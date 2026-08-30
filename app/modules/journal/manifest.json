@@ -1,0 +1,19 @@
+{
+  "id": "mire.journal",
+  "name": "Incident Journal",
+  "description": "Document connection issues, attach evidence, and group entries into incidents for ISP complaints",
+  "version": "1.0.0",
+  "author": "itsDNNS",
+  "minAppVersion": "2026.2",
+  "type": "analysis",
+  "contributes": {
+    "routes": "routes.py",
+    "static": "static/",
+    "i18n": "i18n/"
+  },
+  "menu": {
+    "label_key": "mire.journal.incident_journal",
+    "icon": "book-open",
+    "order": 20
+  }
+}

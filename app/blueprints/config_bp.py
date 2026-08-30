@@ -1,0 +1,154 @@
+"""Configuration and API token management routes."""
+
+import logging
+import os
+from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
+
+from flask import Blueprint, request, jsonify
+
+from app.web import (
+    require_auth, _require_session_auth, _admin_password_matches,
+    _invalidate_admin_sessions, _secret_values_match,
+    get_config_manager, get_storage, get_on_config_changed,
+    _get_client_ip, _localize_timestamps,
+)
+from app.config import (
+    PASSWORD_MASK,
+    POLL_MAX,
+    POLL_MIN,
+)
+
+audit_log = logging.getLogger("docsis.audit")
+log = logging.getLogger("docsis.web")
+
+config_bp = Blueprint("config_bp", __name__)
+
+
+def _should_run_bqm_initial_fetch(url):
+    """Return True only for ThinkBroadband share URLs safe for immediate setup fetch."""
+    try:
+        parsed = urlparse((url or "").strip())
+    except Exception:
+        return False
+    host = (parsed.hostname or "").lower()
+    path = parsed.path or ""
+    return (
+        parsed.scheme == "https"
+        and host in {"thinkbroadband.com", "www.thinkbroadband.com"}
+        and path.startswith("/broadband/monitoring/quality/share/")
+        and path.endswith(".csv")
+    )
+
+
+def run_bqm_initial_fetch(config_manager=None, storage=None):
+    """Lazy wrapper to avoid importing optional BQM routes during blueprint setup."""
+    from app.modules.bqm.routes import run_bqm_initial_fetch as _run_bqm_initial_fetch
+
+    return _run_bqm_initial_fetch(config_manager, storage)
+
+
+@config_bp.route("/api/config", methods=["POST"])
+@_require_session_auth
+def api_config():
+    """Save configuration."""
+    _config_manager = get_config_manager()
+    if not _config_manager:
+        return jsonify({"success": False, "error": "Config not initialized"}), 500
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "error": "No data"}), 400
+        data = dict(data)
+        previous_admin_password = _config_manager.get("admin_password", "")
+        admin_password_requested = "admin_password" in data
+        if admin_password_requested and (
+            data["admin_password"] == PASSWORD_MASK
+            or _admin_password_matches(previous_admin_password, data["admin_password"])
+        ):
+            del data["admin_password"]
+        # Validate timezone if provided
+        if "timezone" in data and data["timezone"]:
+            try:
+                ZoneInfo(data["timezone"])
+            except Exception:
+                return jsonify({"success": False, "error": "Invalid timezone"}), 400
+        # Clamp poll_interval to allowed range
+        if "poll_interval" in data:
+            try:
+                pi = int(data["poll_interval"])
+                data["poll_interval"] = max(POLL_MIN, min(POLL_MAX, pi))
+            except (ValueError, TypeError):
+                pass
+        previous_bqm_url = (_config_manager.get("bqm_url") or "").strip()
+        requested_bqm_url = (data.get("bqm_url") or "").strip() if "bqm_url" in data else previous_bqm_url
+        should_fetch_bqm = (
+            bool(requested_bqm_url)
+            and requested_bqm_url != previous_bqm_url
+            and _should_run_bqm_initial_fetch(requested_bqm_url)
+        )
+        _config_manager.save(data)
+        effective_admin_password = _config_manager.get("admin_password", "")
+        admin_password_changed = (
+            admin_password_requested
+            and not _secret_values_match(previous_admin_password, effective_admin_password)
+        )
+        if admin_password_changed:
+            _invalidate_admin_sessions()
+        audit_log.info("Config changed: ip=%s", _get_client_ip())
+        _on_config_changed = get_on_config_changed()
+        if _on_config_changed:
+            _on_config_changed()
+        response = {"success": True}
+        if should_fetch_bqm:
+            response["bqm_initial_fetch"] = run_bqm_initial_fetch(_config_manager, get_storage())
+        return jsonify(response)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        log.error("Config save failed: %s", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ── API Token Management ──
+
+@config_bp.route("/api/tokens", methods=["GET"])
+@require_auth
+def api_tokens_list():
+    """List all API tokens (without hashes)."""
+    _storage = get_storage()
+    if not _storage:
+        return jsonify({"error": "Storage not available"}), 500
+    tokens = _storage.get_api_tokens()
+    _localize_timestamps(tokens)
+    return jsonify({"tokens": tokens})
+
+
+@config_bp.route("/api/tokens", methods=["POST"])
+@_require_session_auth
+def api_tokens_create():
+    """Create a new API token. Session-only (no token auth)."""
+    _storage = get_storage()
+    if not _storage:
+        return jsonify({"error": "Storage not available"}), 500
+    data = request.get_json()
+    name = (data or {}).get("name", "").strip()
+    if not name:
+        return jsonify({"error": "Token name is required"}), 400
+    token_id, plaintext = _storage.create_api_token(name)
+    audit_log.info("API token created: id=%s name=%s ip=%s", token_id, name, _get_client_ip())
+    return jsonify({"id": token_id, "token": plaintext, "name": name}), 201
+
+
+@config_bp.route("/api/tokens/<int:token_id>", methods=["DELETE"])
+@_require_session_auth
+def api_tokens_revoke(token_id):
+    """Revoke an API token. Session-only (no token auth)."""
+    _storage = get_storage()
+    if not _storage:
+        return jsonify({"error": "Storage not available"}), 500
+    revoked = _storage.revoke_api_token(token_id)
+    if not revoked:
+        return jsonify({"error": "Token not found or already revoked"}), 404
+    audit_log.info("API token revoked: id=%s ip=%s", token_id, _get_client_ip())
+    return jsonify({"success": True})

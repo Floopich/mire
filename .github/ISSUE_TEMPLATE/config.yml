@@ -1,0 +1,20 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🙋 Q&A and troubleshooting
+    url: https://github.com/itsDNNS/docsight/discussions/categories/q-a
+    about: Use Discussions for setup help, reverse proxy questions, and troubleshooting
+  - name: 💡 Ideas and roadmap feedback
+    url: https://github.com/itsDNNS/docsight/discussions/categories/ideas
+    about: Discuss new features and product ideas before opening implementation work
+  - name: 🧰 Show and tell
+    url: https://github.com/floopich/mire/discussions
+    about: Share your setup, dashboards, exports, and evidence workflow with the community
+  - name: 📚 Docs and installation guides
+    url: https://github.com/itsDNNS/docsight/wiki
+    about: Read the wiki, install guides, and architecture docs first
+  - name: ☕ Support the project on Ko-fi
+    url: https://ko-fi.com/itsdnns
+    about: Support Mire development on Ko-fi
+  - name: 💙 Donate via PayPal
+    url: https://paypal.me/itsDNNS
+    about: Support Mire development via PayPal

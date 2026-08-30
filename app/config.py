@@ -1,0 +1,491 @@
+"""Configuration management with persistent config.json + env var overrides."""
+
+import json
+import logging
+import os
+import stat
+from urllib.parse import urlparse
+
+from cryptography.fernet import Fernet
+from werkzeug.security import generate_password_hash
+
+log = logging.getLogger("docsis.config")
+
+POLL_MIN = 60
+POLL_MAX = 14400
+
+SECRET_KEYS = {
+    "modem_password",
+    "mqtt_password",
+    "speedtest_tracker_token",
+    "notify_webhook_token",
+    "notify_apprise_key",
+    "notify_apprise_token",
+    "notify_pwa_push_vapid_private_key",
+}
+PRIVATE_KEYS = set()
+HASH_KEYS = {"admin_password"}
+PASSWORD_MASK = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+MODULE_SECRET_KEYS: set[str] = set()
+MODULE_SECRET_OWNERS: dict[str, str] = {}
+
+
+def parse_config_bool(value) -> bool:
+    """Parse a boolean value supplied by config, JSON, or form input."""
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def set_module_secret_registry(keys: set[str], owners: dict[str, str]) -> None:
+    """Replace module-secret reservations while retaining shared set objects."""
+    MODULE_SECRET_KEYS.clear()
+    MODULE_SECRET_KEYS.update(keys)
+    MODULE_SECRET_OWNERS.clear()
+    MODULE_SECRET_OWNERS.update(owners)
+    # A key may change from normal scalar config to secret config after a module
+    # update within the same process. Secret encryption must always take
+    # precedence over stale bool/int coercion metadata from an earlier load.
+    BOOL_KEYS.difference_update(keys)
+    INT_KEYS.difference_update(keys)
+
+
+def is_secret_key(key: str) -> bool:
+    """Return whether a config key uses write-only secret semantics."""
+    return key in SECRET_KEYS or key in MODULE_SECRET_KEYS
+
+
+DEFAULTS = {
+    "modem_type": "generic",
+    "modem_url": "http://192.168.178.1",
+    "modem_user": "",
+    "modem_password": "",
+    "poll_interval": 900,
+    "web_port": 8765,
+    "public_url": "",
+    "history_days": 0,
+    "snapshot_time": "06:00",
+    "theme": "dark",
+    "font_family": "outfit",
+    "language": "fr",
+    "temperature_unit": "celsius",
+    "isp_name": "VOO",
+    "admin_password": "",
+    "metrics_require_token": False,
+    "dismissed_notice_ids": [],
+    "update_check_enabled": False,
+    "gaming_quality_enabled": True,
+    "speedtest_tls_insecure": False,
+    "booked_download": 0,
+    "booked_upload": 0,
+    "notify_webhook_url": "",
+    "notify_webhook_token": "",
+    "notify_apprise_enabled": False,
+    "notify_apprise_url": "",
+    "notify_apprise_key": "",
+    "notify_apprise_token": "",
+    "notify_apprise_tag": "",
+    "notify_pwa_push_enabled": False,
+    "notify_pwa_push_vapid_public_key": "",
+    "notify_pwa_push_vapid_private_key": "",
+    "notify_pwa_push_vapid_subject": "mailto:admin@example.com",
+    "notify_min_severity": "warning",
+    "notify_cooldown": 3600,
+    "notify_cooldowns": "{}",
+    "timezone": "",
+    "disabled_modules": "mire.smokeping",  # comma-separated list of module IDs to disable
+    "active_theme": "",  # Module ID of active theme (empty = first available)
+    "show_reserved_modules": False,
+    "module_registry_url": "https://raw.githubusercontent.com/itsDNNS/docsight-modules/main/registry.json",
+    "health_hysteresis": 0,
+    "sc_enabled": False,
+    "sc_global_cooldown": 300,
+    "sc_trigger_cooldown": 900,
+    "sc_max_actions_per_hour": 4,
+    "sc_speedtest_min_interval": 14400,
+    "sc_speedtest_max_actions_per_day": 4,
+    "sc_speedtest_match_window": 900,
+    "sc_flapping_window": 3600,
+    "sc_flapping_threshold": 3,
+    "sc_trigger_modulation": True,
+    "sc_trigger_modulation_direction": "both",
+    "sc_trigger_modulation_min_qam": "",
+    "sc_trigger_snr": False,
+    "sc_trigger_error_spike": False,
+    "sc_trigger_error_spike_min_delta": 0,
+    "sc_trigger_health": False,
+    "sc_trigger_health_level": "any_degradation",
+    "sc_trigger_packet_loss": False,
+    "sc_trigger_packet_loss_min_pct": "5.0",
+}
+CORE_CONFIG_KEYS = frozenset(DEFAULTS)
+
+ENV_MAP = {
+    "modem_type": "MODEM_TYPE",
+    "modem_url": "MODEM_URL",
+    "modem_user": "MODEM_USER",
+    "modem_password": "MODEM_PASSWORD",
+    "mqtt_host": "MQTT_HOST",
+    "mqtt_port": "MQTT_PORT",
+    "mqtt_user": "MQTT_USER",
+    "mqtt_password": "MQTT_PASSWORD",
+    "mqtt_tls_insecure": "MQTT_TLS_INSECURE",
+    "mqtt_topic_prefix": "MQTT_TOPIC_PREFIX",
+    "mqtt_discovery_prefix": "MQTT_DISCOVERY_PREFIX",
+    "poll_interval": "POLL_INTERVAL",
+    "web_port": "WEB_PORT",
+    "public_url": "PUBLIC_URL",
+    "history_days": "HISTORY_DAYS",
+    "data_dir": "DATA_DIR",
+    "admin_password": "ADMIN_PASSWORD",
+    "metrics_require_token": "METRICS_REQUIRE_TOKEN",
+    "bqm_url": "BQM_URL",
+    "speedtest_tracker_url": "SPEEDTEST_TRACKER_URL",
+    "speedtest_tracker_token": "SPEEDTEST_TRACKER_TOKEN",
+    "speedtest_tls_insecure": "SPEEDTEST_TLS_INSECURE",
+    "booked_download": "BOOKED_DOWNLOAD",
+    "booked_upload": "BOOKED_UPLOAD",
+    "update_check_enabled": "UPDATE_CHECK_ENABLED",
+    "gaming_quality_enabled": "GAMING_QUALITY_ENABLED",
+    "notify_webhook_url": "NOTIFY_WEBHOOK_URL",
+    "notify_webhook_token": "NOTIFY_WEBHOOK_TOKEN",
+    "notify_apprise_enabled": "NOTIFY_APPRISE_ENABLED",
+    "notify_apprise_url": "NOTIFY_APPRISE_URL",
+    "notify_apprise_key": "NOTIFY_APPRISE_KEY",
+    "notify_apprise_token": "NOTIFY_APPRISE_TOKEN",
+    "notify_apprise_tag": "NOTIFY_APPRISE_TAG",
+    "notify_pwa_push_enabled": "NOTIFY_PWA_PUSH_ENABLED",
+    "notify_pwa_push_vapid_public_key": "NOTIFY_PWA_PUSH_VAPID_PUBLIC_KEY",
+    "notify_pwa_push_vapid_private_key": "NOTIFY_PWA_PUSH_VAPID_PRIVATE_KEY",
+    "notify_pwa_push_vapid_subject": "NOTIFY_PWA_PUSH_VAPID_SUBJECT",
+    "notify_min_severity": "NOTIFY_MIN_SEVERITY",
+    "notify_cooldown": "NOTIFY_COOLDOWN",
+    "notify_cooldowns": "NOTIFY_COOLDOWNS",
+    "weather_enabled": "WEATHER_ENABLED",
+    "weather_latitude": "WEATHER_LATITUDE",
+    "weather_longitude": "WEATHER_LONGITUDE",
+    "health_hysteresis": "HEALTH_HYSTERESIS",
+    "show_reserved_modules": False,
+    "module_registry_url": "MODULE_REGISTRY_URL",
+    "sc_enabled": "SC_ENABLED",
+    "sc_global_cooldown": "SC_GLOBAL_COOLDOWN",
+    "sc_trigger_cooldown": "SC_TRIGGER_COOLDOWN",
+    "sc_max_actions_per_hour": "SC_MAX_ACTIONS_PER_HOUR",
+    "sc_speedtest_min_interval": "SC_SPEEDTEST_MIN_INTERVAL",
+    "sc_speedtest_max_actions_per_day": "SC_SPEEDTEST_MAX_ACTIONS_PER_DAY",
+    "sc_speedtest_match_window": "SC_SPEEDTEST_MATCH_WINDOW",
+    "sc_flapping_window": "SC_FLAPPING_WINDOW",
+    "sc_flapping_threshold": "SC_FLAPPING_THRESHOLD",
+    "sc_trigger_modulation": "SC_TRIGGER_MODULATION",
+    "sc_trigger_modulation_direction": "SC_TRIGGER_MODULATION_DIRECTION",
+    "sc_trigger_modulation_min_qam": "SC_TRIGGER_MODULATION_MIN_QAM",
+    "sc_trigger_snr": "SC_TRIGGER_SNR",
+    "sc_trigger_error_spike": "SC_TRIGGER_ERROR_SPIKE",
+    "sc_trigger_error_spike_min_delta": "SC_TRIGGER_ERROR_SPIKE_MIN_DELTA",
+    "sc_trigger_health": "SC_TRIGGER_HEALTH",
+    "sc_trigger_health_level": "SC_TRIGGER_HEALTH_LEVEL",
+    "sc_trigger_packet_loss": "SC_TRIGGER_PACKET_LOSS",
+    "sc_trigger_packet_loss_min_pct": "SC_TRIGGER_PACKET_LOSS_MIN_PCT",
+}
+
+# Deprecated env vars (FRITZ_* -> MODEM_*) - checked as fallback
+_LEGACY_ENV_MAP = {
+    "modem_url": "FRITZ_URL",
+    "modem_user": "FRITZ_USER",
+    "modem_password": "FRITZ_PASSWORD",
+}
+
+# Deprecated config keys (fritz_* -> modem_*) - migrated on load
+_LEGACY_KEY_MAP = {
+    "fritz_url": "modem_url",
+    "fritz_user": "modem_user",
+    "fritz_password": "modem_password",
+}
+
+INT_KEYS = {"poll_interval", "web_port", "history_days", "booked_download", "booked_upload", "notify_cooldown", "health_hysteresis",
+            "sc_global_cooldown", "sc_trigger_cooldown", "sc_max_actions_per_hour",
+            "sc_speedtest_min_interval", "sc_speedtest_max_actions_per_day", "sc_speedtest_match_window",
+            "sc_flapping_window", "sc_flapping_threshold",
+            "sc_trigger_error_spike_min_delta"}
+BOOL_KEYS = {"show_reserved_modules", "update_check_enabled", "gaming_quality_enabled", "notify_apprise_enabled",
+             "notify_pwa_push_enabled", "metrics_require_token",
+             "speedtest_tls_insecure", "sc_enabled", "sc_trigger_modulation", "sc_trigger_snr",
+             "sc_trigger_error_spike", "sc_trigger_health", "sc_trigger_packet_loss"}
+
+URL_KEYS = {"modem_url", "bqm_url", "speedtest_tracker_url", "notify_webhook_url", "notify_apprise_url"}
+_ALLOWED_URL_SCHEMES = {"http", "https"}
+
+class ConfigManager:
+    """Loads config from config.json, env vars override file values.
+    Passwords are encrypted at rest using Fernet (AES-128-CBC)."""
+
+    def __init__(self, data_dir="/data"):
+        self.data_dir = data_dir
+        self.config_path = os.path.join(data_dir, "config.json")
+        self._key_path = os.path.join(data_dir, ".config_key")
+        self._file_config = {}
+        self._fernet = self._init_fernet()
+        self._load()
+
+    def _init_fernet(self):
+        """Load or generate encryption key."""
+        os.makedirs(self.data_dir, exist_ok=True)
+        if os.path.exists(self._key_path):
+            with open(self._key_path, "rb") as f:
+                key = f.read().strip()
+        else:
+            key = Fernet.generate_key()
+            with open(self._key_path, "wb") as f:
+                f.write(key)
+            try:
+                os.chmod(self._key_path, stat.S_IRUSR | stat.S_IWUSR)
+            except OSError:
+                pass
+            log.info("Generated new encryption key")
+        return Fernet(key)
+
+    def _encrypt(self, value):
+        """Encrypt a string value."""
+        if not value:
+            return ""
+        return self._fernet.encrypt(value.encode()).decode()
+
+    def _decrypt(self, value):
+        """Decrypt a string value. Returns plaintext on failure (migration)."""
+        if not value:
+            return ""
+        try:
+            return self._fernet.decrypt(value.encode()).decode()
+        except Exception:
+            # Value is likely plaintext (pre-encryption migration)
+            return value
+
+    def _load(self):
+        """Load config.json if it exists. Migrates legacy fritz_* keys to modem_*."""
+        if os.path.exists(self.config_path):
+            try:
+                with open(self.config_path, "r") as f:
+                    self._file_config = json.load(f)
+                log.info("Loaded config from %s", self.config_path)
+                self._migrate_legacy_keys()
+            except Exception as e:
+                log.warning("Failed to load config.json: %s", e)
+                self._file_config = {}
+        else:
+            log.info("No config.json found, using defaults/env")
+
+    def _migrate_legacy_keys(self):
+        """Migrate fritz_* config keys to modem_* (backwards compatibility)."""
+        migrated = False
+        for old_key, new_key in _LEGACY_KEY_MAP.items():
+            if old_key in self._file_config and new_key not in self._file_config:
+                self._file_config[new_key] = self._file_config.pop(old_key)
+                migrated = True
+            elif old_key in self._file_config:
+                del self._file_config[old_key]
+                migrated = True
+        if migrated:
+            try:
+                with open(self.config_path, "w") as f:
+                    json.dump(self._file_config, f, indent=2)
+                log.info("Migrated legacy fritz_* keys to modem_*")
+            except Exception as e:
+                log.warning("Failed to save migrated config: %s", e)
+
+    def _get_default_disabled_modules(self):
+        """Keep existing Smokeping setups active while new installs default it off."""
+        if self._file_config.get("smokeping_url") and self._file_config.get("smokeping_targets"):
+            return ""
+        return DEFAULTS["disabled_modules"]
+
+    def get(self, key, default=None):
+        """Get config value: env var > legacy env var > config.json > default.
+        Secret keys from config.json are decrypted transparently."""
+        # Env vars are never encrypted
+        env_name = ENV_MAP.get(key)
+        if env_name:
+            env_val = os.environ.get(env_name)
+            if env_val is not None and env_val != "":
+                if key in INT_KEYS:
+                    return int(env_val)
+                if key in BOOL_KEYS:
+                    return env_val.lower() in ("true", "1", "yes", "on")
+                return env_val
+        # Check deprecated FRITZ_* env vars as fallback
+        legacy_env = _LEGACY_ENV_MAP.get(key)
+        if legacy_env:
+            env_val = os.environ.get(legacy_env)
+            if env_val is not None and env_val != "":
+                return env_val
+
+        if key in self._file_config:
+            val = self._file_config[key]
+            if key in INT_KEYS and not isinstance(val, int):
+                if val == "" or val is None:
+                    return default if default is not None else 0
+                return int(val)
+            if key in HASH_KEYS:
+                # Return werkzeug hash as-is; legacy Fernet-encrypted values get decrypted
+                if val and (val.startswith("scrypt:") or val.startswith("pbkdf2:")):
+                    return val
+                return self._decrypt(val)
+            if is_secret_key(key) or key in PRIVATE_KEYS:
+                return self._decrypt(val)
+            return val
+
+        if key == "disabled_modules":
+            return self._get_default_disabled_modules()
+
+        if default is not None:
+            return default
+        return DEFAULTS.get(key)
+
+    def has_stored_value(self, key):
+        """Return whether config.json contains this key, excluding defaults/env."""
+        return key in self._file_config
+
+    @staticmethod
+    def _validate_url(key, value):
+        """Validate that URL keys use http or https scheme only."""
+        if not value:
+            return
+        parsed = urlparse(value)
+        if parsed.scheme not in _ALLOWED_URL_SCHEMES:
+            raise ValueError(
+                f"Invalid URL scheme '{parsed.scheme}' for {key}. "
+                f"Only http and https are allowed."
+            )
+
+    def save(self, data):
+        """Save config values to config.json. Passwords are encrypted."""
+        os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
+
+        # Validate URL keys before any mutation
+        for key in URL_KEYS:
+            if key in data and data[key]:
+                self._validate_url(key, data[key])
+
+        # Don't overwrite passwords with the mask placeholder
+        for key in MODULE_SECRET_KEYS | SECRET_KEYS | HASH_KEYS:
+            if key in data and data[key] == PASSWORD_MASK:
+                del data[key]
+
+        # Hash password keys (admin_password) before storing
+        for key in HASH_KEYS:
+            if key in data and data[key]:
+                if not (data[key].startswith("scrypt:") or data[key].startswith("pbkdf2:")):
+                    data[key] = generate_password_hash(data[key])
+
+        # Encrypt secret and private values before storing. Private values stay
+        # displayable in normal Settings and report forms, unlike password-style secrets.
+        for key in MODULE_SECRET_KEYS | SECRET_KEYS | PRIVATE_KEYS:
+            if key in data and data[key]:
+                data[key] = self._encrypt(data[key])
+
+        # Merge with existing config
+        self._file_config.update(data)
+
+        # Cast int keys
+        for key in INT_KEYS:
+            if key in self._file_config:
+                try:
+                    self._file_config[key] = int(self._file_config[key])
+                except (ValueError, TypeError):
+                    pass
+
+        # Cast bool keys
+        for key in BOOL_KEYS:
+            if key in self._file_config:
+                val = self._file_config[key]
+                if isinstance(val, str):
+                    self._file_config[key] = val.lower() in ("true", "1", "yes", "on")
+
+        with open(self.config_path, "w") as f:
+            json.dump(self._file_config, f, indent=2)
+        try:
+            os.chmod(self.config_path, stat.S_IRUSR | stat.S_IWUSR)
+        except OSError:
+            pass
+        log.info("Config saved to %s", self.config_path)
+
+    def is_configured(self):
+        """True if modem type was explicitly saved (setup completed)."""
+        return "modem_type" in self._file_config
+
+    def is_update_check_enabled(self):
+        """True if release update checks against GitHub are enabled."""
+        return self._get_bool("update_check_enabled")
+
+    def is_mqtt_configured(self):
+        """True if mqtt_host is set (MQTT is optional)."""
+        return bool(self.get("mqtt_host"))
+
+    def is_smokeping_configured(self):
+        """True if smokeping_url and smokeping_targets are set."""
+        return bool(self.get("smokeping_url") and self.get("smokeping_targets"))
+
+    def is_bqm_configured(self):
+        """True if bqm_url is set (BQM is optional)."""
+        return bool(self.get("bqm_url"))
+
+    def _get_bool(self, key):
+        """Get a config value and coerce it to bool.
+
+        Handles both native bool values and string representations
+        from web form submissions or environment variables.
+        """
+        val = self.get(key)
+        if isinstance(val, str):
+            return val.lower() in ("true", "1", "yes")
+        return bool(val)
+
+    def is_gaming_quality_enabled(self):
+        """True if gaming quality index is enabled."""
+        return self._get_bool("gaming_quality_enabled")
+
+    def is_notify_configured(self):
+        """True if any notification channel is configured."""
+        pwa_push_configured = (
+            self._get_bool("notify_pwa_push_enabled")
+            and bool(self.get("notify_pwa_push_vapid_public_key"))
+            and bool(self.get("notify_pwa_push_vapid_private_key"))
+        )
+        return bool(self.get("notify_webhook_url")) or (
+            self._get_bool("notify_apprise_enabled") and bool(self.get("notify_apprise_url"))
+        ) or pwa_push_configured
+
+    def is_speedtest_configured(self):
+        """True if speedtest_tracker_url and token are set."""
+        return bool(self.get("speedtest_tracker_url") and self.get("speedtest_tracker_token"))
+
+    def is_weather_configured(self):
+        """True if weather is enabled and latitude/longitude are set."""
+        lat = self.get("weather_latitude")
+        lon = self.get("weather_longitude")
+        return self._get_bool("weather_enabled") and bool(lat) and bool(lon)
+
+    def is_backup_configured(self):
+        """True if automatic backups are enabled and a backup path is set."""
+        return self._get_bool("backup_enabled") and bool(self.get("backup_path"))
+
+    def get_theme(self):
+        """Return 'dark' or 'light'."""
+        theme = self.get("theme", "dark")
+        return theme if theme in ("dark", "light") else "dark"
+
+    def get_all(self, mask_secrets=False):
+        """Return all config values as dict.
+        If mask_secrets=True, password fields show a mask instead of real values."""
+        result = {}
+        for key in DEFAULTS:
+            val = self.get(key)
+            if mask_secrets and (
+                key in SECRET_KEYS or key in MODULE_SECRET_KEYS or key in HASH_KEYS
+            ) and val:
+                result[key] = PASSWORD_MASK
+            else:
+                result[key] = val
+        result["data_dir"] = os.environ.get("DATA_DIR", self.data_dir)
+        return result

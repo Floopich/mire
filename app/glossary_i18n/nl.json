@@ -1,0 +1,388 @@
+{
+  "categories": [
+    {
+      "description": "Kabel-/DOCSIS-protocol-, signaal-, kanaal- en gebeurtenistermen die Mire uitlegt.",
+      "id": "docsis_terms",
+      "title": "DOCSIS-termen"
+    },
+    {
+      "description": "Weergaven, integraties en bewijsinstrumenten die Mire zelf levert.",
+      "id": "mire_features",
+      "title": "Mire-functies"
+    }
+  ],
+  "terms": [
+    {
+      "aliases": [
+        "Kabelinternet",
+        "Gegevens via kabel Service Interfacespecificatie"
+      ],
+      "category": "cable_basics",
+      "id": "docsis",
+      "levels": {
+        "advanced": "DOCSIS gebruikt een mix van downstream- en upstream-kanaalfamilies zoals SC-QAM, OFDM en OFDMA. Elke familie levert ander bewijsmateriaal, dus Mire houdt kanaaltype, richting en ondersteuningsstatus gescheiden.",
+        "basic": "DOCSIS zorgt voor internetdiensten via coaxkabel. Mire leest modem-, kanaal- en signaalgegevens uit van ondersteunde DOCSIS-apparaten, dus het bewijsmateriaal gaat over de kabeltoegangslijn en niet over DSL.",
+        "eli5": "DOCSIS is de kabelinternet-taal die een kabelmodem en het netwerk van de provider met elkaar spreken.",
+        "technician": "Gebruik DOCSIS-bewijsmateriaal als RF/MAC-context aan modemzijde: kanaal-lock, vermogen, MER/SNR, modulatie, fouten en events. Provisioning door de provider, CMTS-beleid, segmentbelasting en IP-routering vereisen nog steeds expliciete ondersteunende bronnen."
+      },
+      "misconceptions": [
+        "DOCSIS is geen DSL; DSL-waarden en kabelkanaalwaarden mogen niet één op één worden vergeleken."
+      ],
+      "protected_terms": [
+        "DOCSIS",
+        "DSL",
+        "Mire"
+      ],
+      "title": "DOCSIS"
+    },
+    {
+      "aliases": [
+        "Kabelmodem-aansluitsysteem",
+        "Externe PHY",
+        "Provider-headend"
+      ],
+      "category": "cable_basics",
+      "id": "cmts",
+      "levels": {
+        "advanced": "Het gedrag van CMTS/CCAP kan kanaalbeschikbaarheid, profielen, planning en provisioning beïnvloeden, maar deze beslissingen aan providerzijde zijn slechts gedeeltelijk zichtbaar via modemtelemetrie.",
+        "basic": "Een CMTS of vergelijkbaar toegangssysteem beheert DOCSIS-modems, kanalen, planning en dienstconfiguratie. Mire ziet doorgaans alleen de modemzijde.",
+        "eli5": "De CMTS is het systeem aan de kant van de provider waarmee je kabelmodem communiceert.",
+        "technician": "Leid de exacte CMTS-status niet af uit modembewijs alleen. Gebruik CMTS-gerelateerde bewoordingen alleen wanneer deze worden onderbouwd door expliciete providergegevens, event-context of modemvelden die dit daadwerkelijk blootleggen."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "CMTS",
+        "DOCSIS",
+        "Mire"
+      ],
+      "title": "CMTS"
+    },
+    {
+      "aliases": [
+        "Segment",
+        "Dienstengroep",
+        "Kabelknooppunt",
+        "Knooppuntsplitsing"
+      ],
+      "category": "cable_basics",
+      "id": "node_segment",
+      "levels": {
+        "advanced": "Servicegroepgrenzen beïnvloeden contentie, kanaalbelasting en upgradeplanning. Een lokale modem kan symptomen tonen, maar niet de volledige segmentpopulatie of de scheduler-status aan providerzijde.",
+        "basic": "Mensen in hetzelfde kabelsegment delen een deel van de toegangsnetwerkcapaciteit. Het opsplitsen van een node kan het aantal gebruikers dat dezelfde resources deelt verminderen.",
+        "eli5": "Een node of segment is het deel van het kabelnetwerk dat wordt gedeeld door een groep huizen.",
+        "technician": "Gebruik segmentterminologie met voorzichtigheid: bewijs eerst de lokale signaalgezondheid, vergelijk vervolgens timing, snelheids-/latentiebewijs en providerinformatie voordat een probleem 'segmentbelasting' wordt genoemd."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "DOCSIS",
+        "CMTS",
+        "Mire"
+      ],
+      "title": "Knooppunt/segment"
+    },
+    {
+      "aliases": [
+        "Kabelsegment",
+        "Knooppunt",
+        "Gedeeld toegangsnetwerk"
+      ],
+      "category": "cable_basics",
+      "id": "shared_medium",
+      "levels": {
+        "advanced": "Gedrag van een gedeeld medium hangt af van de grootte van de servicegroep, scheduling, kanaalcapaciteit, actieve vraag en providerbeleid. Eén modem kan niet direct het hele segment meten.",
+        "basic": "Een gedeeld medium kan druk zijn, zelfs als je eigen modemsignaal er schoon uitziet. Mire scheidt lokaal modembewijs van claims over benutting aan providerzijde.",
+        "eli5": "Kabelinternet deelt delen van het toegangsnetwerk in de buurt met andere gebruikers.",
+        "technician": "Onderscheid schoon RF-bewijs van congestiebewijs. Correleer patronen naar tijdstip van de dag, speedtest-/BQM-/monitoringgegevens en providerfeedback voordat een gedeeld medium als hoofdoorzaak wordt aangewezen."
+      },
+      "misconceptions": [
+        "Een goed signaalniveau bewijst niet dat het providersegment niet overbelast is."
+      ],
+      "protected_terms": [
+        "DOCSIS",
+        "CMTS",
+        "Mire"
+      ],
+      "title": "Gedeeld medium"
+    },
+    {
+      "aliases": [
+        "Downloadrichting",
+        "DS",
+        "Downstream-kanalen"
+      ],
+      "category": "modulation_channels",
+      "id": "downstream",
+      "levels": {
+        "advanced": "Downstream-bewijsmateriaal kan afkomstig zijn van SC-QAM- en OFDM-kanalen. Vermogen, SNR/MER, modulatie-/profielgegevens en channel lock laten zien of de modem de carrier zuiver kan ontvangen.",
+        "basic": "Downstream-kanalen bevatten downloads en ander inkomend verkeer. Mire toont hun lock-status en signaalkwaliteit apart van upstream-kanalen.",
+        "eli5": "Downstream is data die van het netwerk van de provider naar je modem gaat.",
+        "technician": "Onderzoek downstream-problemen door getroffen kanalen, MER/SNR-veranderingen, groei van correctable/uncorrectable errors, OFDM-profielwijzigingen en tijdstempels van gebeurtenissen met elkaar te correleren, in plaats van één ontvangstwaarde als volledige diagnose te behandelen."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "DOCSIS",
+        "SC-QAM",
+        "OFDM"
+      ],
+      "title": "Stroomafwaarts"
+    },
+    {
+      "aliases": [
+        "Uploadrichting",
+        "US",
+        "Upstream-kanalen"
+      ],
+      "category": "modulation_channels",
+      "id": "upstream",
+      "levels": {
+        "advanced": "Upstream kan gebruikmaken van SC-QAM of OFDMA. Zendvermogen, modulatie-downgrades, ranging-gedrag en ruissymptomen op het retourpad wegen vaak zwaarder dan waarden aan de downloadzijde.",
+        "basic": "Upstream-kanalen bevatten uploads, aanvragen en modem-ranging. Mire gebruikt ze als bewijsmateriaal voor de uploadzijde van het signaal.",
+        "eli5": "Upstream is data die van je modem terug naar het netwerk van de provider gaat.",
+        "technician": "Vergelijk bij upstream-storingen vermogensverschuivingen, kanaaluitval, ontbrekende OFDMA-ondersteuning, T3/T4-gebeurtenissen en periodes van latency of packetloss. Ontbrekende upstream-velden betekenen unsupported of not reported, niet automatisch nul."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "DOCSIS",
+        "SC-QAM",
+        "OFDMA"
+      ],
+      "title": "Upstream"
+    },
+    {
+      "aliases": [
+        "Gebonden kanalen",
+        "Kanaalbundel",
+        "DOCSIS-koppeling"
+      ],
+      "category": "modulation_channels",
+      "id": "channel_bonding",
+      "levels": {
+        "advanced": "Bonding combineert kanaalcapaciteit, maar het bruikbare resultaat hangt af van richting, kanaalfamilie, vergrendelingsstatus, profielen, schedulergedrag en serviceconfiguratie.",
+        "basic": "DOCSIS-modems gebruiken vaak meerdere downstream- en upstreamkanalen tegelijk. Mire groepeert zichtbare kanalen zodat je kunt zien wat gebundeld, vergrendeld en gezond is.",
+        "eli5": "Channel bonding zorgt ervoor dat een modem meerdere kabelkanalen tegelijk kan gebruiken.",
+        "technician": "Let bij het beoordelen van bonding-gegevens op ontbrekende of verslechterde leden in de bundel, familiespecifieke gezondheid, en of symptomen één kanaal, één richting of de hele service group treffen."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "DOCSIS",
+        "SC-QAM",
+        "OFDM",
+        "OFDMA"
+      ],
+      "title": "Kanaalkoppeling"
+    },
+    {
+      "aliases": [
+        "Single-carrier QAM",
+        "DOCSIS 3.0-kanaal",
+        "QAM-kanaal"
+      ],
+      "category": "modulation_channels",
+      "id": "sc_qam",
+      "levels": {
+        "advanced": "SC-QAM gebruikt één carrier met een vaste kanaalbreedte en een QAM-orde. Dat maakt de algemene kanaalcontext eenvoudiger dan profielgebaseerde OFDM/OFDMA, mits de modem voldoende velden blootgeeft.",
+        "basic": "SC-QAM-kanalen zijn traditionele DOCSIS 3.0-achtige kanalen. Mire kan meestal hun vermogen, SNR/MER, modulatie, vergrendelingsstatus en gezondheid tonen.",
+        "eli5": "SC-QAM is het klassieke smalle DOCSIS-kanaaltype.",
+        "technician": "Gebruik SC-QAM-rijen om kanaalspecifieke storingen te isoleren: vergelijk aangrenzende kanalen, modulatiewijzigingen, MER/SNR en foutengroei voordat je van één slechte waarde escaleert naar een conclusie voor het hele netwerk."
+      },
+      "misconceptions": [
+        "Een SC-QAM-capaciteitsschatting is geen Speedtest-resultaat."
+      ],
+      "protected_terms": [
+        "SC-QAM",
+        "DOCSIS",
+        "QAM",
+        "Layer-1"
+      ],
+      "title": "SC-QAM"
+    },
+    {
+      "aliases": [
+        "DOCSIS 3.1 downstream",
+        "Orthogonale frequentieverdelingsmultiplexing"
+      ],
+      "category": "modulation_channels",
+      "id": "ofdm",
+      "levels": {
+        "advanced": "De gezondheid van OFDM hangt af van profielen, uitgesloten subcarriers, PLC/lock-status en profielbeschikbaarheid. Ontbrekende profielinformatie moet als unknown blijven staan in plaats van te worden ingevuld met geraden capaciteit.",
+        "basic": "DOCSIS 3.1 gebruikt OFDM voor brede downstream-ontvangkanalen. Mire labelt dit apart, omdat OFDM-gegevens anders zijn dan de klassieke SC-QAM-rijen.",
+        "eli5": "OFDM is het type DOCSIS 3.1 downstreamkanaal dat is opgebouwd uit veel kleine subcarriers.",
+        "technician": "Vergelijk voor OFDM-diagnostiek profielwijzigingen, MER-achtige indicatoren, codeword-/foutgedrag en aangrenzend SC-QAM-bewijs. Behandel niet-ondersteunde profielvelden als een grens van de data, niet als bewijs van goede of slechte service."
+      },
+      "misconceptions": [
+        "Ontbrekende OFDM-capaciteit betekent niet dat het kanaal ongebruikt is; Mire mist mogelijk eenvoudigweg veilige gegevens op profielniveau."
+      ],
+      "protected_terms": [
+        "OFDM",
+        "DOCSIS",
+        "SC-QAM"
+      ],
+      "title": "OFDM"
+    },
+    {
+      "aliases": [
+        "DOCSIS 3.1 upstream",
+        "Meervoudige toegang met orthogonale frequentieverdeling"
+      ],
+      "category": "modulation_channels",
+      "id": "ofdma",
+      "levels": {
+        "advanced": "OFDMA hangt af van profielen, subcarriers, minislots, ruis op het retourpad en scheduler-context. Ontbrekende, None- of null-velden betekenen niet ondersteund of niet gerapporteerd, niet gemeten op nul.",
+        "basic": "Met OFDMA kunnen veel modems delen van een breed upstreamblok delen. Mire labelt dit apart van SC-QAM-upstreamkanalen.",
+        "eli5": "OFDMA is het type DOCSIS 3.1 upstreamkanaal.",
+        "technician": "Diagnosticeer OFDMA met upstream-events, zendgedrag, profielbeschikbaarheid en latency-/losstiming. Vermijd SC-QAM-achtige capaciteitsgissingen tenzij de modem de vereiste OFDMA-details prijsgeeft."
+      },
+      "misconceptions": [
+        "Een OFDMA-kanaal zonder weergegeven capaciteitsnummer kan nog steeds actief en belangrijk zijn."
+      ],
+      "protected_terms": [
+        "OFDMA",
+        "DOCSIS",
+        "SC-QAM"
+      ],
+      "title": "OFDMA"
+    },
+    {
+      "aliases": [
+        "QAM",
+        "256-QAM",
+        "4096-QAM",
+        "Modulatie"
+      ],
+      "category": "modulation_channels",
+      "id": "qam_modulation_order",
+      "levels": {
+        "advanced": "De QAM-orde moet samen met de kanaalfamilie en SNR/MER worden geïnterpreteerd. SC-QAM heeft een eenvoudigere, vaste kanaalrelatie dan de profielgebaseerde kanalen van OFDM/OFDMA.",
+        "basic": "Hogere QAM-niveaus kunnen meer bits per symbool overdragen, maar vereisen een schoner signaal. Mire toont de modulatie, zodat drops of low-QAM-status zichtbaar worden.",
+        "eli5": "Modulatie bepaalt hoeveel data er in elke stap van het kabelsignaal past.",
+        "technician": "Gebruik modulatiewijzigingen als bewijs, niet als op zichzelf staand oordeel. Correleer ze met MER/SNR, vermogen, toename van fouten, kanaalfamilie, en of de waarde actueel is of enkel de laatst gerapporteerde status van de modem."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "QAM",
+        "DOCSIS",
+        "SC-QAM",
+        "OFDM",
+        "OFDMA"
+      ],
+      "title": "QAM / modulatievolgorde"
+    },
+    {
+      "aliases": [
+        "Signaalniveau",
+        "dBmV",
+        "Ontvangstvermogen",
+        "Zendvermogen"
+      ],
+      "category": "signal_quality",
+      "id": "power_level",
+      "levels": {
+        "advanced": "Vermogen moet worden geïnterpreteerd per richting en kanaaltype. Een downstream-ontvangstniveau, een upstream-zendniveau en een OFDMA report-power-veld zijn geen onderling verwisselbare metingen.",
+        "basic": "Mire kan het downstream-ontvangstvermogen en het upstream-zendvermogen tonen wanneer de modem deze rapporteert. Beide richtingen betekenen iets anders.",
+        "eli5": "Vermogensniveau geeft aan hoe sterk het kabelsignaal is, of hoe hard de modem moet terugpraten.",
+        "technician": "Gebruik vermogensgegevens samen met MER/SNR, modulatie, lock-status, geschiedenis van splitters/bekabeling, en timing. Maak van niet-ondersteunde of ontbrekende vermogensvelden geen nulwaardemetingen."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "dBmV",
+        "DOCSIS",
+        "Mire"
+      ],
+      "title": "Vermogensniveau"
+    },
+    {
+      "aliases": [
+        "Signaal-ruisverhouding",
+        "Modulatiefoutverhouding",
+        "MER",
+        "SNR"
+      ],
+      "category": "signal_quality",
+      "id": "snr_mer",
+      "levels": {
+        "advanced": "SNR/MER krijgt pas betekenis in combinatie met modulatie, kanaalfamilie, foutentellers en trends over tijd. Eén nette waarde kan tijdelijke ruis of profielwijzigingen verbergen.",
+        "basic": "SNR en MER zijn metingen van signaalkwaliteit. Betere waarden betekenen meestal dat de modem het kanaal betrouwbaarder kan decoderen.",
+        "eli5": "SNR/MER geeft aan hoe duidelijk de modem het signaal kan onderscheiden van ruis.",
+        "technician": "Leg bij escalatie MER/SNR samen vast met de betrokken kanaal-ID's, tijdstempels, veranderingen in foutpercentage, vermogen en events. Vermijd het door elkaar halen van SNR/MER-betekenissen tussen kanaalfamilies zonder te controleren wat de modem daadwerkelijk rapporteert."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "SNR",
+        "MER",
+        "DOCSIS",
+        "QAM"
+      ],
+      "title": "SNR/MER"
+    },
+    {
+      "aliases": [
+        "Corrigeerbare fouten",
+        "Gecorrigeerde codewoorden",
+        "FEC gecorrigeerd"
+      ],
+      "category": "error_counters",
+      "id": "correctable_errors",
+      "levels": {
+        "advanced": "Corrigeerbare fouten tonen FEC-werk, geen direct pakketverlies. Recente groei tijdens ruisgebeurtenissen is sterker bewijs dan een groot cumulatief totaal uit het verleden.",
+        "basic": "Tellers voor corrigeerbare fouten kunnen oplopen, zelfs op een werkende lijn. Mire maakt ze bruikbaar door snelheid, timing, betrokken kanalen en of onherstelbare fouten ook stijgen te tonen.",
+        "eli5": "Corrigeerbare fouten zijn signaalfouten die de modem kon herstellen.",
+        "technician": "Vergelijk de groei van gecorrigeerde codewords per kanaal en tijdvenster. Combineer dit met MER/SNR, modulatie en onherstelbare fouten om onschuldige achtergrondcorrectie te onderscheiden van een actieve storing."
+      },
+      "misconceptions": [
+        "Een hoog oud corrigeerbaar totaal is niet automatisch een actieve fout."
+      ],
+      "protected_terms": [
+        "DOCSIS",
+        "FEC",
+        "Mire"
+      ],
+      "title": "Corrigeerbare fouten"
+    },
+    {
+      "aliases": [
+        "Oncorrigeerbare fouten",
+        "Ongecorrigeerde codewoorden",
+        "FEC niet-gecorrigeerd"
+      ],
+      "category": "error_counters",
+      "id": "uncorrectable_errors",
+      "levels": {
+        "advanced": "Bewijs moet ruwe cumulatieve tellers gescheiden houden van afgeleide groei. Resets, wraparound en modemherstarts kunnen ruwe totalen veranderen zonder dat er sprake is van een nieuwe storing.",
+        "basic": "Uncorrectables kunnen wijzen op verlies van data op kanaalniveau, vooral wanneer ze toenemen binnen het observatievenster. Mire vindt de groei en timing belangrijker dan één oude totaalwaarde.",
+        "eli5": "Uncorrectable errors zijn signaalfouten die de modem niet kon herstellen.",
+        "technician": "Gebruik uncorrectables als escalatiebewijs wanneer verse groei samenvalt met lage MER/SNR, modulatiedalingen, event logs, of merkbare latency/loss bij de gebruiker. Bewaar de ruwe teller bij het exporteren van bewijs."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "DOCSIS",
+        "FEC",
+        "Mire"
+      ],
+      "title": "Oncorrigeerbare fouten"
+    },
+    {
+      "aliases": [
+        "Snelheidstest",
+        "Downloadtest",
+        "Uploadtest",
+        "Ookla"
+      ],
+      "category": "capacity_throughput",
+      "id": "speedtest",
+      "levels": {
+        "advanced": "Een speedtest meet de end-to-end IP-prestatie op één moment. Dit is niet hetzelfde als DOCSIS-kanaalcapaciteit, tariefsnelheid of lokale RF-conditie.",
+        "basic": "Mire kan download, upload, latency en jitter vastleggen zodat merkbare prestaties vergeleken kunnen worden met DOCSIS-bewijs.",
+        "eli5": "Speedtest meet de doorvoersnelheid en latency die een gebruiker ziet tijdens een test.",
+        "technician": "Interpreteer speedtestresultaten samen met testserver, tijdstip, connection monitor-data, segmentaanwijzingen en modembewijs. Gebruik geen enkel laag resultaat als bewijs van een DOCSIS-signaalfout."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "Speedtest",
+        "IP",
+        "DOCSIS",
+        "Mire"
+      ],
+      "title": "Snelheidstest"
+    }
+  ]
+}

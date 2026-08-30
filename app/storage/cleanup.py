@@ -1,0 +1,194 @@
+"""Cleanup, purge, timezone, and UTC migration mixin."""
+
+import logging
+import os
+import shutil
+import sqlite3
+from datetime import datetime, timedelta
+
+from ..tz import local_today, utc_now, utc_cutoff, local_to_utc, local_date_to_utc_range
+
+log = logging.getLogger("docsis.storage")
+
+
+class CleanupMethods:
+
+    # ── Timezone ──
+
+    def set_timezone(self, tz_name):
+        """Set the timezone name used for local conversions on read."""
+        self.tz_name = tz_name
+
+    # ── UTC Migration ──
+
+    _TIMESTAMP_COLUMNS = [
+        ("snapshots", "timestamp"),
+        ("events", "timestamp"),
+        ("journal_entries", "created_at"),
+        ("journal_entries", "updated_at"),
+        ("journal_attachments", "created_at"),
+        ("incidents", "created_at"),
+        ("incidents", "updated_at"),
+        ("speedtest_results", "timestamp"),
+        ("api_tokens", "created_at"),
+        ("api_tokens", "last_used_at"),
+        ("bqm_graphs", "timestamp"),
+        ("weather_data", "timestamp"),
+        ("smart_capture_executions", "created_at"),
+        ("smart_capture_executions", "fired_at"),
+        ("smart_capture_executions", "completed_at"),
+        ("smart_capture_executions", "claimed_at"),
+    ]
+
+    def migrate_to_utc(self, tz_name):
+        """One-time migration: convert all timestamp columns from local time to UTC.
+
+        - Idempotent: checks _mire_meta for 'tz_migrated' flag
+        - Creates a safety backup before migration
+        - Runs in a single transaction (automatic rollback on error)
+        - Skips NULL, empty, and already-UTC (Z-suffix) values
+        """
+        with self._read() as conn:
+            row = conn.execute(
+                "SELECT value FROM _mire_meta WHERE key = 'tz_migrated'"
+            ).fetchone()
+            if row:
+                log.debug("UTC migration already completed (%s), skipping", row[0])
+                return False
+
+        # Safety backup
+        backup_path = self.db_path + ".pre_utc_migration"
+        if not os.path.exists(backup_path):
+            shutil.copy2(self.db_path, backup_path)
+            log.info("UTC migration: backup created at %s", backup_path)
+
+        migrated_count = 0
+        with self._write() as conn:
+            for table, column in self._TIMESTAMP_COLUMNS:
+                # Check table and column exist
+                try:
+                    cols = [r[1] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+                except Exception:
+                    continue
+                if column not in cols:
+                    continue
+
+                rows = conn.execute(
+                    f"SELECT rowid, [{column}] FROM [{table}] "
+                    f"WHERE [{column}] IS NOT NULL AND [{column}] != '' AND [{column}] NOT LIKE '%Z'",
+                ).fetchall()
+
+                for rowid, ts_val in rows:
+                    try:
+                        utc_val = local_to_utc(ts_val, tz_name)
+                        conn.execute(
+                            f"UPDATE [{table}] SET [{column}] = ? WHERE rowid = ?",
+                            (utc_val, rowid),
+                        )
+                        migrated_count += 1
+                    except (ValueError, KeyError) as e:
+                        log.warning(
+                            "UTC migration: skipped %s.%s rowid=%d value=%r: %s",
+                            table, column, rowid, ts_val, e,
+                        )
+
+            # Mark migration as done
+            conn.execute(
+                "INSERT INTO _mire_meta (key, value) VALUES (?, ?)",
+                ("tz_migrated", f"{tz_name}|{utc_now()}"),
+            )
+
+        log.info(
+            "UTC migration complete: %d values converted (timezone: %s)",
+            migrated_count, tz_name or "UTC",
+        )
+        return True
+
+    def _incident_retention_ranges(self, conn):
+        """Return UTC timestamp ranges for explicit incident windows."""
+        try:
+            rows = conn.execute(
+                "SELECT start_date, COALESCE(end_date, '') FROM incidents "
+                "WHERE start_date IS NOT NULL AND start_date != ''"
+            ).fetchall()
+        except sqlite3.OperationalError:
+            return []
+
+        ranges = []
+        tz = getattr(self, 'tz_name', '')
+        today = local_today(tz)
+        for start_date, end_date in rows:
+            try:
+                start_ts, _ = local_date_to_utc_range(start_date, tz)
+                _, end_ts = local_date_to_utc_range(end_date or today, tz)
+            except Exception as exc:
+                log.warning("Retention skipped invalid incident window %r..%r: %s", start_date, end_date, exc)
+                continue
+            ranges.append((start_ts, end_ts))
+        return ranges
+
+    def _delete_expired_unprotected_rows(self, conn, table, timestamp_column, cutoff):
+        """Delete old rows unless their timestamp lies in an incident window."""
+        ranges = self._incident_retention_ranges(conn)
+        if not ranges:
+            return conn.execute(
+                f"DELETE FROM {table} WHERE {timestamp_column} < ?",
+                (cutoff,),
+            ).rowcount
+
+        protected = " OR ".join(
+            f"({timestamp_column} >= ? AND {timestamp_column} <= ?)"
+            for _ in ranges
+        )
+        params = [cutoff]
+        for start_ts, end_ts in ranges:
+            params.extend([start_ts, end_ts])
+        return conn.execute(
+            f"DELETE FROM {table} WHERE {timestamp_column} < ? AND NOT ({protected})",
+            params,
+        ).rowcount
+
+    def _cleanup(self):
+        """Delete snapshots, BQM graphs, and events older than max_days. 0 = keep all."""
+        if self.max_days <= 0:
+            return
+        cutoff = utc_cutoff(days=self.max_days)
+        with self._write() as conn:
+            deleted = self._delete_expired_unprotected_rows(
+                conn, "snapshots", "timestamp", cutoff
+            )
+        if deleted:
+            log.info("Cleaned up %d old snapshots (before %s)", deleted, cutoff)
+        tz = getattr(self, 'tz_name', '')
+        today = local_today(tz)
+        cutoff_date = (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=self.max_days)).strftime("%Y-%m-%d")
+        try:
+            with self._write() as conn:
+                bqm_deleted = conn.execute(
+                    "DELETE FROM bqm_graphs WHERE date < ?", (cutoff_date,)
+                ).rowcount
+            if bqm_deleted:
+                log.info("Cleaned up %d old BQM graphs (before %s)", bqm_deleted, cutoff_date)
+        except sqlite3.OperationalError:
+            pass  # Table may not exist if BQM module not loaded
+        try:
+            with self._write() as conn:
+                weather_deleted = conn.execute(
+                    "DELETE FROM weather_data WHERE timestamp < ?", (cutoff,)
+                ).rowcount
+            if weather_deleted:
+                log.info("Cleaned up %d old weather records (before %s)", weather_deleted, cutoff)
+        except sqlite3.OperationalError:
+            pass  # Table may not exist if weather module not loaded
+        events_deleted = self.delete_old_events(self.max_days)
+        if events_deleted:
+            log.info("Cleaned up %d old events (before %s)", events_deleted, cutoff)
+        try:
+            with self._write() as conn:
+                sc_deleted = conn.execute(
+                    "DELETE FROM smart_capture_executions WHERE created_at < ?", (cutoff,)
+                ).rowcount
+            if sc_deleted:
+                log.info("Cleaned up %d old Smart Capture executions (before %s)", sc_deleted, cutoff)
+        except sqlite3.OperationalError:
+            pass  # Table may not exist on older schemas

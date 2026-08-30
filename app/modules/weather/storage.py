@@ -1,0 +1,99 @@
+"""Standalone weather data storage."""
+
+import logging
+from app.storage.migrations import run_migrations
+from app.storage.sqlite import (
+    DEFAULT_SQLITE_BUSY_TIMEOUT_MS,
+    bulk_write,
+    open_read,
+    write_transaction,
+)
+from .migrations import MIGRATIONS
+import threading
+from collections import defaultdict
+from pathlib import Path
+
+log = logging.getLogger("docsis.storage.weather")
+
+
+def _normalize_range_ts(ts, separator=" "):
+    """Accept either ISO 'T' or legacy space-separated timestamps for queries."""
+    if not ts or len(ts) < 19:
+        return ts
+    if ts[10] not in ("T", " "):
+        return ts
+    return ts[:10] + separator + ts[11:]
+
+
+class WeatherStorage:
+    """Standalone weather data storage (not a mixin).
+
+    Creates the weather_data table if it doesn't exist.
+    """
+
+    BUSY_TIMEOUT_MS = DEFAULT_SQLITE_BUSY_TIMEOUT_MS
+    _locks = defaultdict(threading.RLock)
+
+    def __init__(self, db_path):
+        self.db_path = db_path
+        lock_key = str(Path(db_path).expanduser().resolve(strict=False))
+        self._lock = self._locks[lock_key]
+        self._ensure_table()
+
+    def _connect(self):
+        """Compatibility context for internal test setup writes."""
+        return write_transaction(self.db_path)
+
+    def _ensure_table(self):
+        """Create the weather_data table if it doesn't exist."""
+        with self._lock:
+            run_migrations(self.db_path, MIGRATIONS)
+
+    def save_weather_data(self, records):
+        """Bulk insert weather records, ignoring duplicates by timestamp.
+
+        Args:
+            records: list of dicts with 'timestamp' and 'temperature' keys
+        """
+        if not records:
+            return
+        try:
+            with self._lock:
+                bulk_write(
+                    self.db_path,
+                    "INSERT OR IGNORE INTO weather_data "
+                    "(timestamp, temperature) VALUES (?, ?)",
+                    [(r["timestamp"], r["temperature"]) for r in records],
+                )
+            log.debug("Saved %d weather records", len(records))
+        except Exception as e:
+            log.error("Failed to save weather data: %s", e)
+
+    def get_weather_data(self, limit=2000):
+        """Return weather data, newest first."""
+        with open_read(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT timestamp, temperature FROM weather_data "
+                "ORDER BY timestamp DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_weather_in_range(self, start_ts, end_ts):
+        """Return weather data within a timestamp range, oldest first."""
+        start_ts = _normalize_range_ts(start_ts, " ")
+        end_ts = _normalize_range_ts(end_ts, " ")
+        with open_read(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT timestamp, temperature FROM weather_data "
+                "WHERE timestamp >= ? AND timestamp <= ? "
+                "ORDER BY timestamp ASC",
+                (start_ts, end_ts),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_weather_count(self):
+        """Return number of weather records."""
+        with open_read(self.db_path) as conn:
+            row = conn.execute("SELECT COUNT(*) FROM weather_data").fetchone()
+        return row[0] if row else 0

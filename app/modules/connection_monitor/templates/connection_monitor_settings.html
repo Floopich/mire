@@ -1,0 +1,83 @@
+<!-- ═══ Panel: Connection Monitor (Module) ═══ -->
+<div class="settings-panel" id="panel-mod-mire_connection_monitor">
+    <div class="settings-card glass">
+        <div class="card-header">
+            <div class="card-title-group">
+                <div class="card-icon blue">
+                    <i data-lucide="activity"></i>
+                </div>
+                <div>
+                    <div class="card-title">{{ t['mire.connection_monitor.connection_monitor'] or 'Connection Monitor' }}</div>
+                    <div class="card-subtitle">{{ t['mire.connection_monitor.connection_monitor_desc'] or 'Always-on latency monitoring for cable troubleshooting' }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="toggle-row">
+            <div class="toggle-info">
+                <span class="toggle-title">{{ t['mire.connection_monitor.cm_enable'] or 'Enable Connection Monitor' }}</span>
+                <span class="toggle-desc">{{ t['mire.connection_monitor.cm_enable_hint'] or 'Continuously probes configured targets and tracks latency, packet loss, and outages.' }}</span>
+            </div>
+            <input type="hidden" name="connection_monitor_enabled" value="false">
+            <label class="toggle">
+                <input type="checkbox" id="connection_monitor_enabled" name="connection_monitor_enabled" value="true" {% if config.connection_monitor_enabled %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="form-grid cols-2" style="margin-top: var(--space-md);">
+            <div class="form-field">
+                <label class="form-label" for="connection_monitor_poll_interval_ms">{{ t['mire.connection_monitor.cm_poll_interval'] or 'Probe interval (ms)' }}</label>
+                <input class="form-input" type="number" id="connection_monitor_poll_interval_ms" name="connection_monitor_poll_interval_ms" value="{{ config.connection_monitor_poll_interval_ms or 5000 }}" min="1000" step="1000">
+                <span class="form-hint">{{ t['mire.connection_monitor.cm_poll_interval_hint'] or 'Time between probes per target. Default: 5000ms (5s). Minimum: 1000ms.' }}</span>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="connection_monitor_probe_method">{{ t['mire.connection_monitor.cm_probe_method'] or 'Probe method' }}</label>
+                <select class="form-input form-select" id="connection_monitor_probe_method" name="connection_monitor_probe_method">
+                    <option value="auto" {% if config.connection_monitor_probe_method == 'auto' %}selected{% endif %}>{{ t['mire.connection_monitor.cm_probe_auto'] or 'Auto (ICMP preferred)' }}</option>
+                    <option value="icmp" {% if config.connection_monitor_probe_method == 'icmp' %}selected{% endif %}>{{ t['mire.connection_monitor.cm_probe_icmp'] or 'ICMP only' }}</option>
+                    <option value="tcp" {% if config.connection_monitor_probe_method == 'tcp' %}selected{% endif %}>{{ t['mire.connection_monitor.cm_probe_tcp'] or 'TCP only' }}</option>
+                </select>
+                <span class="form-hint">{{ t['mire.connection_monitor.cm_probe_method_hint'] or 'Auto tries ICMP first, falls back to TCP if not available. TCP works everywhere.' }}</span>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="connection_monitor_tcp_port">{{ t['mire.connection_monitor.cm_tcp_port'] or 'TCP port' }}</label>
+                <input class="form-input" type="number" id="connection_monitor_tcp_port" name="connection_monitor_tcp_port" value="{{ config.connection_monitor_tcp_port or 443 }}" min="1" max="65535">
+                <span class="form-hint">{{ t['mire.connection_monitor.cm_tcp_port_hint'] or 'Port used for TCP probes. Default: 443.' }}</span>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="connection_monitor_retention_days">{{ t['mire.connection_monitor.cm_retention'] or 'Keep samples (days)' }}</label>
+                <input class="form-input" type="number" id="connection_monitor_retention_days" name="connection_monitor_retention_days" value="{{ config.connection_monitor_retention_days if config.connection_monitor_retention_days is not none else 0 }}" min="0">
+                <span class="form-hint">{{ t['mire.connection_monitor.cm_retention_hint'] or '0 = keep all data. Otherwise, delete samples older than this many days.' }}</span>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="connection_monitor_outage_threshold">{{ t['mire.connection_monitor.cm_outage_threshold'] or 'Outage threshold' }}</label>
+                <input class="form-input" type="number" id="connection_monitor_outage_threshold" name="connection_monitor_outage_threshold" value="{{ config.connection_monitor_outage_threshold or 5 }}" min="1">
+                <span class="form-hint">{{ t['mire.connection_monitor.cm_outage_threshold_hint'] or 'Consecutive timeouts before an outage event is triggered.' }}</span>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="connection_monitor_loss_warning_pct">{{ t['mire.connection_monitor.cm_loss_warning'] or 'Loss warning (%)' }}</label>
+                <input class="form-input" type="number" id="connection_monitor_loss_warning_pct" name="connection_monitor_loss_warning_pct" value="{{ config.connection_monitor_loss_warning_pct if config.connection_monitor_loss_warning_pct is not none else 2.0 }}" min="0" step="0.1">
+                <span class="form-hint">{{ t['mire.connection_monitor.cm_loss_warning_hint'] or 'Packet loss percentage that triggers a warning event.' }}</span>
+            </div>
+        </div>
+
+        <!-- Target Management -->
+        <div style="margin-top: var(--space-xl);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-sm);">
+                <div class="section-label">{{ t['mire.connection_monitor.cm_targets'] or 'Targets' }}</div>
+                <button type="button" class="btn btn-ghost btn-sm" id="cm-add-target-btn">
+                    <i data-lucide="plus" style="width:14px;height:14px;"></i>
+                    {{ t['mire.connection_monitor.cm_add_target'] or 'Add target' }}
+                </button>
+            </div>
+            <span class="form-hint" style="display: block; margin-bottom: var(--space-md);">{{ t['mire.connection_monitor.cm_targets_hint'] or 'IP addresses or hostnames to monitor.' }}</span>
+            <div id="cm-targets-list"></div>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="mire-connection-monitor-settings-bootstrap">{{ {
+    'label': t['mire.connection_monitor.cm_target_label'] or 'Label',
+    'host': t['mire.connection_monitor.cm_target_host'] or 'Host',
+    'remove': t['mire.connection_monitor.cm_remove'] or 'Remove'
+}|tojson }}</script>
+<script defer src="{{ module_static_url('mire.connection_monitor', 'js/connection-monitor-settings.js', v=version) }}"></script>

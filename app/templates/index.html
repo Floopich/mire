@@ -1,0 +1,2686 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-theme="{{ theme|default('dark') }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#06080f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Mire</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='logo.svg') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css', v=version) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css', v=version) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css', v=version) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css', v=version) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/views.css', v=version) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modals.css', v=version) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/glossary.css', v=version) }}">
+    {% for mod in modules|sort(attribute='menu.order') if mod.has_css %}
+    <link rel="stylesheet" href="{{ module_static_url(mod.id, 'style.css', v=version) }}">
+    {% endfor %}
+    {% if active_theme_data %}
+    <style id="theme-module-vars">
+    :root, [data-theme="dark"] {
+        {% for key, value in active_theme_data.get('dark', {}).items() %}
+        {{ key }}: {{ value }};
+        {% endfor %}
+    }
+    [data-theme="light"] {
+        {% for key, value in active_theme_data.get('light', {}).items() %}
+        {{ key }}: {{ value }};
+        {% endfor %}
+    }
+    </style>
+    {% endif %}
+    {% if config.font_family == 'system' %}
+    <style id="font-override">:root { --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }</style>
+    {% endif %}
+    {% include 'partials/browser_url_bootstrap.html' %}
+    <script src="{{ url_for('static', filename='vendor/lucide.min.js', v=version) }}"></script>
+</head>
+<body>
+{% set connection_monitor_installed = modules|selectattr('id', 'equalto', 'mire.connection_monitor')|list %}
+<div id="offline-status-banner" class="offline-status-banner" role="status" aria-live="polite" hidden>
+    <strong>Offline</strong>
+    <span>Showing last-known dashboard shell in read-only mode. Live modem data and manual refresh are unavailable until Mire reconnects.</span>
+    <span id="offline-last-known" class="offline-last-known"></span>
+</div>
+<div class="app-layout">
+
+<!-- Mobile Header -->
+<header class="mobile-header">
+    <button class="hamburger" id="hamburger" onclick="openSidebar()" aria-label="Menu" aria-controls="sidebar" aria-expanded="false">
+        <i data-lucide="menu"></i>
+    </button>
+    <span class="mobile-header-title">Mire</span>
+    <div class="mobile-header-status">
+        <span id="topbar-countdown"></span>
+        <button class="hamburger" id="refresh-btn" title="{{ t.refresh }}" style="min-width:36px;min-height:36px;padding:4px;">
+            <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
+        </button>
+    </div>
+</header>
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar" aria-label="Main navigation" aria-hidden="true">
+    <div class="sidebar-header">
+        <div class="sidebar-logo"><img src="{{ url_for('static', filename='logo.svg') }}" alt="Mire" width="18" height="18"></div>
+        <div class="sidebar-brand-text">
+            <div class="sidebar-title">Mire</div>
+            <div class="sidebar-subtitle">{{ t.sidebar_monitoring }}</div>
+        </div>
+        <button type="button" class="sidebar-close" onclick="closeSidebar()" aria-label="{{ t.get('close_menu', 'Close menu') }}">
+            <i data-lucide="x"></i>
+        </button>
+    </div>
+    <div class="sidebar-content">
+        <!-- Primary navigation -->
+        <div class="nav-section" data-nav-section="monitoring" data-nav-label="{{ t.sidebar_monitoring }}">
+            <div class="nav-group-label">{{ t.sidebar_monitoring }}</div>
+            <div class="nav-section-items">
+                <button class="nav-item active" data-view="live" data-nav-icon="layout-dashboard" data-nav-title="{{ t.home }}">
+                    <i data-lucide="layout-dashboard"></i> {{ t.home }}
+                </button>
+                <button class="nav-item" data-view="events" data-nav-icon="bell" data-nav-title="{{ t.event_log }}">
+                    <i data-lucide="bell"></i> {{ t.event_log }}
+                    <span class="nav-badge" id="event-badge" style="display:none;"></span>
+                </button>
+                <button class="nav-item" data-view="channels" data-nav-icon="layers" data-nav-title="{{ t.channels }}">
+                    <i data-lucide="layers"></i> {{ t.channels }}
+                </button>
+                <button class="nav-item" data-view="trends" data-nav-icon="trending-up" data-nav-title="{{ t.signal_trends }}">
+                    <i data-lucide="trending-up"></i> {{ t.signal_trends }}
+                </button>
+            </div>
+        </div>
+        {% if modules|selectattr('id', 'equalto', 'mire.evidence')|list %}
+        <div class="nav-section" data-nav-section="evidence" data-nav-label="{{ t.get('mire.evidence.title', 'Evidence Journey') }}">
+            <div class="nav-section-items">
+                <button class="nav-item" data-view="evidence" data-nav-icon="clipboard-check" data-nav-title="{{ t.get('mire.evidence.title', 'Evidence Journey') }}">
+                    <i data-lucide="clipboard-check"></i> {{ t.get('mire.evidence.title', 'Evidence Journey') }}
+                </button>
+            </div>
+        </div>
+        {% endif %}
+        <!-- Secondary analysis views (collapsible) -->
+        {% set analysis_items = [] %}
+        {% if speedtest_configured or bqm_configured or connection_monitor_installed %}{% if analysis_items.append('correlation') %}{% endif %}{% endif %}
+        {% if modules|selectattr('id', 'equalto', 'mire.connection_monitor')|list %}{% if analysis_items.append('connection_monitor') %}{% endif %}{% endif %}
+        {% if modules|selectattr('id', 'equalto', 'mire.comparison')|list %}{% if analysis_items.append('comparison') %}{% endif %}{% endif %}
+        {% if gaming_quality_enabled %}{% if analysis_items.append('gaming') %}{% endif %}{% endif %}
+        {% if modules|selectattr('id', 'equalto', 'mire.modulation')|list %}{% if analysis_items.append('modulation') %}{% endif %}{% endif %}
+        {% if analysis_items %}
+        <div class="nav-section nav-section-collapsible" data-nav-section="analysis" data-nav-label="{{ t.get('sidebar_analysis', 'Analysis') }}">
+            <div class="nav-group-label nav-group-toggle" role="button" tabindex="0" aria-expanded="false" onclick="toggleNavSection(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+                {{ t.get('sidebar_analysis', 'Analysis') }}
+                <i data-lucide="chevron-down" class="nav-toggle-icon"></i>
+            </div>
+            <div class="nav-section-items">
+                {% if speedtest_configured or bqm_configured or connection_monitor_installed %}
+                <button class="nav-item" data-view="correlation" data-nav-icon="bar-chart-3" data-nav-title="{{ t.correlation_analysis }}">
+                    <i data-lucide="bar-chart-3"></i> {{ t.correlation_analysis }}
+                </button>
+                {% endif %}
+                {% if modules|selectattr('id', 'equalto', 'mire.connection_monitor')|list %}
+                <button class="nav-item" data-view="connection-monitor" data-nav-icon="satellite-dish" data-nav-title="{{ t.get('mire.connection_monitor.connection_monitor', 'Connection Monitor') }}">
+                    <i data-lucide="satellite-dish"></i> {{ t.get('mire.connection_monitor.connection_monitor', 'Connection Monitor') }}
+                </button>
+                {% endif %}
+                {% if modules|selectattr('id', 'equalto', 'mire.comparison')|list %}
+                <button class="nav-item" data-view="comparison" data-nav-icon="git-compare-arrows" data-nav-title="{{ t.get('mire.comparison.title', 'Before/After Comparison') }}">
+                    <i data-lucide="git-compare-arrows"></i> {{ t.get('mire.comparison.title', 'Before/After Comparison') }}
+                </button>
+                {% endif %}
+                {% if gaming_quality_enabled %}
+                <button class="nav-item" data-view="gaming" data-nav-icon="gamepad-2" data-nav-title="{{ t.gaming_quality_label }}">
+                    <i data-lucide="gamepad-2"></i> {{ t.gaming_quality_label }}
+                </button>
+                {% endif %}
+                {% if modules|selectattr('id', 'equalto', 'mire.modulation')|list %}
+                <button class="nav-item" data-view="modulation" data-nav-icon="bar-chart-3" data-nav-title="{{ t.get('mire.modulation.title', 'Modulation Performance') }}">
+                    <i data-lucide="bar-chart-3"></i> {{ t.get('mire.modulation.title', 'Modulation Performance') }}
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        <div class="nav-section" data-nav-section="external" data-nav-label="{{ t.sidebar_external }}">
+            <div class="nav-group-label">{{ t.sidebar_external }}</div>
+            <div class="nav-section-items">
+                {% if modules|selectattr('id', 'equalto', 'mire.speedtest')|list %}
+                {% if speedtest_configured %}
+                <button class="nav-item" data-view="speedtest" data-nav-icon="rabbit" data-nav-title="{{ t.speedtest }}">
+                    <i data-lucide="rabbit"></i> {{ t.speedtest }}
+                </button>
+                {% else %}
+                <button class="nav-item" onclick="openSpeedtestSetupModal()">
+                    <i data-lucide="settings"></i> {{ t.speedtest_setup }}
+                </button>
+                {% endif %}
+                {% endif %}
+                {% if modules|selectattr('id', 'equalto', 'mire.bqm')|list %}
+                {% if bqm_configured %}
+                <button class="nav-item" data-view="bqm" data-nav-icon="chart-spline" data-nav-title="{{ t.bqm_title }}">
+                    <i data-lucide="chart-spline"></i> {{ t.bqm_title }}
+                </button>
+                {% else %}
+                <button class="nav-item" onclick="openBqmSetupModal()">
+                    <i data-lucide="settings"></i> {{ t.bqm_setup }}
+                </button>
+                {% endif %}
+                {% endif %}
+                {% if modules|selectattr('id', 'equalto', 'mire.smokeping')|list %}
+                {% if smokeping_configured %}
+                <button class="nav-item" data-view="smokeping" data-nav-icon="radar" data-nav-title="{{ t.smokeping_title }}">
+                    <i data-lucide="radar"></i> {{ t.smokeping_title }}
+                </button>
+                {% else %}
+                <button class="nav-item" onclick="openSmokepingSetupModal()">
+                    <i data-lucide="settings"></i> {{ t.smokeping_setup }}
+                </button>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        <div class="nav-section" data-nav-section="documentation" data-nav-label="{{ t.sidebar_documentation }}">
+            <div class="nav-group-label">{{ t.sidebar_documentation }}</div>
+            <div class="nav-section-items">
+                {% if modules|selectattr('id', 'equalto', 'mire.journal')|list %}
+                <button class="nav-item" data-view="journal" data-nav-icon="clipboard-list" data-nav-title="{{ t.incident_journal }}">
+                    <i data-lucide="clipboard-list"></i> {{ t.incident_journal }}
+                </button>
+                {% endif %}
+                <button class="nav-item" id="export-link" onclick="exportForLLM()">
+                    <i data-lucide="file-output"></i> {{ t.export_llm }}
+                </button>
+                {% if modules|selectattr('id', 'equalto', 'mire.reports')|list %}
+                <button class="nav-item" id="report-link" onclick="openReportModal()">
+                    <i data-lucide="file-text"></i> {{ t.incident_report }}
+                </button>
+                {% endif %}
+                <button class="nav-item" data-view="glossary" data-nav-icon="book-open" data-nav-title="{{ t.get('glossary_page_title', 'Glossary') }}">
+                    <i data-lucide="book-open"></i> {{ t.get('glossary_page_title', 'Glossary') }}
+                </button>
+            </div>
+        </div>
+        {% set tab_modules = [] %}
+        {% for mod in modules if mod.template_paths.get('tab') and mod.id not in ('mire.modulation', 'mire.comparison', 'mire.connection_monitor', 'mire.evidence') %}
+            {% if tab_modules.append(mod) %}{% endif %}
+        {% endfor %}
+        {% if tab_modules %}
+        <div class="nav-section" data-nav-section="extensions" data-nav-label="{{ t.sidebar_extensions }}">
+            <div class="nav-group-label">{{ t.sidebar_extensions }}</div>
+            <div class="nav-section-items">
+                {% for mod in tab_modules|sort(attribute='menu.order') %}
+                <button class="nav-item" data-view="mod-{{ mod.id|replace('.', '-') }}" data-nav-icon="{{ mod.menu.get('icon', 'puzzle') }}" data-nav-title="{{ t.get(mod.menu.label_key, mod.name) }}">
+                    <i data-lucide="{{ mod.menu.get('icon', 'puzzle') }}"></i>
+                    {{ t.get(mod.menu.label_key, mod.name) }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        <div style="flex:1;"></div>
+        <a class="nav-item" href="{{ url_for('settings') }}">
+            <i data-lucide="settings"></i> {{ t.settings }}
+        </a>
+        <a class="nav-item" href="{{ url_for('settings', _anchor='support') }}">
+            <i data-lucide="heart-handshake"></i> {{ t.get('support_nav', 'Support') }}
+        </a>
+        {% if auth_enabled %}
+        <form action="{{ url_for('logout') }}" method="post">
+            <button type="submit" class="nav-item">
+                <i data-lucide="log-out"></i> {{ t.logout }}
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    <div class="sidebar-footer">
+        <div class="dark-toggle">
+            <span class="dark-toggle-label"><i data-lucide="moon"></i> {{ t.dark_mode or 'Dark Mode' }}</span>
+            <label class="toggle">
+                <input type="checkbox" id="theme-toggle-sidebar">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="sidebar-footer-row">
+            <a href="https://github.com/floopich/mire/releases" target="_blank">
+                {{ version }}
+                {% if update_available %}
+                <span class="update-badge" title="{{ update_available }}">{{ t.update_available }}</span>
+                {% endif %}
+            </a>
+            <div class="sidebar-icons">
+                <a href="https://github.com/floopich/mire/issues/new" target="_blank" rel="noopener noreferrer" title="{{ t.report_bug }}">
+                    <i data-lucide="bug"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+<div class="backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
+
+<!-- Main Area -->
+<main class="app-main">
+
+<!-- ═══ View: Dashboard ═══ -->
+<div class="main-content">
+<div id="view-dashboard" class="view active dashboard-view">
+
+
+
+{% if dashboard_notices %}
+<div class="notice-stack dashboard-notice-stack">
+    {% for notice in dashboard_notices %}
+    <article class="maintainer-notice notice-{{ notice.severity }}" data-notice-id="{{ notice.id }}">
+        <div class="notice-icon"><i data-lucide="{{ 'alert-triangle' if notice.severity == 'warning' else ('shield-alert' if notice.severity == 'critical' else 'info') }}"></i></div>
+        <div class="notice-content">
+            <div class="notice-title-row">
+                <h2>{{ notice.title }}</h2>
+                <span class="badge badge-{{ 'crit' if notice.severity == 'critical' else ('warn' if notice.severity == 'warning' else 'info') }}">{{ t.get('notice_severity_' ~ notice.severity, notice.severity|capitalize) }}</span>
+            </div>
+            <p>{{ notice.body }}</p>
+            {% if notice.link_url and notice.link_label %}
+            <a class="notice-link" href="{{ notice.link_url }}" target="_blank" rel="noopener noreferrer">{{ notice.link_label }}</a>
+            {% endif %}
+        </div>
+        <button type="button" class="notice-dismiss" onclick="dismissMaintainerNotice('{{ notice.id }}')" aria-label="{{ t.get('notice_dismiss', 'Dismiss') }}">
+            <i data-lucide="x"></i>
+        </button>
+    </article>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if error %}
+<div class="error-box">{{ t.error_label }}: {{ error }}</div>
+{% endif %}
+
+{% if analysis %}
+    {% set s = analysis.summary %}
+    {% set ds = analysis.ds_channels %}
+    {% set us = analysis.us_channels %}
+    {% set has_docsis = ds|length > 0 or us|length > 0 %}
+
+    {# ── Speedtest health (independent of DOCSIS data) ── #}
+    {% if speedtest_configured and speedtest_latest %}
+        {% set eff_booked_dl = booked_download if (booked_download and booked_download > 0) else ((connection_info.max_downstream_kbps // 1000) if connection_info and connection_info.max_downstream_kbps else 0) %}
+        {% set eff_booked_ul = booked_upload if (booked_upload and booked_upload > 0) else ((connection_info.max_upstream_kbps // 1000) if connection_info and connection_info.max_upstream_kbps else 0) %}
+        {% if eff_booked_dl > 0 %}
+            {% set dl_ratio = speedtest_latest.download_mbps / eff_booked_dl %}
+            {% if dl_ratio >= 0.8 %}
+                {% set speed_health = 'health-good' %}
+                {% set dl_val_class = 'val-good' %}
+            {% elif dl_ratio >= 0.5 %}
+                {% set speed_health = 'health-warn' %}
+                {% set dl_val_class = 'val-warn' %}
+            {% else %}
+                {% set speed_health = 'health-crit' %}
+                {% set dl_val_class = 'val-bad' %}
+            {% endif %}
+        {% else %}
+            {% set speed_health = 'health-good' %}
+            {% set dl_val_class = 'val-good' %}
+        {% endif %}
+        {% if eff_booked_ul > 0 %}
+            {% set ul_ratio = speedtest_latest.upload_mbps / eff_booked_ul %}
+            {% if ul_ratio >= 0.8 %}
+                {% set ul_val_class = 'val-good' %}
+            {% elif ul_ratio >= 0.5 %}
+                {% set ul_val_class = 'val-warn' %}
+            {% else %}
+                {% set ul_val_class = 'val-bad' %}
+            {% endif %}
+        {% else %}
+            {% set ul_val_class = 'val-good' %}
+        {% endif %}
+        {% set speed_health_map = {'val-good': 'good', 'val-warn': 'warn', 'val-bad': 'crit', 'val-tolerated': 'tolerated'} %}
+        {% set speed_health_key = speed_health_map.get(dl_val_class, 'crit') %}
+        {% set speed_badge_label = {'good': t.health_good, 'tolerated': t.health_tolerated, 'warn': t.health_marginal, 'crit': t.health_critical}.get(speed_health_key, t.health_critical) %}
+        {% set upload_health_key = 'crit' if ul_val_class == 'val-bad' else (ul_val_class|replace('val-', '')) %}
+        {% set speed_download_pct = none %}
+        {% set speed_pct_caption = '' %}
+        {% set speed_range_data = none %}
+        {% if eff_booked_dl > 0 %}
+            {% set speed_download_pct = speedtest_latest.download_mbps / eff_booked_dl * 100 %}
+            {% set speed_pct_caption = (speed_download_pct|round(0)|int) ~ '%' %}
+            {% set speed_marker_raw = speed_download_pct / 120 * 100 %}
+            {% set speed_marker = 0 if speed_marker_raw < 0 else (100 if speed_marker_raw > 100 else speed_marker_raw) %}
+            {% set speed_range_data = {
+                'marker': speed_marker|round(1),
+                'span_start': speed_marker|round(1),
+                'span_width': 0,
+                'low_label': '0%',
+                'good_label': t.get('speed_contract_good_label', '≥ 80% of contract'),
+                'high_label': '120%',
+                'bands': [
+                    {'kind': 'crit', 'left': 0, 'width': 41.67},
+                    {'kind': 'warn', 'left': 41.67, 'width': 25},
+                    {'kind': 'good', 'left': 66.67, 'width': 33.33}
+                ]
+            } %}
+        {% endif %}
+    {% endif %}
+
+    {% macro metric_range_viz(range_data, health, good_label, context_label='', context_value='') -%}
+    {% if range_data %}
+    <div class="metric-range-viz"
+         style="--metric-marker: {{ range_data.marker }}%; --metric-span-start: {{ range_data.span_start }}%; --metric-span-width: {{ range_data.span_width }}%; --metric-range-accent: var(--{{ health }});">
+        {% if context_label or context_value %}
+        <div class="metric-range-caption">
+            <span>{{ context_label }}</span>
+            <strong>{{ context_value }}</strong>
+        </div>
+        {% endif %}
+        <div class="metric-range-track" aria-hidden="true">
+            {% for band in range_data.bands %}
+            <span class="metric-range-band {{ band.kind }}" style="left:{{ band.left }}%;width:{{ band.width }}%;"></span>
+            {% endfor %}
+            <span class="metric-range-window"></span>
+            <span class="metric-range-marker"></span>
+        </div>
+        <div class="metric-range-labels">
+            <span>{{ range_data.low_label }}</span>
+            <span class="metric-range-good">{{ good_label }} {{ range_data.good_label }}</span>
+            <span>{{ range_data.high_label }}</span>
+        </div>
+    </div>
+    {% endif %}
+    {%- endmacro %}
+
+    {% if has_docsis %}
+    {% set health_map = {"good": t.health_good, "tolerated": t.health_tolerated, "marginal": t.health_marginal, "critical": t.health_critical} %}
+    {% set health_msgs = {"good": t.health_good_msg, "tolerated": t.health_tolerated_msg, "marginal": t.health_marginal_msg, "critical": t.health_critical_msg} %}
+    {% set issue_labels = {
+        "ds_power_critical": t.issue_ds_power_critical,
+        "ds_power_marginal": t.issue_ds_power_marginal,
+        "ds_power_tolerated": t.issue_ds_power_tolerated,
+        "ds_modulation_critical": t.ch_modulation_critical,
+        "ds_modulation_marginal": t.ch_modulation_warning,
+        "ds_modulation_tolerated": t.ch_modulation_warning,
+        "us_power_critical_low": t.issue_us_power_critical_low,
+        "us_power_critical_high": t.issue_us_power_critical_high,
+        "us_power_marginal_low": t.issue_us_power_marginal_low,
+        "us_power_marginal_high": t.issue_us_power_marginal_high,
+        "us_power_tolerated_low": t.issue_us_power_tolerated_low,
+        "us_power_tolerated_high": t.issue_us_power_tolerated_high,
+        "us_modulation_marginal": t.issue_us_modulation_marginal,
+        "us_modulation_critical": t.issue_us_modulation_critical,
+        "snr_critical": t.issue_snr_critical,
+        "snr_marginal": t.issue_snr_marginal,
+        "snr_tolerated": t.issue_snr_tolerated,
+        "uncorr_errors_high": t.issue_uncorr_errors_high,
+        "uncorr_errors_critical": t.issue_uncorr_errors_critical,
+    } %}
+    {% set issue_descs = {
+        "ds_power_critical": t.issue_ds_power_critical_desc,
+        "ds_power_marginal": t.issue_ds_power_marginal_desc,
+        "ds_power_tolerated": t.issue_ds_power_tolerated_desc,
+        "ds_modulation_critical": t.get("dashboard_modulation_ds_detail_hint", ""),
+        "ds_modulation_marginal": t.get("dashboard_modulation_ds_detail_hint", ""),
+        "ds_modulation_tolerated": t.get("dashboard_modulation_ds_detail_hint", ""),
+        "us_power_critical_low": t.issue_us_power_critical_low_desc,
+        "us_power_critical_high": t.issue_us_power_critical_high_desc,
+        "us_power_marginal_low": t.issue_us_power_marginal_low_desc,
+        "us_power_marginal_high": t.issue_us_power_marginal_high_desc,
+        "us_power_tolerated_low": t.issue_us_power_tolerated_low_desc,
+        "us_power_tolerated_high": t.issue_us_power_tolerated_high_desc,
+        "us_modulation_marginal": t.issue_us_modulation_marginal_desc,
+        "us_modulation_critical": t.issue_us_modulation_critical_desc,
+        "snr_critical": t.issue_snr_critical_desc,
+        "snr_marginal": t.issue_snr_marginal_desc,
+        "snr_tolerated": t.issue_snr_tolerated_desc,
+        "uncorr_errors_high": t.issue_uncorr_errors_high_desc,
+        "uncorr_errors_critical": t.issue_uncorr_errors_critical_desc,
+    } %}
+    {% set health_labels = {'good': t.health_good, 'tolerated': t.health_tolerated, 'warn': t.health_marginal, 'warning': t.health_marginal, 'crit': t.health_critical, 'critical': t.health_critical, 'missing': t.get('signal_family_unavailable', 'Unavailable')} %}
+    {% set ds_good = ds|selectattr('health', 'equalto', 'good')|list|length %}
+    {% set ds_tolerated = ds|selectattr('health', 'equalto', 'tolerated')|list|length %}
+    {% set ds_warn = ds|selectattr('health', 'equalto', 'warning')|list|length %}
+    {% set ds_crit = ds|selectattr('health', 'equalto', 'critical')|list|length %}
+    {% set ds_total = ds|length %}
+    {% set ds_pct = (((ds_good + ds_tolerated) / ds_total * 100)|round(0)|int) if ds_total > 0 else 0 %}
+    {% set us_good_c = us|selectattr('health', 'equalto', 'good')|list|length %}
+    {% set us_tolerated_c = us|selectattr('health', 'equalto', 'tolerated')|list|length %}
+    {% set us_warn_c = us|selectattr('health', 'equalto', 'warning')|list|length %}
+    {% set us_crit_c = us|selectattr('health', 'equalto', 'critical')|list|length %}
+    {% set us_total = us|length %}
+    {% set us_pct = (((us_good_c + us_tolerated_c) / us_total * 100)|round(0)|int) if us_total > 0 else 0 %}
+
+    {# ══════════════════════════════════════════════════════════════════════════
+       HERO CARD — Status context + channel health + signal trend
+       ══════════════════════════════════════════════════════════════════════════ #}
+    {% set hero_health = 'good' if s.health == 'good' else ('tolerated' if s.health == 'tolerated' else ('crit' if s.health == 'critical' else 'warn')) %}
+    {% set dashboard_meta_row %}
+            <div class="insights-meta">
+                <div class="hero-meta">
+                        {% if isp_name %}
+                        <span class="hero-meta-item" style="cursor:help;"
+                            title="{{ t.isp_name_tooltip }}">
+                            <i data-lucide="cloud"></i> {{ isp_name }}
+                        </span>
+                        {% endif %}
+                        {% if device_info and device_info.model %}
+                        <span class="hero-meta-item hero-meta-truncate glossary-hint" style="cursor:help;"
+                            title="{{ device_info.model }}">
+                            <i data-lucide="router"></i>
+                            <span class="hero-meta-label">{{ device_info.model }}</span>
+                            <span class="glossary-popover">{{ device_info.model }}</span>
+                        </span>
+                        {% endif %}
+                        {% if device_info and device_info.hw_version %}
+                        <span class="hero-meta-item" style="cursor:help;"
+                            title="{{ t.hw_version_tooltip }}">
+                            <i data-lucide="cpu"></i> {{ device_info.hw_version }}
+                        </span>
+                        {% endif %}
+                        {% if device_info and device_info.sw_version %}
+                        <span class="hero-meta-item hero-meta-truncate glossary-hint" style="cursor:help;"
+                            title="{{ device_info.sw_version }}">
+                            <i data-lucide="package"></i>
+                            <span class="hero-meta-label">{{ device_info.sw_version }}</span>
+                            <span class="glossary-popover">{{ device_info.sw_version }}</span>
+                        </span>
+                        {% endif %}
+                        {% if device_info and device_info.get('uptime_seconds') is not none %}
+                        <span class="hero-meta-item" style="cursor:help;"
+                            title="{{ t.uptime_tooltip }}">
+                            <i data-lucide="clock"></i> {{ device_info.uptime_seconds|fmt_uptime }}
+                        </span>
+                        {% endif %}
+                        {% if device_info and device_info.reboot_reason %}
+                        <span class="hero-meta-item" style="cursor:help;"
+                            title="{{ t.reboot_reason_tooltip }}">
+                            <i data-lucide="rotate-cw-square"></i> {{ device_info.reboot_reason }}
+                        </span>
+                        {% endif %}
+                        {% if device_info and device_info.docsis_status %}
+                        <span class="hero-meta-item" style="cursor:help;"
+                            title="{{ t.docsis_status_tooltip }}">
+                            <i data-lucide="arrow-down-up"></i> {{ device_info.docsis_status }}
+                        </span>
+                        {% endif %}
+                        <span class="hero-meta-item" style="cursor:help;"
+                            title="{{ t.channel_count_tooltip }}">
+                            <i data-lucide="radio"></i> {{ s.ds_total }}/{{ s.us_total }} Ch
+                        </span>
+                        <span class="hero-meta-item glossary-hint" style="cursor:help;"
+                            title="{{ t.get('docsis_basics_label', 'DOCSIS basics') }}"
+                            data-glossary-term-id="docsis"
+                            data-glossary-term-label="{{ t.get('glossary_page_title', 'Glossary') }}">
+                            <i data-lucide="book-open"></i>
+                            <span class="hero-meta-label">{{ t.get('docsis_basics_label', 'DOCSIS basics') }}</span>
+                            <span class="glossary-popover">{{ t.get('glossary_docsis_basics', 'Cable internet uses DOCSIS, not DSL. Mire reads modem, channel, and signal data from supported cable gateways. Signal health, modulation, and SC-QAM capacity estimates are Layer-1/channel diagnostics, not Speedtest/IP throughput or tariff speed. Cable is a shared medium; segment utilization and provider/network conditions can affect real speeds.') }}</span>
+                        </span>
+                        {% if connection_info and connection_info.max_downstream_kbps %}
+                        <span class="hero-meta-item"><i data-lucide="gauge"></i> {{ connection_info.max_downstream_kbps // 1000 }}/{{ connection_info.max_upstream_kbps // 1000 }} MBit/s</span>
+                        {% elif booked_download and booked_download > 0 %}
+                        <span class="hero-meta-item"><i data-lucide="gauge"></i> {{ booked_download|int }}/{{ booked_upload|int }} MBit/s</span>
+                        {% endif %}
+                        {% if device_info and device_info.wan_ipv4 %}
+                        <span class="hero-meta-item" style="cursor:help;"
+                            title="{{ t.wan_ipv4_tooltip }}">
+                            <i data-lucide="globe"></i> {{ device_info.wan_ipv4 }}
+                        </span>
+                        {% endif %}
+                        {% if device_info and device_info.wan_ipv6 %}
+                        <span class="hero-meta-item" style="cursor:help;"
+                            title="{{ t.wan_ipv6_tooltip }}">
+                            <i data-lucide="globe"></i> {{ device_info.wan_ipv6 }}
+                        </span>
+                        {% endif %}
+                        {% if gaming_quality_enabled and gaming_index %}
+                        {% set _g = gaming_index.grade|upper %}
+                        {% set _badge_class = 'badge-good' if _g in ('A', 'B') else ('badge-warn' if _g == 'C' else 'badge-crit') %}
+                        <span class="hero-meta-item" style="cursor:help;"
+                            title="{{ gaming_index.score }}/100 — {{ t['gaming_tooltip_' ~ gaming_index.grade|lower] }}{% if not gaming_index.has_speedtest %} ({{ t.gaming_no_speedtest }}){% endif %}">
+                            <i data-lucide="gamepad-2" style="width:14px;height:14px;"></i> {{ t.gaming_badge_label }} <span class="badge {{ _badge_class }}" style="margin-left:2px;">{{ gaming_index.grade }}</span>
+                        </span>
+                        {% endif %}
+                        <span class="hero-meta-item desktop-only" id="desktop-countdown"></span>
+                        <button type="button" class="hero-meta-item desktop-only hero-refresh-button" title="{{ t.refresh }}"
+                            onclick="var rb=document.getElementById('refresh-btn');if(rb)rb.click();">
+                            <i data-lucide="refresh-cw" style="width:13px;height:13px;"></i> {{ t.refresh }}
+                        </button>
+                </div>
+            </div>
+    {% endset %}
+    {% set active_issues = [] %}
+    {% for issue in s.health_issues %}{% if 'tolerated' not in issue %}{% if active_issues.append(issue) %}{% endif %}{% endif %}{% endfor %}
+    {% set issue_actions = {
+        "ds_power_critical": t.get("insight_action_ds_power_critical", ""),
+        "ds_power_marginal": t.get("insight_action_ds_power_marginal", ""),
+        "us_power_critical_low": t.get("insight_action_us_power_critical", ""),
+        "us_power_critical_high": t.get("insight_action_us_power_critical", ""),
+        "us_power_marginal_low": t.get("insight_action_us_power_marginal", ""),
+        "us_power_marginal_high": t.get("insight_action_us_power_marginal", ""),
+        "us_modulation_marginal": t.get("insight_action_us_modulation", ""),
+        "us_modulation_critical": t.get("insight_action_us_modulation", ""),
+        "snr_critical": t.get("insight_action_snr_critical", ""),
+        "snr_marginal": t.get("insight_action_snr_marginal", ""),
+        "uncorr_errors_high": t.get("insight_action_uncorr_errors", ""),
+        "uncorr_errors_critical": t.get("insight_action_uncorr_errors", ""),
+    } %}
+    {% set signal_families = s.get('signal_families', {}) %}
+    {% set ds_signal_families = signal_families.get('downstream', {}).get('families', {}) if signal_families else {} %}
+    {% set us_signal_families = signal_families.get('upstream', {}).get('families', {}) if signal_families else {} %}
+    {% set has_signal_family_metric_cards = ds_signal_families.get('sc_qam') or ds_signal_families.get('ofdm') or us_signal_families.get('sc_qam') or us_signal_families.get('ofdma') %}
+    <section class="hero-card glass dashboard-hero health-{{ hero_health }}">
+        {{ dashboard_meta_row|safe }}
+        {# ── Insights Panel — actionable guidance from health issues (#219) ── #}
+        {% if active_issues %}
+        <div class="insights-panel insights-panel-{{ s.health }}">
+            <div class="insights-header">
+                <div class="insights-icon"><i data-lucide="lightbulb"></i></div>
+                <div class="insights-heading">
+                    <span class="insights-title">{{ t.get("insights_title", "Insights") }}</span>
+                    <span class="insights-context"><span class="status-dot {{ hero_health }}"></span>{{ health_map.get(s.health, s.health) }}</span>
+                </div>
+            </div>
+            <div class="insights-list">
+                {% for issue in active_issues %}
+                {% set sev = 'crit' if 'critical' in issue else 'warn' %}
+                <div class="insight-card insight-{{ sev }}">
+                    <div class="insight-rail {{ sev }}"><i data-lucide="alert-circle"></i></div>
+                    <div class="insight-content">
+                        <div class="insight-condition">{{ issue_labels.get(issue, issue) }}</div>
+                        <div class="insight-explanation">{{ issue_descs.get(issue, '') }}</div>
+                    </div>
+                    {% if issue_actions.get(issue) %}
+                    <div class="insight-action"><i data-lucide="arrow-right" style="width:12px;height:12px;"></i> {{ issue_actions[issue] }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% elif s.health == 'tolerated' %}
+        <div class="insights-panel insights-panel-tolerated">
+            <div class="insights-header">
+                <div class="insights-icon"><i data-lucide="lightbulb"></i></div>
+                <div class="insights-heading">
+                    <span class="insights-title">{{ t.get("insights_title", "Insights") }}</span>
+                    <span class="insights-context"><span class="status-dot {{ hero_health }}"></span>{{ health_map.get(s.health, s.health) }}</span>
+                </div>
+            </div>
+            <div class="insights-list">
+                <div class="insight-card insight-tolerated">
+                    <div class="insight-rail tolerated"><i data-lucide="info"></i></div>
+                    <div class="insight-content">
+                        <div class="insight-condition">{{ t.get("insights_tolerated", "Minor deviations detected, but within tolerance.") }}</div>
+                        <div class="insight-explanation">{{ health_msgs.get(s.health, '') }}</div>
+                    </div>
+                    <div class="insight-action"><i data-lucide="check-circle"></i> {{ t.get("insight_action_tolerated", "No immediate action needed. Watch whether the tolerated state persists") }}</div>
+                </div>
+            </div>
+        </div>
+        {% elif s.health == 'good' %}
+        <div class="insights-panel insights-panel-good">
+            <div class="insights-header">
+                <div class="insights-icon"><i data-lucide="lightbulb"></i></div>
+                <div class="insights-heading">
+                    <span class="insights-title">{{ t.get("insights_title", "Insights") }}</span>
+                    <span class="insights-context"><span class="status-dot {{ hero_health }}"></span>{{ health_map.get(s.health, s.health) }}</span>
+                </div>
+            </div>
+            <div class="insights-list">
+                <div class="insight-card insight-good">
+                    <div class="insight-rail good"><i data-lucide="check-circle"></i></div>
+                    <div class="insight-content">
+                        <div class="insight-condition">{{ t.get("insights_all_healthy", "All channels within healthy ranges — no action needed.") }}</div>
+                        <div class="insight-explanation">{{ health_msgs.get(s.health, '') }}</div>
+                    </div>
+                    <div class="insight-action"><i data-lucide="check-circle"></i> {{ t.get("insight_action_good", "No action needed. Keep normal monitoring active") }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <div class="hero-visual-row">
+            <aside class="hero-channel-health" aria-label="{{ t.get('dashboard_channel_health', 'Channel health') }}">
+                <div class="hero-channel-health-head">
+                    <span>{{ t.get('dashboard_section_channels', 'Channels') }}</span>
+                    <strong>{{ t.get('dashboard_channel_health', 'Channel health') }}</strong>
+                </div>
+                <div class="hero-channel-health-list">
+                    <div class="hero-health-card">
+                        <div class="hero-health-topline">
+                            <div>
+                                <div class="hero-health-name">{{ t.downstream }}</div>
+                                <div class="hero-health-subtitle">{{ ds_total }} {{ t.channels }}</div>
+                            </div>
+                            <div class="hero-health-score">
+                                <strong>{{ ds_pct }}%</strong>
+                                <span>{{ t.healthy }}</span>
+                            </div>
+                        </div>
+                        <div class="hero-health-bar" aria-hidden="true">
+                            <span class="good" style="flex: {{ ds_good }};"></span>
+                            <span class="tolerated" style="flex: {{ ds_tolerated }};"></span>
+                            <span class="warn" style="flex: {{ ds_warn }};"></span>
+                            <span class="crit" style="flex: {{ ds_crit }};"></span>
+                        </div>
+                        <div class="hero-health-stats">
+                            <span class="hero-health-stat good"><i></i>{{ health_labels.good }} <strong>{{ ds_good }}</strong></span>
+                            <span class="hero-health-stat tolerated"><i></i>{{ health_labels.tolerated }} <strong>{{ ds_tolerated }}</strong></span>
+                            <span class="hero-health-stat warn"><i></i>{{ health_labels.warn }} <strong>{{ ds_warn }}</strong></span>
+                            <span class="hero-health-stat crit"><i></i>{{ health_labels.crit }} <strong>{{ ds_crit }}</strong></span>
+                        </div>
+                    </div>
+                    <div class="hero-health-card">
+                        <div class="hero-health-topline">
+                            <div>
+                                <div class="hero-health-name">{{ t.upstream }}</div>
+                                <div class="hero-health-subtitle">{{ us_total }} {{ t.channels }}</div>
+                            </div>
+                            <div class="hero-health-score">
+                                <strong>{{ us_pct }}%</strong>
+                                <span>{{ t.healthy }}</span>
+                            </div>
+                        </div>
+                        <div class="hero-health-bar" aria-hidden="true">
+                            <span class="good" style="flex: {{ us_good_c }};"></span>
+                            <span class="tolerated" style="flex: {{ us_tolerated_c }};"></span>
+                            <span class="warn" style="flex: {{ us_warn_c }};"></span>
+                            <span class="crit" style="flex: {{ us_crit_c }};"></span>
+                        </div>
+                        <div class="hero-health-stats">
+                            <span class="hero-health-stat good"><i></i>{{ health_labels.good }} <strong>{{ us_good_c }}</strong></span>
+                            <span class="hero-health-stat tolerated"><i></i>{{ health_labels.tolerated }} <strong>{{ us_tolerated_c }}</strong></span>
+                            <span class="hero-health-stat warn"><i></i>{{ health_labels.warn }} <strong>{{ us_warn_c }}</strong></span>
+                            <span class="hero-health-stat crit"><i></i>{{ health_labels.crit }} <strong>{{ us_crit_c }}</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+            {% if not has_signal_family_metric_cards %}
+            <div class="hero-modulation-context" aria-label="{{ t.get('dashboard_modulation_context', 'Modulation context') }}">
+                <div class="hero-modulation-head">
+                    <span>{{ t.get('dashboard_modulation_context', 'Modulation context') }}</span>
+                    <a class="hero-modulation-link" href="#modulation">
+                        {{ t.get('dashboard_modulation_open_detail', t.get('mire.modulation.title', 'Modulation Performance')) }}
+                        <i data-lucide="arrow-right" style="width:12px;height:12px;"></i>
+                    </a>
+                </div>
+                <div class="hero-modulation-grid">
+                {% for mod in home_modulation_context %}
+                    {% set mod_label = t.downstream if mod.dir == 'ds' else t.upstream %}
+                    {% set mod_issue_label = issue_labels.get(mod.issue, '') if mod.issue else '' %}
+                    <div class="hero-modulation-card hero-modulation-{{ mod.health }}" data-modulation-dir="{{ mod.dir }}">
+                        <div class="hero-modulation-card-top">
+                            <span>{{ mod_label }}</span>
+                            <strong>{{ mod.primary if mod.primary else t.get('dashboard_modulation_unavailable', 'N/A') }}</strong>
+                        </div>
+                        {% if mod.issue %}
+                        <div class="hero-modulation-status">{{ mod_issue_label }}</div>
+                        <div class="hero-modulation-cause">{{ t.get('dashboard_modulation_us_cause', 'Reduced modulation contributes to this state') }}</div>
+                        {% elif mod.health == 'missing' %}
+                        <div class="hero-modulation-status">{{ t.get('dashboard_modulation_missing_hint', 'No current QAM value reported by the modem') }}</div>
+                        {% else %}
+                        <div class="hero-modulation-status">{{ t.get('dashboard_modulation_normal', 'No modulation degradation detected') }}</div>
+                        {% if mod.dir == 'ds' %}
+                        <div class="hero-modulation-cause muted">{{ t.get('dashboard_modulation_ds_detail_hint', 'Downstream detail remains in the Modulation Performance view') }}</div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            <div class="hero-chart-wrap">
+                <div class="hero-chart-head">
+                    <span>{{ t.get('dashboard_signal_trend', '24h signal trend') }}</span>
+                    <span>{{ t.get('dashboard_signal_scope', 'DS power / US power / SNR') }}</span>
+                </div>
+                <canvas id="hero-trend-chart" role="img" aria-label="{{ t.get('dashboard_signal_trend', '24h signal trend') }}"></canvas>
+            </div>
+        </div>
+    </section>
+
+    {# ── Per-card health ── #}
+    {% set signal_health = 'crit' if 'ds_power_critical' in s.health_issues or 'snr_critical' in s.health_issues
+       else ('warn' if 'ds_power_marginal' in s.health_issues or 'snr_marginal' in s.health_issues
+       else ('tolerated' if 'ds_power_tolerated' in s.health_issues or 'snr_tolerated' in s.health_issues else 'good')) %}
+    {% set us_health_fallback = 'crit' if 'us_power_critical_low' in s.health_issues or 'us_power_critical_high' in s.health_issues
+       else ('warn' if 'us_power_marginal_low' in s.health_issues or 'us_power_marginal_high' in s.health_issues
+       else ('tolerated' if 'us_power_tolerated_low' in s.health_issues or 'us_power_tolerated_high' in s.health_issues else 'good')) %}
+    {% set us_health = metric_ranges.us_power.health if metric_ranges.us_power is defined and metric_ranges.us_power.health is defined else us_health_fallback %}
+    {% set error_health = 'crit' if 'uncorr_errors_critical' in s.health_issues else ('warn' if 'uncorr_errors_high' in s.health_issues else 'good') %}
+
+    {# ── DS Power health ── #}
+    {% set ds_pwr_health_fallback = 'crit' if 'ds_power_critical' in s.health_issues else ('warn' if 'ds_power_marginal' in s.health_issues else ('tolerated' if 'ds_power_tolerated' in s.health_issues else 'good')) %}
+    {% set ds_pwr_health = metric_ranges.ds_power.health if metric_ranges.ds_power is defined and metric_ranges.ds_power.health is defined else ds_pwr_health_fallback %}
+    {# ── SNR health ── #}
+    {% set snr_health_fallback = 'crit' if 'snr_critical' in s.health_issues else ('warn' if 'snr_marginal' in s.health_issues else ('tolerated' if 'snr_tolerated' in s.health_issues else 'good')) %}
+    {% set snr_health = metric_ranges.snr.health if metric_ranges.snr is defined and metric_ranges.snr.health is defined else snr_health_fallback %}
+
+    {% macro metric_range_viz(range_data, health, good_label, context_label='', context_value='') -%}
+    {% if range_data %}
+    <div class="metric-range-viz"
+         style="--metric-marker: {{ range_data.marker }}%; --metric-span-start: {{ range_data.span_start }}%; --metric-span-width: {{ range_data.span_width }}%; --metric-range-accent: var(--{{ health }});">
+        {% if context_label or context_value %}
+        <div class="metric-range-caption">
+            <span>{{ context_label }}</span>
+            <strong>{{ context_value }}</strong>
+        </div>
+        {% endif %}
+        <div class="metric-range-track" aria-hidden="true">
+            {% for band in range_data.bands %}
+            <span class="metric-range-band {{ band.kind }}" style="left:{{ band.left }}%;width:{{ band.width }}%;"></span>
+            {% endfor %}
+            <span class="metric-range-window"></span>
+            <span class="metric-range-marker"></span>
+        </div>
+        <div class="metric-range-labels">
+            <span>{{ range_data.low_label }}</span>
+            <span class="metric-range-good">{{ good_label }} {{ range_data.good_label }}</span>
+            <span>{{ range_data.high_label }}</span>
+        </div>
+    </div>
+    {% endif %}
+    {%- endmacro %}
+
+    {% macro signal_family_card(card_id, label, family, metric_key, metric_unit, metric_label, spark_key, icon_class, icon_name, range_data=None, glossary_text=None, spark_color=None) -%}
+        {% set metric = family.get(metric_key, {}) %}
+        {% set modulation = family.get('modulation', {}) %}
+        {% set raw_health = family.get('health', metric.get('health', 'missing')) %}
+        {% set health_class = 'crit' if raw_health == 'critical' else ('warn' if raw_health == 'warning' else ('muted' if raw_health == 'missing' else raw_health)) %}
+        {% set metric_raw_health = range_data.health if range_data and range_data.health is defined else metric.get('health', raw_health) %}
+        {% set metric_health_class = 'crit' if metric_raw_health == 'critical' else ('warn' if metric_raw_health == 'warning' else ('muted' if metric_raw_health == 'missing' else metric_raw_health)) %}
+        {% set modulation_health = modulation.get('health', 'missing') %}
+        {% set modulation_health_class = 'crit' if modulation_health == 'critical' else ('warn' if modulation_health == 'warning' else ('muted' if modulation_health == 'missing' else modulation_health)) %}
+        {% set modulation_values = modulation.get('values') %}
+        {% set metric_value = metric.get('avg') %}
+        {% set family_count = family.get('count', 0) %}
+        <div class="metric-card glass" id="{{ card_id }}">
+            {% if glossary_text %}<span class="glossary-hint"><i data-lucide="info"></i><div class="glossary-popover">{{ glossary_text }}</div></span>{% endif %}
+            <div class="metric-header">
+                <span class="metric-label">{{ label }}</span>
+                <div class="metric-icon {{ icon_class }}"><i data-lucide="{{ icon_name }}"></i></div>
+            </div>
+            <div class="metric-value-row">
+                <div class="metric-value" style="color:var(--{{ metric_health_class }});">{% if metric_value is not none %}{{ metric_value }}<span class="unit">{% if metric_unit %}{{ metric_unit }}{% endif %}{% if metric_label %} {{ metric_label }}{% endif %}</span>{% else %}{{ t.get('signal_family_unavailable', 'Unavailable') }}<span class="unit">{% if metric_unit %}{{ metric_unit }}{% endif %}{% if metric_label %} {{ metric_label }}{% endif %}</span>{% endif %}</div>
+                <canvas class="metric-spark" id="spark-{{ card_id|replace('metric-', '') }}" data-spark-key="{{ spark_key }}"{% if spark_color %} data-spark-color="{{ spark_color }}"{% endif %} width="144" height="56" aria-hidden="true"></canvas>
+            </div>
+            {% if metric_value is not none and family_count %}
+            <div class="metric-sub metric-average-row">
+                <span class="range metric-average-copy">{{ t.get('metric_average_label', 'Avg') }} · {{ family_count }} {{ t.get('metric_active_channel_singular', 'active channel') if family_count == 1 else t.get('metric_active_channel_plural', 'active channels') }}</span>
+            </div>
+            {% endif %}
+            <div class="metric-sub metric-status-row">
+                <span class="metric-context">
+                    <span class="metric-sub-label">{{ t.get('signal_family_status_label', 'Family status') }}</span>
+                    <span class="badge badge-{{ raw_health }} badge-{{ health_class }}">{{ health_labels.get(raw_health, health_labels.get(health_class, raw_health|title)) }}</span>
+                </span>
+            </div>
+            {% set health_counts = family.get('health_counts', {}) %}
+            {% set health_count_total = health_counts.get('good', 0) + health_counts.get('tolerated', 0) + health_counts.get('warning', 0) + health_counts.get('critical', 0) %}
+            {% if health_count_total > 1 %}
+            <div class="metric-sub metric-health-distribution-row">
+                <span class="metric-sub-label">{{ t.get('signal_family_channels_label', t.get('channels', 'Channels')) }}:</span>
+                {% set distribution = namespace(first=true) %}
+                {% for health_key in ['good', 'tolerated', 'warning', 'critical'] %}
+                    {% set count = health_counts.get(health_key, 0) %}
+                    {% if count %}
+                        {% if not distribution.first %}<span class="metric-sub-label metric-health-distribution-separator">·</span>{% endif %}
+                        <span class="range metric-health-count metric-health-count-{{ health_key }}">{{ count }} {{ health_labels.get(health_key, health_key|title) }}</span>
+                        {% set distribution.first = false %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% set health_driver = family.get('health_driver') %}
+            {% if health_driver and health_driver.get('health') not in ['good', 'missing'] %}
+            {% set driver_dimension = health_driver.get('dimension') %}
+            {% set driver_label_key = 'signal_family_metric_' ~ driver_dimension %}
+            <div class="metric-sub metric-health-driver-row">
+                <span class="metric-sub-label">{{ t.get('signal_family_driver_label', 'Driving') }}:</span>
+                <span class="range metric-health-driver-value">{% if health_driver.get('channel_id') is not none %}{{ t.ch_abbr }} {{ health_driver.get('channel_id') }} {% endif %}{{ t.get(driver_label_key, driver_dimension|title) }}{% if health_driver.get('value') is not none %} {{ health_driver.get('value') }}{% if health_driver.get('unit') %} {{ health_driver.get('unit') }}{% endif %}{% endif %}</span>
+            </div>
+            {% endif %}
+            {% if modulation.get('value') %}
+            <div class="metric-sub metric-modulation-row">
+                <span class="metric-sub-label">{{ t.get('signal_family_modulation_label', 'Modulation') }}:</span>
+                {% if modulation_values %}
+                    {% for modulation_value in modulation_values %}
+                        {% set value_raw_health = modulation_value.get('health', modulation_health) %}
+                        {% set value_health_class = 'crit' if value_raw_health == 'critical' else ('warn' if value_raw_health == 'warning' else ('muted' if value_raw_health == 'missing' else value_raw_health)) %}
+                        {% if not loop.first %}<span class="metric-sub-label metric-modulation-separator">—</span>{% endif %}
+                        <span class="range metric-modulation-value" style="color:var(--{{ value_health_class }});">{{ modulation_value.get('value') }}</span>
+                    {% endfor %}
+                {% else %}
+                    <span class="range metric-modulation-value" style="color:var(--{{ modulation_health_class }});">{{ modulation.get('value') }}</span>{% if modulation.get('secondary') %}
+                    <span class="metric-sub-label metric-modulation-separator">—</span>
+                    <span class="range metric-modulation-value" style="color:var(--{{ modulation_health_class }});">{{ modulation.get('secondary') }}</span>{% endif %}
+                {% endif %}
+            </div>
+            {% endif %}
+            {% if metric_value is not none and range_data %}
+            {% set metric_min = metric.get('min') if metric.get('min') is not none else metric_value %}
+            {% set metric_max = metric.get('max') if metric.get('max') is not none else metric_value %}
+            {{ metric_range_viz(range_data, range_data.health if range_data.health is defined else metric_health_class, health_labels.good, t.get('metric_channel_span', 'Channel min-max'), metric_min ~ ' — ' ~ metric_max) }}
+            {% endif %}
+        </div>
+    {%- endmacro %}
+
+    {# ══════════════════════════════════════════════════════════════════════════
+       METRICS GRID — Compact signal + error + speed cards
+       ══════════════════════════════════════════════════════════════════════════ #}
+    <div class="dashboard-section-header">
+        <div>
+            <span class="dashboard-section-kicker">{{ t.get('dashboard_section_overview', 'Overview') }}</span>
+            <h2>{{ t.get('dashboard_key_metrics', 'Key metrics') }}</h2>
+        </div>
+        <span class="dashboard-section-context">
+            {% if has_signal_family_metric_cards %}
+            <strong>{{ t.get('signal_family_average_section_title', 'Signal family averages') }}</strong>
+            <span>{{ t.get('signal_family_average_section_hint', 'Values are averaged across active channels in each DOCSIS signal family.') }}</span>
+            {% else %}
+            {{ t.get('dashboard_key_metrics_hint', 'Live modem, throughput and monitoring signals') }}
+            {% endif %}
+        </span>
+    </div>
+    <div class="metrics-grid">
+        {% if not has_signal_family_metric_cards %}
+        {# Card 1: DS Power (legacy aggregate fallback) #}
+        <div class="metric-card glass">
+            <span class="glossary-hint" data-glossary-term-id="power_level" data-glossary-term-label="{{ t.get('glossary_page_title', 'Glossary') }}"><i data-lucide="info"></i><div class="glossary-popover">{{ t.glossary_ds_power }}</div></span>
+            <div class="metric-header">
+                <span class="metric-label">{{ t.signal_ds_power }}</span>
+                <div class="metric-icon purple"><i data-lucide="arrow-down"></i></div>
+            </div>
+            <div class="metric-value-row">
+                <div class="metric-value" style="color:var(--{{ ds_pwr_health }});">{{ s.ds_power_avg }}<span class="unit">dBmV</span></div>
+                <canvas class="metric-spark" id="spark-ds-power" width="144" height="56" aria-hidden="true"></canvas>
+            </div>
+            <div class="metric-sub metric-status-row">
+                <span class="metric-context">
+                    <span class="metric-sub-label">{{ t.get('metric_status_label', 'Status') }}</span>
+                    <span class="badge badge-{{ ds_pwr_health }}">{{ health_labels[ds_pwr_health] }}</span>
+                </span>
+            </div>
+            {{ metric_range_viz(metric_ranges.ds_power, ds_pwr_health, health_labels.good, t.get('metric_channel_span', 'Channel min-max'), s.ds_power_min ~ ' — ' ~ s.ds_power_max) }}
+        </div>
+
+        {# Card 2: US Power (legacy aggregate fallback) #}
+        <div class="metric-card glass">
+            <span class="glossary-hint" data-glossary-term-id="power_level" data-glossary-term-label="{{ t.get('glossary_page_title', 'Glossary') }}"><i data-lucide="info"></i><div class="glossary-popover">{{ t.glossary_us_power }}</div></span>
+            <div class="metric-header">
+                <span class="metric-label">{{ t.signal_us_power }}</span>
+                <div class="metric-icon blue"><i data-lucide="arrow-up"></i></div>
+            </div>
+            <div class="metric-value-row">
+                <div class="metric-value" style="color:var(--{{ us_health }});">{{ s.us_power_avg }}<span class="unit">dBmV</span></div>
+                <canvas class="metric-spark" id="spark-us-power" width="144" height="56" aria-hidden="true"></canvas>
+            </div>
+            <div class="metric-sub metric-status-row">
+                <span class="metric-context">
+                    <span class="metric-sub-label">{{ t.get('metric_status_label', 'Status') }}</span>
+                    <span class="badge badge-{{ us_health }}">{{ health_labels[us_health] }}</span>
+                </span>
+            </div>
+            {{ metric_range_viz(metric_ranges.us_power, us_health, health_labels.good, t.get('metric_channel_span', 'Channel min-max'), s.us_power_min ~ ' — ' ~ s.us_power_max) }}
+        </div>
+
+        {# Card 3: SNR/MER legacy compact fallback #}
+        {% set snr_display = home_snr_display if home_snr_display is defined else {} %}
+        {% set snr_label = t.get(snr_display.label_key, 'SNR') if snr_display.label_key is defined else 'SNR' %}
+        {% set snr_value = snr_display.value if snr_display.value is defined and snr_display.value is not none else s.ds_snr_avg %}
+        {% set snr_min = snr_display.min if snr_display.min is defined and snr_display.min is not none else s.ds_snr_min %}
+        {% set snr_max = snr_display.max if snr_display.max is defined and snr_display.max is not none else s.ds_snr_max %}
+        <div class="metric-card glass">
+            <span class="glossary-hint" data-glossary-term-id="snr_mer" data-glossary-term-label="{{ t.get('glossary_page_title', 'Glossary') }}"><i data-lucide="info"></i><div class="glossary-popover">{{ t.glossary_snr }}</div></span>
+            <div class="metric-header">
+                <span class="metric-label">{{ snr_label }}</span>
+                <div class="metric-icon green"><i data-lucide="signal"></i></div>
+            </div>
+            <div class="metric-value-row">
+                <div class="metric-value" style="color:var(--{{ snr_health }});">{{ snr_value }}<span class="unit">dB</span></div>
+                <canvas class="metric-spark" id="spark-snr" width="144" height="56" aria-hidden="true"></canvas>
+            </div>
+            <div class="metric-sub metric-status-row">
+                <span class="metric-context">
+                    <span class="metric-sub-label">{{ t.get('metric_status_label', 'Status') }}</span>
+                    <span class="badge badge-{{ snr_health }}">{{ health_labels[snr_health] }}</span>
+                </span>
+            </div>
+            {{ metric_range_viz(metric_ranges.snr, snr_health, health_labels.good, t.get('metric_channel_span', 'Channel min-max'), snr_min ~ ' — ' ~ snr_max) }}
+        </div>
+        {% endif %}
+
+        {# Family-aware signal cards: DS power, DS quality, then US power by DOCSIS family. #}
+        {% if ds_signal_families.get('sc_qam') %}
+        {{ signal_family_card('metric-ds-sc-qam-power-card', t.get('signal_family_ds_power_sc_qam', 'DS POWER (SC-QAM)'), ds_signal_families.get('sc_qam'), 'power', 'dBmV', '', 'ds_scqam_power_avg', 'ds-signal', 'arrow-down', metric_ranges.get('ds_sc_qam_power'), t.glossary_ds_power, '#8b5cf6') }}
+        {% endif %}
+        {% if ds_signal_families.get('ofdm') %}
+        {{ signal_family_card('metric-ds-ofdm-power-card', t.get('signal_family_ds_power_ofdm', 'DS POWER (OFDM)'), ds_signal_families.get('ofdm'), 'power', 'dBmV', '', 'ds_ofdm_power_avg', 'ds-signal', 'arrow-down', metric_ranges.get('ds_ofdm_power'), t.glossary_ds_power, '#8b5cf6') }}
+        {% endif %}
+        {% if ds_signal_families.get('sc_qam') %}
+        {{ signal_family_card('metric-ds-sc-qam-snr-card', t.get('signal_family_ds_snr_sc_qam', 'DS SNR (SC-QAM)'), ds_signal_families.get('sc_qam'), 'snr', 'dB', '', 'ds_scqam_snr_avg', 'ds-signal', 'arrow-down', metric_ranges.get('ds_sc_qam_snr'), t.glossary_snr, '#8b5cf6') }}
+        {% endif %}
+        {% if ds_signal_families.get('ofdm') %}
+        {{ signal_family_card('metric-ds-ofdm-mer-card', t.get('signal_family_ds_mer_ofdm', 'DS MER (OFDM)'), ds_signal_families.get('ofdm'), 'mer', 'dB', '', 'ds_ofdm_mer_avg', 'ds-signal', 'arrow-down', metric_ranges.get('ds_ofdm_mer'), t.glossary_snr, '#8b5cf6') }}
+        {% endif %}
+        {% if us_signal_families.get('sc_qam') %}
+        {{ signal_family_card('metric-us-sc-qam-card', t.get('signal_family_us_power_sc_qam', 'US POWER (SC-QAM)'), us_signal_families.get('sc_qam'), 'power', 'dBmV', '', 'us_scqam_power_avg', 'us-signal', 'arrow-up', metric_ranges.get('us_sc_qam_power'), t.glossary_us_power, '#38bdf8') }}
+        {% endif %}
+        {% if us_signal_families.get('ofdma') %}
+        {{ signal_family_card('metric-us-ofdma-card', t.get('signal_family_us_power_ofdma', 'US POWER (OFDMA)'), us_signal_families.get('ofdma'), 'power', 'dBmV', '', 'us_ofdma_power_avg', 'us-signal', 'arrow-up', metric_ranges.get('us_ofdma_power'), t.glossary_us_power, '#38bdf8') }}
+        {% endif %}
+
+        {# Card 4: Errors #}
+        {% if (s.errors_supported is not defined or s.errors_supported) and (s.ds_correctable_errors is not none or s.ds_uncorrectable_errors is not none) %}
+        {% set error_coverage = s.get('error_counter_coverage', {}) %}
+        {% set comparable_channels = error_coverage.get('comparable_channels', s.ds_total if s.ds_uncorr_pct is not none else 0) %}
+        {% set error_total_channels = error_coverage.get('total_channels', s.ds_total) %}
+        {% set error_coverage_text = t.get('error_ratio_coverage', 'Calculated from {comparable} of {total} downstream channels').replace('{comparable}', comparable_channels|string).replace('{total}', error_total_channels|string) %}
+        <div class="metric-card glass" id="metric-errors-card">
+            <span class="glossary-hint" data-glossary-term-id="uncorrectable_errors" data-glossary-term-label="{{ t.get('glossary_page_title', 'Glossary') }}"><i data-lucide="info"></i><div class="glossary-popover">{{ t.glossary_errors }}</div></span>
+            <div class="metric-header">
+                <span class="metric-label">{{ t.card_errors }}</span>
+                <div class="metric-icon amber"><i data-lucide="alert-triangle"></i></div>
+            </div>
+            <div class="metric-value-row">
+                {% if s.ds_uncorr_pct is not none %}
+                <div class="metric-value" style="color:var(--{{ error_health }});">{{ s.ds_uncorr_pct }}<span class="unit">%</span></div>
+                {% else %}
+                <div class="metric-value" style="color:var(--muted);">{{ t.get('error_ratio_unavailable', 'Share unavailable') }}</div>
+                {% endif %}
+                <canvas class="metric-spark" id="spark-errors" width="144" height="56" aria-hidden="true"></canvas>
+            </div>
+            <div class="metric-sub metric-status-row">
+                <span class="metric-context">
+                    <span class="metric-sub-label">{{ t.get('error_ratio_comparable_label', 'Uncorrectable error share') }}</span>
+                    {% if s.ds_uncorr_pct is not none %}
+                    <span class="badge badge-{{ error_health }}">{{ health_labels[error_health] }}</span>
+                    {% endif %}
+                </span>
+                <span class="range">{{ error_coverage_text }}</span>
+            </div>
+            <div class="metric-range-caption">
+                {% if s.ds_correctable_errors is not none %}
+                <span>{{ t.get('error_raw_correctable_total', 'Raw correctable total') }}</span>
+                <strong>{{ s.ds_correctable_errors|fmt_k }}</strong>
+                {% endif %}
+            </div>
+            <div class="metric-range-caption">
+                {% if s.ds_uncorrectable_errors is not none %}
+                <span>{{ t.get('error_raw_uncorrectable_total', 'Raw uncorrectable total') }}</span>
+                <strong>{{ s.ds_uncorrectable_errors|fmt_k }}</strong>
+                {% endif %}
+            </div>
+            {% if s.ds_uncorr_pct is not none %}
+            {{ metric_range_viz(metric_ranges.errors, error_health, health_labels.good) }}
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {# Card 4: Speed (conditional) #}
+        {% if speedtest_configured and speedtest_latest %}
+        <div class="metric-card glass" id="metric-speed-card" role="button" tabindex="0" style="cursor:pointer;" onclick="switchView('speedtest')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('speedtest')}">
+            <div class="metric-header">
+                <span class="metric-label">{{ t.speed }}</span>
+                <div class="metric-icon green"><i data-lucide="rabbit"></i></div>
+            </div>
+            <div class="metric-value-row">
+                <div class="metric-value" style="color:var(--{{ speed_health_key }});">{{ speedtest_latest.download_mbps|fmt_speed_value }}<span class="unit">{{ speedtest_latest.download_mbps|fmt_speed_unit }} {{ t.download }}</span></div>
+                <canvas class="metric-spark" id="spark-speed" data-spark-key="speedtest_download" data-spark-color="#10b981" width="144" height="56" aria-hidden="true"></canvas>
+            </div>
+            <div class="metric-sub metric-average-row">
+                <span class="range metric-average-copy">{{ t.get('speedtest_latest_result', 'Latest speedtest result') }}</span>
+            </div>
+            <div class="metric-sub metric-status-row">
+                <span class="metric-context">
+                    <span class="metric-sub-label">{{ t.get('metric_status_label', 'Status') }}</span>
+                    <span class="badge badge-{{ speed_health_key }}">{{ speed_badge_label }}</span>
+                </span>
+            </div>
+            <div class="metric-sub metric-modulation-row">
+                <span class="metric-sub-label">{{ t.upload }}:</span>
+                <span class="range" style="color:var(--{{ upload_health_key }});">{{ speedtest_latest.upload_mbps|fmt_speed_value }} {{ speedtest_latest.upload_mbps|fmt_speed_unit }}</span>
+                <span class="metric-sub-label">{{ t.ping }}:</span>
+                <span class="range">{{ speedtest_latest.ping_ms|round(0)|int }} ms</span>
+                <span class="metric-sub-label">{{ t.jitter }}:</span>
+                <span class="range">{{ speedtest_latest.jitter_ms|round(1) }} ms</span>
+            </div>
+            {{ metric_range_viz(speed_range_data, speed_health_key, t.health_good, t.get('metric_download_contract', 'Download vs contract'), speed_pct_caption) }}
+        </div>
+        {% endif %}
+
+
+        {# ── Connection Monitor card (inline with other metric cards) ── #}
+        {% if modules|selectattr('id', 'equalto', 'mire.connection_monitor')|list %}
+        <div class="metric-card glass" id="connection-monitor-card" role="button" tabindex="0" style="cursor:pointer;" onclick="switchView('connection-monitor')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('connection-monitor')}">
+            <div class="metric-header">
+                <span class="metric-label">{{ t.get('mire.connection_monitor.connection_monitor', 'Connection Monitor') }}</span>
+                <div class="metric-icon blue"><i data-lucide="satellite-dish"></i></div>
+            </div>
+            <div class="metric-value-row">
+                <div class="metric-value" id="cm-card-latency">&ndash;</div>
+                <canvas class="metric-spark" id="spark-connection-monitor" data-spark-key="connection_monitor_latency_ms" data-spark-color="#38bdf8" width="144" height="56" aria-hidden="true"></canvas>
+            </div>
+            <div class="metric-sub metric-average-row">
+                <span class="range metric-average-copy" id="cm-card-avg">&ndash;</span>
+            </div>
+            <div class="metric-sub metric-status-row">
+                <span class="metric-context">
+                    <span class="metric-sub-label">{{ t.get('metric_status_label', 'Status') }}</span>
+                    <span class="badge badge-info" id="cm-card-badge">&ndash;</span>
+                </span>
+            </div>
+            <div class="metric-sub metric-modulation-row" id="cm-card-mod-row"></div>
+            <div class="metric-range-viz" id="cm-card-range" style="--metric-marker: 0%; --metric-span-start: 0%; --metric-span-width: 0%; --metric-range-accent: var(--muted);">
+                <div class="metric-range-caption">
+                    <span>{{ t.get('cm_latency_range', 'Latency range') }}</span>
+                    <strong id="cm-card-range-context">&ndash;</strong>
+                </div>
+                <div class="metric-range-track" aria-hidden="true">
+                    <span class="metric-range-band good" style="left:0%;width:33.33%;"></span>
+                    <span class="metric-range-band warn" style="left:33.33%;width:33.33%;"></span>
+                    <span class="metric-range-band crit" style="left:66.67%;width:33.33%;"></span>
+                    <span class="metric-range-window"></span>
+                    <span class="metric-range-marker"></span>
+                </div>
+                <div class="metric-range-labels">
+                    <span>0 ms</span>
+                    <span class="metric-range-good">{{ t.health_good }} &lt; 50 ms</span>
+                    <span>150 ms</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% if modules|selectattr('id', 'equalto', 'mire.connection_monitor')|list %}
+    <script src="{{ module_static_url('mire.connection_monitor', 'js/connection-monitor-card.js', v=version) }}"></script>
+    {% endif %}
+
+    {# ══════════════════════════════════════════════════════════════════════════
+       CHANNELS — Detailed channel tables with health chips
+       ══════════════════════════════════════════════════════════════════════════ #}
+    <div class="dashboard-section-header">
+        <div>
+            <span class="dashboard-section-kicker">{{ t.get('dashboard_section_channels', 'Channels') }}</span>
+            <h2>{{ t.get('dashboard_channel_details', 'Channel details') }}</h2>
+        </div>
+        <span>{{ t.get('dashboard_channel_details_hint', 'Per-channel downstream and upstream signal values') }}</span>
+    </div>
+
+    {# ── Module Cards (mixed with core, sorted by order) ── #}
+    {% for mod in modules|sort(attribute='menu.order') if mod.template_paths.get('card') and mod.id != 'mire.connection_monitor' %}
+    {% include mod.template_paths['card'] %}
+    {% endfor %}
+
+    {# ══════════════════════════════════════════════════════════════════════════
+       DOWNSTREAM CHANNELS — Channel detail tables with collapsible groups
+       ══════════════════════════════════════════════════════════════════════════ #}
+    {% set ds_versions = ds|map(attribute='docsis_version')|unique|sort|list %}
+    <section class="channels-section glass dashboard-channel-panel">
+        <div class="channel-header">
+            <div>
+                <div class="channel-title">{{ t.downstream }} {{ t.channels }}</div>
+                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">{{ ds|length }} {{ t.channels }}{% if ds_versions %} · DOCSIS {{ ds_versions|join(' + ') }}{% endif %}</div>
+            </div>
+            <div class="channel-health-chips">
+                <span class="health-chip"><span class="dot good"></span> {{ ds_good }} {{ health_labels.good }}</span>
+                <span class="health-chip"><span class="dot tolerated"></span> {{ ds_tolerated }} {{ health_labels.tolerated }}</span>
+                <span class="health-chip"><span class="dot warn"></span> {{ ds_warn }} {{ health_labels.warn }}</span>
+                <span class="health-chip"><span class="dot crit"></span> {{ ds_crit }} {{ health_labels.crit }}</span>
+            </div>
+        </div>
+
+        {% for group in ds|groupby('docsis_version')|reverse %}
+        <div class="docsis-group">
+            <div class="docsis-group-header" role="button" tabindex="0" aria-expanded="false" aria-controls="ds-docsis-group-{{ loop.index }}" onclick="if(!event.target.closest('.glossary-hint')){var open=this.parentElement.classList.toggle('open');this.setAttribute('aria-expanded', open ? 'true' : 'false')}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+                <i data-lucide="chevron-right"></i>
+                DOCSIS {{ group.grouper }} {{ 'OFDM' if group.grouper == '3.1' else 'SC-QAM' }} <span class="glossary-hint" data-glossary-term-id="{{ 'ofdm' if group.grouper == '3.1' else 'sc_qam' }}" data-glossary-term-label="{{ t.get('glossary_page_title', 'Glossary') }}"><i data-lucide="info"></i><div class="glossary-popover">{{ t.glossary_ofdm if group.grouper == '3.1' else t.glossary_scqam }}</div></span> · {{ group.list|length }} {{ t.channel if group.list|length == 1 else t.channels }}
+            </div>
+            <div class="table-scroll-wrapper" id="ds-docsis-group-{{ loop.index }}">
+                <div class="table-scroll">
+                    <table class="channel-table">
+                        <thead><tr>
+                            <th>{{ t.ch_abbr }}</th><th>{{ t.frequency }}</th><th>{{ t.th_power }}</th>
+                            <th>{{ t.get('signal_family_metric_mer', 'MER') if group.grouper|string == '3.1' else t.snr_abbr }}</th><th>{{ t.mod_abbr }}</th><th title="{{ t.get('mire.modulation.capacity_tooltip', 'Layer-1 estimate for supported SC-QAM channels; unsupported OFDM/OFDMA channels show no estimate; not usable IP throughput') }}">{{ t.get('mire.modulation.capacity_short', 'Capacity estimate') }}</th><th>{{ t.signal_health }}</th>
+                        </tr></thead>
+                        <tbody>
+                        {% for ch in group.list %}
+                        {% set ch_tips = {"power critical": t.ch_power_critical, "power warning": t.ch_power_warning, "power tolerated": t.ch_power_tolerated, "snr critical": t.ch_snr_critical, "snr warning": t.ch_snr_warning, "snr tolerated": t.ch_snr_tolerated} %}
+                        {% set ch_tip_parts = [] %}
+                        {% for key, label in ch_tips.items() %}{% if key in ch.health_detail %}{% if ch_tip_parts.append(label) %}{% endif %}{% endif %}{% endfor %}
+                        <tr>
+                            <td>{{ ch.channel_id }}</td>
+                            <td>{{ ch.frequency }}{% if ch.frequency and 'MHz' not in ch.frequency|string %} MHz{% endif %}</td>
+                            <td data-health="{{ ch.power_health or 'good' }}">{{ ch.power if ch.power is not none else "—" }}{% if ch.power is not none %} dBmV{% endif %}</td>
+                            <td data-health="{{ ch.snr_health or 'good' }}">{{ ch.snr if ch.snr is not none else "—" }}{% if ch.snr is not none %} dB{% endif %}</td>
+                            <td data-health="{{ ch.modulation_health or 'good' }}">{{ ch.modulation }}</td>
+                            <td title="{{ t.get('mire.modulation.capacity_tooltip', 'Layer-1 estimate for supported SC-QAM channels; unsupported OFDM/OFDMA channels show no estimate; not usable IP throughput') }}">{% if ch.theoretical_bitrate is defined and ch.theoretical_bitrate is not none %}{{ ch.theoretical_bitrate|round(1) }} {{ 'Mbit/s' if lang == 'de' else 'Mbps' }}{% else %}&#8212;{% endif %}</td>
+                            <td>
+                                {% if ch.health == "good" %}<span class="badge badge-good">{{ health_labels.good }}</span>
+                                {% elif ch.health == "critical" %}<span class="badge badge-crit" title="{{ ch_tip_parts|join(', ') }}">{{ health_labels.crit }}</span>
+                                {% elif ch.health == "warning" %}<span class="badge badge-warn" title="{{ ch_tip_parts|join(', ') }}">{{ health_labels.warn }}</span>
+                                {% else %}<span class="badge badge-tolerated" title="{{ ch_tip_parts|join(', ') }}">{{ health_labels.tolerated }}</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════════
+       UPSTREAM CHANNELS — Channel detail tables with collapsible groups
+       ══════════════════════════════════════════════════════════════════════════ #}
+    {% set us_versions = us|map(attribute='docsis_version')|unique|sort|list %}
+    <section class="channels-section glass dashboard-channel-panel">
+        <div class="channel-header">
+            <div>
+                <div class="channel-title">{{ t.upstream }} {{ t.channels }}</div>
+                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">{{ us|length }} {{ t.channels }}{% if us_versions %} · DOCSIS {{ us_versions|join(' + ') }}{% endif %}</div>
+            </div>
+            <div class="channel-health-chips">
+                <span class="health-chip"><span class="dot good"></span> {{ us_good_c }} {{ health_labels.good }}</span>
+                <span class="health-chip"><span class="dot tolerated"></span> {{ us_tolerated_c }} {{ health_labels.tolerated }}</span>
+                <span class="health-chip"><span class="dot warn"></span> {{ us_warn_c }} {{ health_labels.warn }}</span>
+                <span class="health-chip"><span class="dot crit"></span> {{ us_crit_c }} {{ health_labels.crit }}</span>
+            </div>
+        </div>
+
+        {% for group in us|groupby('docsis_version')|reverse %}
+        <div class="docsis-group">
+            <div class="docsis-group-header" role="button" tabindex="0" aria-expanded="false" aria-controls="us-docsis-group-{{ loop.index }}" onclick="if(!event.target.closest('.glossary-hint')){var open=this.parentElement.classList.toggle('open');this.setAttribute('aria-expanded', open ? 'true' : 'false')}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+                <i data-lucide="chevron-right"></i>
+                DOCSIS {{ group.grouper }} {{ 'OFDMA' if group.grouper == '3.1' else 'SC-QAM' }} <span class="glossary-hint" data-glossary-term-id="{{ 'ofdma' if group.grouper == '3.1' else 'sc_qam' }}" data-glossary-term-label="{{ t.get('glossary_page_title', 'Glossary') }}"><i data-lucide="info"></i><div class="glossary-popover">{{ t.glossary_ofdm if group.grouper == '3.1' else t.glossary_scqam }}</div></span> · {{ group.list|length }} {{ t.channel if group.list|length == 1 else t.channels }}
+            </div>
+            <div class="table-scroll-wrapper" id="us-docsis-group-{{ loop.index }}">
+                <div class="table-scroll">
+                    <table class="channel-table">
+                        <thead><tr>
+                            <th>{{ t.ch_abbr }}</th><th>{{ t.frequency }}</th><th>{{ t.th_power }}</th>
+                            <th>{{ t.mod_abbr }}</th><th title="{{ t.get('mire.modulation.capacity_tooltip', 'Layer-1 estimate for supported SC-QAM channels; unsupported OFDM/OFDMA channels show no estimate; not usable IP throughput') }}">{{ t.get('mire.modulation.capacity_short', 'Capacity estimate') }}</th><th>{{ t.signal_health }}</th>
+                        </tr></thead>
+                        <tbody>
+                        {% for ch in group.list %}
+                        {% set ch_tips = [] %}
+                        {% if 'power critical low' in ch.health_detail %}{% set _ = ch_tips.append(t.ch_power_critical_low) %}{% elif 'power critical high' in ch.health_detail %}{% set _ = ch_tips.append(t.ch_power_critical_high) %}{% elif 'power warning low' in ch.health_detail %}{% set _ = ch_tips.append(t.ch_power_warning_low) %}{% elif 'power warning high' in ch.health_detail %}{% set _ = ch_tips.append(t.ch_power_warning_high) %}{% elif 'power tolerated low' in ch.health_detail %}{% set _ = ch_tips.append(t.ch_power_tolerated_low) %}{% elif 'power tolerated high' in ch.health_detail %}{% set _ = ch_tips.append(t.ch_power_tolerated_high) %}{% endif %}
+                        {% if 'modulation critical' in ch.health_detail %}{% set _ = ch_tips.append(t.ch_modulation_critical) %}{% elif 'modulation warning' in ch.health_detail %}{% set _ = ch_tips.append(t.ch_modulation_warning) %}{% endif %}
+                        {% set ch_tip = ch_tips|join(', ') %}
+                        <tr>
+                            <td>{{ ch.channel_id }}</td>
+                            <td>{{ ch.frequency }}{% if ch.frequency and 'MHz' not in ch.frequency|string %} MHz{% endif %}</td>
+                            <td data-health="{{ ch.power_health or 'good' }}">{{ ch.power if ch.power is not none else "—" }}{% if ch.power is not none %} dBmV{% endif %}</td>
+                            <td data-health="{{ ch.modulation_health or 'good' }}">{{ ch.modulation }}</td>
+                            <td title="{{ t.get('mire.modulation.capacity_tooltip', 'Layer-1 estimate for supported SC-QAM channels; unsupported OFDM/OFDMA channels show no estimate; not usable IP throughput') }}">{% if ch.theoretical_bitrate is defined and ch.theoretical_bitrate is not none %}{{ ch.theoretical_bitrate|round(1) }} {{ 'Mbit/s' if lang == 'de' else 'Mbps' }}{% else %}&#8212;{% endif %}</td>
+                            <td>
+                                {% if ch.health == "good" %}<span class="badge badge-good">{{ health_labels.good }}</span>
+                                {% elif ch.health == "critical" %}<span class="badge badge-crit" title="{{ ch_tip }}">{{ health_labels.crit }}</span>
+                                {% elif ch.health == "warning" %}<span class="badge badge-warn" title="{{ ch_tip }}">{{ health_labels.warn }}</span>
+                                {% else %}<span class="badge badge-tolerated" title="{{ ch_tip }}">{{ health_labels.tolerated }}</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </section>
+
+    {% if not has_us_ofdma %}
+    <div class="card-notice card-notice-warn" style="margin-top:8px;">
+        <span>&#9888;</span> {{ t.card_no_docsis31 }}
+    </div>
+    {% endif %}
+
+    {% else %}
+    {# ── No DOCSIS data (GenericDriver / non-DOCSIS modem) ── #}
+    <div class="no-docsis-placeholder glass">
+        <div class="no-docsis-icon-wrap">
+            <i data-lucide="router"></i>
+        </div>
+        <h2>{{ t.no_docsis_title }}</h2>
+        <p>{{ t.no_docsis_msg }}</p>
+    </div>
+
+    {# ── Non-DOCSIS cards: speed, modules ── #}
+    {% if speedtest_configured and speedtest_latest %}
+    <div class="metrics-grid">
+        <div class="metric-card glass" id="metric-speed-card" role="button" tabindex="0" style="cursor:pointer;" onclick="switchView('speedtest')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('speedtest')}">
+            <div class="metric-header">
+                <span class="metric-label">{{ t.speed }}</span>
+                <div class="metric-icon green"><i data-lucide="rabbit"></i></div>
+            </div>
+            <div class="metric-value-row">
+                <div class="metric-value" style="color:var(--{{ speed_health_key }});">{{ speedtest_latest.download_mbps|fmt_speed_value }}<span class="unit">{{ speedtest_latest.download_mbps|fmt_speed_unit }} {{ t.download }}</span></div>
+                <canvas class="metric-spark" id="spark-speed" data-spark-key="speedtest_download" data-spark-color="#10b981" width="144" height="56" aria-hidden="true"></canvas>
+            </div>
+            <div class="metric-sub metric-average-row">
+                <span class="range metric-average-copy">{{ t.get('speedtest_latest_result', 'Latest speedtest result') }}</span>
+            </div>
+            <div class="metric-sub metric-status-row">
+                <span class="metric-context">
+                    <span class="metric-sub-label">{{ t.get('metric_status_label', 'Status') }}</span>
+                    <span class="badge badge-{{ speed_health_key }}">{{ speed_badge_label }}</span>
+                </span>
+            </div>
+            <div class="metric-sub metric-modulation-row">
+                <span class="metric-sub-label">{{ t.upload }}:</span>
+                <span class="range" style="color:var(--{{ upload_health_key }});">{{ speedtest_latest.upload_mbps|fmt_speed_value }} {{ speedtest_latest.upload_mbps|fmt_speed_unit }}</span>
+                <span class="metric-sub-label">{{ t.ping }}:</span>
+                <span class="range">{{ speedtest_latest.ping_ms|round(0)|int }} ms</span>
+                <span class="metric-sub-label">{{ t.jitter }}:</span>
+                <span class="range">{{ speedtest_latest.jitter_ms|round(1) }} ms</span>
+            </div>
+            {{ metric_range_viz(speed_range_data, speed_health_key, t.health_good, t.get('metric_download_contract', 'Download vs contract'), speed_pct_caption) }}
+        </div>
+    </div>
+    {% endif %}
+
+
+    {% for mod in modules|sort(attribute='menu.order') if mod.template_paths.get('card') %}
+    {% include mod.template_paths['card'] %}
+    {% endfor %}
+
+    {% endif %}
+
+{% elif not error %}
+    <div class="waiting">
+        <div class="spinner"></div>
+        <p>{{ t.waiting_msg }}</p>
+    </div>
+{% endif %}
+</div>
+
+<!-- ═══ View: Trends ═══ -->
+<div id="view-trends" class="view">
+    <div class="view-page-header">
+        <div class="view-page-header-left">
+            <h2 class="view-page-title" id="trend-title">{{ t.signal_trends }}</h2>
+        </div>
+        <div class="view-page-actions">
+            <div class="trend-tabs" id="trend-tabs">
+                <button class="trend-tab" data-range="1h">1h</button>
+                <button class="trend-tab" data-range="6h">6h</button>
+                <button class="trend-tab active" data-range="1d">1d</button>
+                <button class="trend-tab" data-range="2d">2d</button>
+                <button class="trend-tab" data-range="3d">3d</button>
+                <button class="trend-tab" data-range="7d">7d</button>
+                <button class="trend-tab" data-range="30d">30d</button>
+                <button class="trend-tab" data-range="90d">90d</button>
+            </div>
+            <button class="trend-tab temp-toggle" id="temp-toggle-btn" style="display:none;" title="{{ t.temp_overlay_show }}">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;">
+                    <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+    <div id="trend-no-data" class="no-data-msg" style="display:none"></div>
+    <div class="charts-grid" id="charts-grid">
+        <!-- DS Power Chart -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <div class="chart-header-content">
+                    <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                    <div class="chart-label">{{ t.ds_power_avg }}</div>
+                </div>
+                <button class="chart-expand-btn" data-chart="chart-ds-power" title="{{ t.expand }}">&#x26F6;</button>
+            </div>
+            <canvas id="chart-ds-power"></canvas>
+        </div>
+
+        <!-- DS SNR Chart -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <div class="chart-header-content">
+                    <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v20M2 12l10-10 10 10M2 12l10 10 10-10"/>
+                    </svg>
+                    <div class="chart-label">{{ t.ds_snr_avg }}</div>
+                </div>
+                <button class="chart-expand-btn" data-chart="chart-ds-snr" title="{{ t.expand }}">&#x26F6;</button>
+            </div>
+            <canvas id="chart-ds-snr"></canvas>
+        </div>
+
+        <!-- US Power Chart -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <div class="chart-header-content">
+                    <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v20M17 7l-5-5-5 5M7 17l5 5 5-5"/>
+                    </svg>
+                    <div class="chart-label">{{ t.us_power_avg }}</div>
+                </div>
+                <button class="chart-expand-btn" data-chart="chart-us-power" title="{{ t.expand }}">&#x26F6;</button>
+            </div>
+            <canvas id="chart-us-power"></canvas>
+        </div>
+
+        <!-- Errors Chart -->
+        <div class="chart-card" id="trend-errors-card">
+            <div class="chart-card-header">
+                <div class="chart-header-content">
+                    <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <div class="chart-label">{{ t.metric_error_count }}</div>
+                </div>
+                <button class="chart-expand-btn" data-chart="chart-errors" title="{{ t.expand }}">&#x26F6;</button>
+            </div>
+            <canvas id="chart-errors"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ View: BQM Graphs ═══ -->
+{% if bqm_configured %}
+<div id="view-bqm" class="view">
+    <div class="view-page-header">
+        <div class="view-page-header-left">
+            <h2 class="view-page-title">{{ t.bqm_title }}</h2>
+        </div>
+        <!-- BQM Toolbar: quick-jump + month nav -->
+        <div id="bqm-toolbar" class="view-page-actions bqm-toolbar">
+        <button class="trend-tab bqm-quick" id="bqm-today-btn">{{ t.bqm_today }}</button>
+        <button class="trend-tab bqm-quick" id="bqm-yesterday-btn">{{ t.bqm_yesterday }}</button>
+        <button class="trend-tab bqm-quick" id="bqm-7d-btn">{{ t.bqm_range_7d or '7d' }}</button>
+        <button class="trend-tab bqm-quick" id="bqm-30d-btn">{{ t.bqm_range_30d or '30d' }}</button>
+        <div class="bqm-month-nav">
+            <button id="bqm-month-prev" class="bqm-nav-btn" aria-label="{{ t.get('previous_month', 'Previous month') }}">&#8249;</button>
+            <span id="bqm-month-label" class="bqm-month-label"></span>
+            <button id="bqm-month-next" class="bqm-nav-btn" aria-label="{{ t.get('next_month', 'Next month') }}">&#8250;</button>
+        </div>
+        <button class="bqm-nav-btn bqm-import-btn" onclick="openBqmImportModal()" title="{{ t.bqm_import_title }}" aria-label="{{ t.bqm_import_title }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="display:block;">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+        </button>
+        <button class="bqm-nav-btn bqm-import-btn" onclick="var s=document.getElementById('bqm-csv-import-section');s.style.display=s.style.display==='none'?'':'none'" title="{{ t.get('bqm_csv_import', 'Import CSV') }}" aria-label="{{ t.get('bqm_csv_import', 'Import CSV') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="display:block;">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+        </button>
+        <button class="bqm-nav-btn bqm-import-btn bqm-delete-btn" onclick="deleteBqmImages()" title="{{ t.bqm_delete }}" aria-label="{{ t.bqm_delete }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="display:block;">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+            </svg>
+        </button>
+        </div>
+    </div>
+    <!-- Calendar grid -->
+    <div id="bqm-calendar" class="bqm-calendar">
+        <div class="bqm-weekday-header">
+            <span>{{ t.weekday_mo }}</span><span>{{ t.weekday_tu }}</span><span>{{ t.weekday_we }}</span><span>{{ t.weekday_th }}</span><span>{{ t.weekday_fr }}</span><span>{{ t.weekday_sa }}</span><span>{{ t.weekday_su }}</span>
+        </div>
+        <div id="bqm-calendar-grid" class="bqm-calendar-grid"></div>
+    </div>
+    <span id="bqm-range-label" class="bqm-range-label"></span>
+    <div id="bqm-content">
+        <div id="bqm-card" class="bqm-card" style="display:none;">
+            <div class="chart-card-header">
+                <div class="chart-header-content">
+                    <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3v18h18"/>
+                        <path d="M7 12l4-4 4 4 4-4"/>
+                    </svg>
+                    <div class="chart-label">{{ t.bqm_title }}</div>
+                    <span id="bqm-live-badge" class="bqm-live-badge" style="display:none;">{{ t.bqm_live }}</span>
+                    <span id="bqm-last-updated" class="bqm-last-updated" style="display:none;"></span>
+                </div>
+                <div id="bqm-view-toggle" class="trend-tabs" style="display:none;">
+                    <button class="trend-tab active" id="bqm-toggle-uplot">uPlot</button>
+                    <button class="trend-tab" id="bqm-toggle-png">PNG</button>
+                </div>
+            </div>
+            <div id="bqm-chart-container" class="bqm-chart-container" style="display:none;"></div>
+            <div id="bqm-image-wrap" style="text-align:center;">
+                <img id="bqm-image" style="max-width:100%; border-radius:8px;" alt="BQM Graph">
+            </div>
+        </div>
+        <div id="bqm-no-data" class="no-data-msg" style="display:none;"></div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ═══ BQM Import Modal ═══ -->
+<dialog class="modal-overlay" id="bqm-import-modal" role="dialog" aria-modal="true" aria-labelledby="bqm-import-modal-title" onclick="if(event.target===this)closeBqmImportModal()" oncancel="event.preventDefault(); closeBqmImportModal()">
+    <div class="modal" style="max-width:800px;">
+        <div class="modal-header">
+            <h2 id="bqm-import-modal-title">{{ t.bqm_import_title }}</h2>
+            <button class="modal-close" onclick="closeBqmImportModal()" aria-label="{{ t.close }}">&times;</button>
+        </div>
+        <div class="modal-body" style="overflow-y:auto;">
+            <!-- Drop zone -->
+            <div id="bqm-import-dropzone" class="import-upload-zone bqm-import-dropzone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:48px;height:48px;color:var(--muted);">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p>{{ t.bqm_import_drop }}</p>
+                <p style="font-size:0.8em;color:var(--muted);">{{ t.bqm_import_formats }}</p>
+                <button type="button" class="btn btn-muted import-browse-btn" onclick="event.stopPropagation(); document.getElementById('bqm-import-file-input').click();">{{ t.get('bqm_import_browse', 'Browse BQM images') }}</button>
+                <input type="file" id="bqm-import-file-input" style="display:none;" accept="image/png,image/jpeg,.png,.jpg,.jpeg" multiple>
+            </div>
+            <div id="bqm-import-validation-state" class="import-validation-state" role="status" aria-live="polite"></div>
+            <!-- Options: overwrite + date offset -->
+            <div id="bqm-import-options" style="display:none; margin:10px 0;">
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:0.9em;cursor:pointer;">
+                        <input type="checkbox" id="bqm-import-overwrite">
+                        {{ t.bqm_import_overwrite }}
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:0.9em;">
+                        {{ t.bqm_import_offset }}:
+                        <input type="number" id="bqm-import-offset" class="bqm-offset-input" min="-30" max="30" value="0" step="1">
+                    </label>
+                </div>
+            </div>
+            <!-- Status line -->
+            <div id="bqm-import-status" class="import-info" style="display:none;"></div>
+            <!-- Preview table -->
+            <div id="bqm-import-preview" style="display:none;">
+                <div class="import-table-wrap">
+                    <table class="bqm-import-table">
+                        <thead><tr>
+                            <th style="width:70px;"></th>
+                            <th>{{ t.incident_title }}</th>
+                            <th style="width:160px;">{{ t.incident_date }}</th>
+                            <th style="width:36px;"></th>
+                        </tr></thead>
+                        <tbody id="bqm-import-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="incident-modal-footer" id="bqm-import-footer" style="display:none;">
+            <div class="modal-footer-left"></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-muted" onclick="closeBqmImportModal()">{{ t.cancel }}</button>
+                <button class="btn btn-accent" id="bqm-import-confirm-btn" onclick="executeBqmImport()" disabled>{{ t.bqm_import }}</button>
+            </div>
+        </div>
+    </div>
+</dialog>
+
+<!-- BQM CSV Import (inline, below calendar) -->
+<div id="bqm-csv-import-section" class="bqm-csv-import" style="display:none; margin:16px auto; max-width:480px; text-align:center;">
+    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:center;">
+        <input type="file" id="bqm-csv-file" accept=".csv" style="font-size:0.85em;">
+        <button class="btn btn-primary btn-sm" id="bqm-csv-import-btn" onclick="importBqmCsv()">{{ t.get('bqm_csv_import', 'Import CSV') }}</button>
+    </div>
+    <div id="bqm-csv-import-status" class="bqm-csv-status" style="margin-top:8px; font-size:0.85em;"></div>
+</div>
+
+<!-- ═══ View: Smokeping Graphs ═══ -->
+{% if modules|selectattr('id', 'equalto', 'mire.smokeping')|list and smokeping_configured %}
+<div id="view-smokeping" class="view">
+    <div class="view-page-header">
+        <div class="view-page-header-left">
+            <h2 class="view-page-title">{{ t.smokeping_title }}</h2>
+        </div>
+        <div class="view-page-actions trend-tabs" id="smokeping-tabs">
+            <button class="trend-tab active" data-span="3h">3h</button>
+            <button class="trend-tab" data-span="30h">30h</button>
+            <button class="trend-tab" data-span="10d">10d</button>
+            <button class="trend-tab" data-span="1y">1y</button>
+        </div>
+    </div>
+    <div id="smokeping-content" class="bqm-card-grid">
+    </div>
+    <div id="smokeping-no-data" class="no-data-msg" style="display:none;"></div>
+</div>
+{% endif %}
+
+<!-- ═══ View: Correlation Analysis ═══ -->
+{% if speedtest_configured or bqm_configured or connection_monitor_installed %}
+<div id="view-correlation" class="view">
+    <div class="view-page-header">
+        <div class="view-page-header-left">
+            <h2 class="view-page-title">{{ t.correlation_title }}</h2>
+            <span class="view-page-subtitle">{{ t.get('correlation_subtitle', 'Build evidence for ISP complaints') }}</span>
+        </div>
+        <div class="view-page-actions trend-tabs" id="correlation-tabs">
+            <button class="trend-tab" data-value="1h" onclick="selectPill(this, loadCorrelationData)">1h</button>
+            <button class="trend-tab" data-value="6h" onclick="selectPill(this, loadCorrelationData)">6h</button>
+            <button class="trend-tab active" data-value="1d" onclick="selectPill(this, loadCorrelationData)">1d</button>
+            <button class="trend-tab" data-value="2d" onclick="selectPill(this, loadCorrelationData)">2d</button>
+            <button class="trend-tab" data-value="3d" onclick="selectPill(this, loadCorrelationData)">3d</button>
+            <button class="trend-tab" data-value="7d" onclick="selectPill(this, loadCorrelationData)">7d</button>
+            <button class="trend-tab" data-value="30d" onclick="selectPill(this, loadCorrelationData)">30d</button>
+            <button class="trend-tab" data-value="90d" onclick="selectPill(this, loadCorrelationData)">90d</button>
+        </div>
+    </div>
+
+    <div id="correlation-loading" class="waiting" style="display:none;">
+        <div class="skeleton skel-chart"></div>
+    </div>
+    <div id="correlation-no-data" class="no-data-msg" style="display:none;"></div>
+
+    <!-- Signal Health Timeline Chart -->
+    <div id="correlation-chart-container" style="display:none;">
+        <!-- Phase 4.4: Modern card wrapper for correlation chart -->
+        <div class="correlation-chart-card">
+            <div class="chart-card-header">
+                <div class="chart-header-content">
+                    <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3v18h18"/>
+                        <path d="M18 17V9"/>
+                        <path d="M13 17V5"/>
+                        <path d="M8 17v-3"/>
+                    </svg>
+                    <div class="chart-label">{{ t.correlation_chart_title }}</div>
+                </div>
+                <div class="chart-export-buttons">
+                    <button class="chart-export-btn" onclick="_corrExportPNG()" title="{{ t.chart_export_png }}">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        PNG
+                    </button>
+                    <button class="chart-export-btn" onclick="_corrExportCSV()" title="{{ t.chart_export_csv }}">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        CSV
+                    </button>
+                </div>
+            </div>
+            <div class="correlation-chart-wrap">
+                <canvas id="correlation-chart"></canvas>
+                <canvas id="correlation-overlay" class="correlation-overlay" role="img" tabindex="0" aria-label="{{ t.correlation_chart_aria_label }}" aria-describedby="correlation-speedtest-hint{% if connection_monitor_installed %} correlation-reachability-hint{% endif %}"></canvas>
+                <div class="correlation-tooltip" id="correlation-tooltip"></div>
+                <button type="button" class="correlation-zoom-reset" id="correlation-zoom-reset" style="display:none;" onclick="_corrResetZoom()">{{ t.chart_reset_zoom }}</button>
+                <div class="correlation-chart-legend" id="correlation-legend"></div>
+                <p class="correlation-speedtest-hint" id="correlation-speedtest-hint">{{ t.correlation_speedtest_hint }}</p>
+                {% if connection_monitor_installed %}
+                <p class="correlation-speedtest-hint" id="correlation-reachability-hint">{{ t.get('correlation_reachability_hint', 'Reachability buckets show observed Connection Monitor coverage; activate the chart to open Connection Monitor details.') }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Unified Timeline Table -->
+    <div id="correlation-table-card" class="table-card" style="display:none;">
+        <div class="table-card-header">
+            <div class="table-card-title">
+                <svg class="table-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span>{{ t.correlation_timeline }}</span>
+            </div>
+        </div>
+        <div id="correlation-table-wrap">
+            <table id="correlation-table">
+                <thead><tr>
+                    <th>{{ t.timestamp }}</th>
+                    <th style="width:90px;">{{ t.source }}</th>
+                    <th>{{ t.event_message }}</th>
+                    <th>{{ t.event_details }}</th>
+                </tr></thead>
+                <tbody id="correlation-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ═══ View: Incident Journal ═══ -->
+<div id="view-journal" class="view">
+    <div class="view-page-header journal-header">
+        <div class="view-page-header-left">
+            <h2 class="view-page-title">{{ t.incident_journal }}</h2>
+        </div>
+        <div class="view-page-actions journal-header-actions">
+            <button class="btn-new-entry" onclick="openEntryModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                    <path d="M12 5v14m-7-7h14"/>
+                </svg>
+                {{ t.new_entry }}
+            </button>
+            <button class="btn-new-entry btn-import" onclick="openImportModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                {{ t.import }}
+            </button>
+            <div class="journal-export-wrapper" style="position:relative;display:inline-block;">
+                <button class="btn-new-entry btn-import" onclick="toggleExportDropdown(event)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    {{ t.export_journal }}
+                </button>
+                <div class="journal-export-dropdown" id="journal-export-dropdown">
+                    <button onclick="exportJournal('csv')">CSV</button>
+                    <button onclick="exportJournal('json')">JSON</button>
+                    <button onclick="exportJournal('md')">Markdown</button>
+                </div>
+            </div>
+            <button class="btn-danger btn-delete-all" id="btn-delete-all-entries" onclick="deleteAllEntries()" style="display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                </svg>
+                {{ t.delete_all }}
+            </button>
+        </div>
+    </div>
+    <div class="incident-filter-bar" id="incident-filter-bar" style="display:none;"></div>
+    <div class="incident-summary" id="incident-summary" style="display:none;"></div>
+    <div class="journal-bulk-bar" id="journal-bulk-bar" style="display:none;">
+        <span class="journal-bulk-count" id="journal-bulk-count"></span>
+        <select id="journal-bulk-incident-select" class="journal-bulk-select">
+            <option value="" disabled selected>{{ t.incident_assign }}…</option>
+        </select>
+        <button class="btn-small btn-accent" onclick="bulkAssign()">{{ t.bulk_assign }}</button>
+        <button class="btn-small btn-muted" onclick="bulkUnassign()">{{ t.bulk_unassign }}</button>
+        <span class="journal-bulk-sep"></span>
+        <button class="btn-small btn-ghost" onclick="clearBulkSelection()">{{ t.bulk_deselect }}</button>
+    </div>
+    <div class="journal-search-wrap" id="journal-search-wrap" style="display:none;">
+        <div class="journal-search-box">
+            <svg class="journal-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="journal-search-input" placeholder="{{ t.search_placeholder }}" autocomplete="off" spellcheck="false">
+            <button class="journal-search-clear" id="journal-search-clear" onclick="clearJournalSearch()" style="display:none;">&times;</button>
+        </div>
+        <span class="journal-search-count" id="journal-search-count"></span>
+    </div>
+    <div id="journal-loading" class="waiting" style="display:none;">
+        <div class="skeleton skel-row"></div>
+        <div class="skeleton skel-row"></div>
+        <div class="skeleton skel-row"></div>
+        <div class="skeleton skel-row"></div>
+    </div>
+    <div id="journal-empty" class="journal-empty" style="display:none;"></div>
+
+    <!-- Phase 4.5: Card wrapper for journal table -->
+    <div id="journal-table-card" class="table-card" style="display:none;">
+        <div class="table-card-header">
+            <div class="table-card-title">
+                <svg class="table-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2z"/>
+                    <path d="M16 2v4M8 2v4M3 10h18"/>
+                </svg>
+                <span>{{ t.incident_journal }}</span>
+            </div>
+            <button class="btn-bulk-toggle" id="btn-bulk-toggle" onclick="toggleBulkMode()" style="display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+                    <polyline points="9 11 12 14 22 4"/>
+                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                </svg>
+                <span id="btn-bulk-toggle-label">{{ t.bulk_select }}</span>
+            </button>
+        </div>
+        <table id="journal-table">
+            <thead><tr id="journal-thead-row">
+                <th style="width:36px;"></th>
+                <th data-col="date">{{ t.incident_date }}<span class="sort-indicator"></span></th>
+                <th data-col="title">{{ t.incident_title }}<span class="sort-indicator"></span></th>
+                <th data-col="description" class="journal-hide-mobile">{{ t.incident_description }}<span class="sort-indicator"></span></th>
+                <th>&#128206;</th>
+            </tr></thead>
+            <tbody id="journal-tbody"></tbody>
+        </table>
+    </div>
+
+    <!-- ═══ Incident Timeline View (replaces journal table) ═══ -->
+    <div id="incident-timeline-view" style="display:none;">
+        <button class="incident-timeline-back" onclick="closeIncidentTimeline()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            <span data-i18n="incident_back_journal">{{ t.incident_back_journal }}</span>
+        </button>
+        <div id="incident-timeline-header" class="incident-timeline-card"></div>
+        <div id="incident-timeline-entries" class="incident-timeline-card"></div>
+        <div id="incident-timeline-chart-card" class="incident-timeline-card">
+            <div class="incident-timeline-section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                <span data-i18n="incident_signal_timeline">{{ t.incident_signal_timeline }}</span>
+            </div>
+            <div class="incident-timeline-chart-wrap">
+                <canvas id="incident-timeline-canvas"></canvas>
+            </div>
+        </div>
+        <div id="incident-timeline-signals" class="incident-timeline-card"></div>
+    </div>
+</div>
+
+<!-- ═══ View: Glossary ═══ -->
+<div id="view-glossary" class="view glossary-app-view">
+    {% include "partials/glossary_view.html" %}
+</div>
+
+<!-- ═══ View: Event Log ═══ -->
+<div id="view-events" class="view">
+    <div class="view-page-header events-header">
+        <div class="view-page-header-left">
+            <h2 class="view-page-title">{{ t.event_log }}</h2>
+        </div>
+        <!-- Phase 4.3: Pill filter toggles for severity -->
+        <div class="view-page-actions events-filter-section">
+            <div class="events-severity-pills" role="group" aria-label="{{ t.event_severity }}">
+                <button class="severity-pill active" data-severity="" onclick="filterEventsBySeverity('')" aria-pressed="true">{{ t.event_all_severities }}</button>
+                <button class="severity-pill" data-severity="info" onclick="filterEventsBySeverity('info')" aria-pressed="false">{{ t.event_severity_info }}</button>
+                <button class="severity-pill" data-severity="warning" onclick="filterEventsBySeverity('warning')" aria-pressed="false">{{ t.event_severity_warning }}</button>
+                <button class="severity-pill" data-severity="critical" onclick="filterEventsBySeverity('critical')" aria-pressed="false">{{ t.event_severity_critical }}</button>
+                <button class="severity-pill" id="device-filter-pill" onclick="filterEventsByDevice()" aria-pressed="false">{{ t.event_filter_device }}</button>
+                <span style="border-left:1px solid var(--card-border, rgba(255,255,255,0.08)); height:20px; margin:0 8px;"></span>
+                <button class="severity-pill active" id="hide-operational-btn" onclick="toggleHideOperational()" aria-pressed="true">{{ t.event_hide_operational }}</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="events-loading" class="waiting" style="display:none;">
+        <div class="skeleton skel-row"></div>
+        <div class="skeleton skel-row"></div>
+        <div class="skeleton skel-row"></div>
+        <div class="skeleton skel-row"></div>
+    </div>
+    <div id="events-empty" class="events-empty" style="display:none;"></div>
+
+    <!-- Phase 4.4: Card wrapper for events feed -->
+    <div id="events-feed-card" class="table-card" style="display:none;">
+        <div class="table-card-header events-card-header">
+            <div class="table-card-title">
+                <svg class="table-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>{{ t.event_log }}</span>
+            </div>
+            <div class="events-card-actions">
+                <a class="btn-export-events" id="events-export-csv" href="{{ url_for('events_bp.api_events_export_csv', exclude_operational='true') }}" download>{{ t.event_export_csv }}</a>
+                <button class="btn-ack-all" id="btn-ack-all" onclick="acknowledgeAllEvents()" style="display:none;">&#10003; {{ t.event_acknowledge_all }}</button>
+            </div>
+        </div>
+        <div id="events-feed" class="events-feed" role="list"></div>
+    </div>
+
+    <div id="events-show-more" style="text-align:center; padding:16px; display:none;">
+        <button class="btn-show-more" onclick="loadMoreEvents()">{{ t.show_more }}</button>
+    </div>
+</div>
+
+<!-- ═══ View: Channel Timeline ═══ -->
+<div id="view-channels" class="view">
+    <div class="view-page-header">
+        <div class="view-page-header-left">
+            <h2 class="view-page-title">{{ t.channels }}</h2>
+        </div>
+        <div class="view-page-actions">
+        <div class="trend-tabs" id="channel-mode-tabs">
+            <button class="trend-tab active" data-value="timeline" onclick="selectPill(this, switchChannelMode)">{{ t.channel_timeline }}</button>
+            <button class="trend-tab" data-value="compare" onclick="selectPill(this, switchChannelMode)">{{ t.channel_compare }}</button>
+        </div>
+        <span id="channel-timeline-controls" style="display:contents;">
+            <select id="channel-select" class="channel-select-styled" onchange="loadChannelTimeline()">
+                <option value="">{{ t.select_channel }}</option>
+            </select>
+            <div class="trend-tabs" id="channel-time-tabs" style="display:none;">
+                <button class="trend-tab" data-value="1h" onclick="selectPill(this, loadChannelTimeline)">1h</button>
+                <button class="trend-tab" data-value="6h" onclick="selectPill(this, loadChannelTimeline)">6h</button>
+                <button class="trend-tab active" data-value="1d" onclick="selectPill(this, loadChannelTimeline)">1d</button>
+                <button class="trend-tab" data-value="2d" onclick="selectPill(this, loadChannelTimeline)">2d</button>
+                <button class="trend-tab" data-value="3d" onclick="selectPill(this, loadChannelTimeline)">3d</button>
+                <button class="trend-tab" data-value="7d" onclick="selectPill(this, loadChannelTimeline)">7d</button>
+                <button class="trend-tab" data-value="30d" onclick="selectPill(this, loadChannelTimeline)">30d</button>
+                <button class="trend-tab" data-value="90d" onclick="selectPill(this, loadChannelTimeline)">90d</button>
+            </div>
+            <button id="channel-temp-toggle-btn" class="trend-tab temp-toggle active" onclick="toggleChannelTempOverlay()" style="display:none;" aria-pressed="true" title="{{ t.temp_overlay_hide }}" aria-label="{{ t.temperature }}">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;" aria-hidden="true">
+                    <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+                </svg>
+            </button>
+        </span>
+        <span id="channel-compare-controls" style="display:none;">
+            <div class="trend-tabs" id="compare-dir-tabs">
+                <button class="trend-tab active" data-value="ds" onclick="selectPill(this, onCompareDirectionChange)">{{ t.downstream }}</button>
+                <button class="trend-tab" data-value="us" onclick="selectPill(this, onCompareDirectionChange)">{{ t.upstream }}</button>
+            </div>
+            <select id="compare-channel-select" class="channel-select-styled"><option value="">{{ t.select_channel }}</option></select>
+            <button id="compare-add-btn" class="compare-add-btn" onclick="addCompareChannel()">+ {{ t.add_channel }}</button>
+            <button id="compare-add-all-btn" class="compare-add-btn" onclick="addAllCompareChannels()">{{ t.all_downstream }}</button>
+            <button id="compare-clear-btn" class="compare-add-btn" onclick="clearCompareChannels()" style="display:none;">{{ t.clear_selection }}</button>
+            <div class="trend-tabs" id="compare-time-tabs" style="display:none;">
+                <button class="trend-tab" data-value="1h" onclick="selectPill(this, loadCompareCharts)">1h</button>
+                <button class="trend-tab" data-value="6h" onclick="selectPill(this, loadCompareCharts)">6h</button>
+                <button class="trend-tab active" data-value="1d" onclick="selectPill(this, loadCompareCharts)">1d</button>
+                <button class="trend-tab" data-value="2d" onclick="selectPill(this, loadCompareCharts)">2d</button>
+                <button class="trend-tab" data-value="3d" onclick="selectPill(this, loadCompareCharts)">3d</button>
+                <button class="trend-tab" data-value="7d" onclick="selectPill(this, loadCompareCharts)">7d</button>
+                <button class="trend-tab" data-value="30d" onclick="selectPill(this, loadCompareCharts)">30d</button>
+                <button class="trend-tab" data-value="90d" onclick="selectPill(this, loadCompareCharts)">90d</button>
+            </div>
+            <button id="compare-temp-toggle-btn" class="trend-tab temp-toggle active" onclick="toggleCompareTempOverlay()" style="display:none;" aria-pressed="true" title="{{ t.temp_overlay_hide }}" aria-label="{{ t.temperature }}">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;" aria-hidden="true">
+                    <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+                </svg>
+            </button>
+        </span>
+        </div>
+    </div>
+
+    <!-- Channel info bar (populated by JS after channel selection) -->
+    <div id="channel-info-bar" class="ch-info-bar" style="display:none;"></div>
+
+    <!-- ── Timeline Sub-View ── -->
+    <div id="channel-panel-timeline">
+        <div id="channel-loading" class="waiting" style="display:none;">
+            <div class="skeleton skel-chart"></div>
+        </div>
+        <div id="channel-empty" class="ch-onboarding" style="display:none;">
+            <i data-lucide="layers"></i>
+            <div class="ch-onboarding-text">
+                <strong>{{ t.get('channel_onboarding_title', 'Channel Timeline') }}</strong>
+                <span>{{ t.get('channel_onboarding_desc', 'Select a channel from the dropdown to view its signal history over time.') }}</span>
+            </div>
+        </div>
+        <div id="channel-no-data" class="no-data-msg" style="display:none;"></div>
+        <div id="channel-charts" class="charts-grid" style="display:none;">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <div class="chart-header-content">
+                        <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                        <div class="chart-label">{{ t.power_history }}</div>
+                    </div>
+                    <button class="chart-expand-btn" data-chart="chart-ch-power" title="{{ t.expand }}">&#x26F6;</button>
+                </div>
+                <canvas id="chart-ch-power"></canvas>
+            </div>
+            <div class="chart-card" id="channel-errors-card">
+                <div class="chart-card-header">
+                    <div class="chart-header-content">
+                        <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <div class="chart-label">{{ t.error_history }}</div>
+                    </div>
+                    <button class="chart-expand-btn" data-chart="chart-ch-errors" title="{{ t.expand }}">&#x26F6;</button>
+                </div>
+                <canvas id="chart-ch-errors"></canvas>
+            </div>
+            <div class="chart-card ch-full-width" id="channel-modulation-card">
+                <div class="chart-card-header">
+                    <div class="chart-header-content">
+                        <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3v18h18"/>
+                            <path d="M7 12l4-4 4 4 4-4"/>
+                        </svg>
+                        <div class="chart-label">{{ t.modulation }}</div>
+                    </div>
+                    <button class="chart-expand-btn" data-chart="chart-ch-modulation" title="{{ t.expand }}">&#x26F6;</button>
+                </div>
+                <canvas id="chart-ch-modulation"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Compare Sub-View ── -->
+    <div id="channel-panel-compare" style="display:none;">
+        <div id="compare-chips" class="compare-chips"></div>
+        <div id="compare-empty" class="events-empty" style="display:none;"></div>
+        <div id="compare-loading" class="waiting" style="display:none;">
+            <div class="skeleton skel-chart"></div>
+        </div>
+        <div id="compare-charts" class="charts-grid" style="display:none;">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <div class="chart-header-content">
+                        <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                        <div class="chart-label">{{ t.power_dbmv }}</div>
+                    </div>
+                    <button class="chart-expand-btn" data-chart="chart-cmp-power" title="{{ t.expand }}">&#x26F6;</button>
+                </div>
+                <canvas id="chart-cmp-power"></canvas>
+            </div>
+            <div class="chart-card" id="compare-snr-card">
+                <div class="chart-card-header">
+                    <div class="chart-header-content">
+                        <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                        </svg>
+                        <div class="chart-label">{{ t.snr_db }}</div>
+                    </div>
+                    <button class="chart-expand-btn" data-chart="chart-cmp-snr" title="{{ t.expand }}">&#x26F6;</button>
+                </div>
+                <canvas id="chart-cmp-snr"></canvas>
+            </div>
+            <div class="chart-card" id="compare-errors-card">
+                <div class="chart-card-header">
+                    <div class="chart-header-content">
+                        <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <div class="chart-label">{{ t.error_history }}</div>
+                    </div>
+                    <button class="chart-expand-btn" data-chart="chart-cmp-errors" title="{{ t.expand }}">&#x26F6;</button>
+                </div>
+                <canvas id="chart-cmp-errors"></canvas>
+            </div>
+            <div class="chart-card" id="compare-modulation-card">
+                <div class="chart-card-header">
+                    <div class="chart-header-content">
+                        <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3v18h18"/>
+                            <path d="M7 12l4-4 4 4 4-4"/>
+                        </svg>
+                        <div class="chart-label">{{ t.modulation }}</div>
+                    </div>
+                    <button class="chart-expand-btn" data-chart="chart-cmp-modulation" title="{{ t.expand }}">&#x26F6;</button>
+                </div>
+                <canvas id="chart-cmp-modulation"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ Entry Modal ═══ -->
+<dialog class="modal-overlay" id="entry-modal" role="dialog" aria-modal="true" aria-labelledby="entry-modal-title" onclick="if(event.target===this)closeEntryModal()">
+    <div class="modal" style="max-width:640px;">
+        <div class="modal-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span id="entry-modal-icon" class="incident-modal-icon"></span>
+                <h2 id="entry-modal-title"></h2>
+            </div>
+            <button class="modal-close" onclick="closeEntryModal()" aria-label="{{ t.close }}">&times;</button>
+        </div>
+        <div class="modal-body" style="overflow-y:auto;">
+            <p class="incident-modal-intro">{{ t.get('entry_modal_intro', 'Capture what happened and link the evidence Mire can turn into an ISP-ready timeline.') }}</p>
+            <input type="hidden" id="entry-id">
+            <div class="incident-form-group">
+                <label for="entry-date">{{ t.incident_date }}</label>
+                <input type="date" id="entry-date">
+            </div>
+            <div class="incident-form-group">
+                <label for="entry-title-input">{{ t.incident_title }}</label>
+                <input type="text" id="entry-title-input" maxlength="200" placeholder="{{ t.incident_title }}">
+            </div>
+            <div class="incident-form-group">
+                <label>{{ t.icon }}</label>
+                <p class="incident-field-hint">{{ t.get('entry_icon_hint', 'Choose a visible category such as outage, packet loss, speed degradation, maintenance, or contact with your ISP.') }}</p>
+                <input type="hidden" id="entry-icon-value">
+                <div class="icon-picker" id="entry-icon-picker"></div>
+            </div>
+            <div class="incident-form-group">
+                <label for="entry-desc">{{ t.incident_description }}</label>
+                <p class="incident-field-hint">{{ t.get('entry_description_hint', 'Add concrete symptoms, times, support references, modem states, or what changed for the connection.') }}</p>
+                <textarea id="entry-desc" maxlength="10000" placeholder="{{ t.incident_description }}"></textarea>
+            </div>
+            <div class="incident-form-group">
+                <label for="entry-incident-select">{{ t.incident_assign }}</label>
+                <select id="entry-incident-select" class="entry-incident-select">
+                    <option value="">{{ t.incident_none }}</option>
+                </select>
+            </div>
+            <div class="incident-form-group" id="entry-attachments-section">
+                <label>{{ t.attachments }}</label>
+                <p class="incident-field-hint">{{ t.get('entry_evidence_hint', 'Evidence can include modem screenshots, BQM images, Speedtest results, SmokePing charts, or support letters.') }}</p>
+                <div class="attachment-list" id="entry-attachment-list"></div>
+                <button class="btn-upload" id="entry-upload-btn" onclick="document.getElementById('entry-file-input').click()">
+                    &#128206; {{ t.upload_file }}
+                </button>
+                <p class="incident-field-hint" id="entry-upload-hint"></p>
+                <span id="entry-upload-spinner" style="display:none;"><span class="upload-spinner"></span></span>
+                <input type="file" id="entry-file-input" style="display:none;" multiple
+                       accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain"
+                       onchange="handleEntryFileUpload(this)">
+            </div>
+        </div>
+        <div class="incident-modal-footer">
+            <div class="modal-footer-left">
+                <button class="btn-danger" id="entry-delete-btn" onclick="deleteEntry()" style="display:none;">{{ t.delete_incident }}</button>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-muted" onclick="closeEntryModal()">{{ t.cancel }}</button>
+                <button class="btn btn-accent" id="entry-save-btn" onclick="saveEntry()">{{ t.get('entry_create_action', 'Create entry') }}</button>
+            </div>
+        </div>
+    </div>
+</dialog>
+
+<!-- ═══ Incident Container Modal ═══ -->
+<dialog class="modal-overlay" id="incident-container-modal" role="dialog" aria-modal="true" aria-labelledby="incident-container-modal-title" onclick="if(event.target===this)closeIncidentModal()">
+    <div class="modal incident-container-modal" style="max-width:560px;">
+        <div class="modal-header">
+            <h2 id="incident-container-modal-title"></h2>
+            <button class="modal-close" onclick="closeIncidentModal()" aria-label="{{ t.close }}">&times;</button>
+        </div>
+        <div class="modal-body" style="overflow-y:auto;">
+            <p class="incident-modal-intro">{{ t.get('incident_modal_intro', 'Group related entries and evidence so Mire can build one clear incident timeline and report path.') }}</p>
+            <input type="hidden" id="incident-container-id">
+            <div class="incident-form-group">
+                <label for="incident-container-name">{{ t.incident_name }}</label>
+                <input type="text" id="incident-container-name" maxlength="200" placeholder="{{ t.incident_name }}">
+            </div>
+            <div class="incident-form-group">
+                <label for="incident-container-status">{{ t.incident_status }}</label>
+                <select id="incident-container-status">
+                    <option value="open">{{ t.incident_status_open }}</option>
+                    <option value="resolved">{{ t.incident_status_resolved }}</option>
+                    <option value="escalated">{{ t.incident_status_escalated }}</option>
+                </select>
+            </div>
+            <div class="incident-form-group" style="display:flex;gap:12px;">
+                <div style="flex:1;">
+                    <label for="incident-container-start">{{ t.incident_start_date }}</label>
+                    <input type="date" id="incident-container-start">
+                </div>
+                <div style="flex:1;">
+                    <label for="incident-container-end">{{ t.incident_end_date }}</label>
+                    <input type="date" id="incident-container-end">
+                </div>
+            </div>
+            <div class="incident-form-group">
+                <label>{{ t.icon }}</label>
+                <p class="incident-field-hint">{{ t.get('incident_icon_hint', 'Pick the category users will recognize later in filters, timelines, and exports.') }}</p>
+                <input type="hidden" id="incident-container-icon-value">
+                <div class="icon-picker" id="incident-container-icon-picker"></div>
+            </div>
+            <div class="incident-form-group">
+                <label for="incident-container-desc">{{ t.incident_description }}</label>
+                <textarea id="incident-container-desc" maxlength="5000" placeholder="{{ t.incident_description }}"></textarea>
+            </div>
+            <div class="incident-form-group" id="incident-container-entry-count-section" style="display:none;">
+                <label>{{ t.get('incident_linked_evidence', 'Linked evidence') }}</label>
+                <div class="incident-evidence-summary">
+                    <span id="incident-container-entry-count" style="font-weight:600;"></span>
+                    <span>{{ t.get('incident_linked_entries_hint', 'journal entries linked to this incident') }}</span>
+                </div>
+                <button type="button" class="btn-small btn-accent" id="incident-container-report-btn" onclick="openIncidentReportFromModal()">{{ t.get('incident_build_report', 'Build report') }}</button>
+            </div>
+            <div class="incident-form-group" id="incident-container-empty-evidence-section">
+                <label>{{ t.get('incident_linked_evidence', 'Linked evidence') }}</label>
+                <p class="incident-field-hint">{{ t.get('incident_empty_evidence_hint', 'Assign journal entries, screenshots, modem snapshots, BQM images, Speedtest results, or SmokePing charts as the incident develops.') }}</p>
+            </div>
+        </div>
+        <div class="incident-modal-footer">
+            <div class="modal-footer-left">
+                <button class="btn-danger" id="incident-container-delete-btn" onclick="deleteIncident()" style="display:none;">{{ t.delete }}</button>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-muted" onclick="closeIncidentModal()">{{ t.cancel }}</button>
+                <button class="btn btn-accent" id="incident-container-save-btn" onclick="saveIncident()">{{ t.get('incident_create_action', 'Create incident') }}</button>
+            </div>
+        </div>
+    </div>
+</dialog>
+
+<!-- ═══ Import Modal ═══ -->
+<dialog class="modal-overlay" id="import-modal" role="dialog" aria-modal="true" aria-labelledby="import-modal-title" onclick="if(event.target===this)closeImportModal()">
+    <div class="modal" style="max-width:900px;">
+        <div class="modal-header">
+            <h2 id="import-modal-title">{{ t.import_incidents }}</h2>
+            <button class="modal-close" onclick="closeImportModal()" aria-label="{{ t.close }}">&times;</button>
+        </div>
+        <div class="modal-body" style="overflow-y:auto;">
+            <!-- Upload zone -->
+            <div id="import-upload-zone" class="import-upload-zone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:48px;height:48px;color:var(--muted);">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p>{{ t.import_upload_hint }}</p>
+                <p style="font-size:0.8em;color:var(--muted);">{{ t.import_file_types }}</p>
+                <button type="button" class="btn btn-muted import-browse-btn" onclick="event.stopPropagation(); document.getElementById('import-file-input').click();">{{ t.get('import_browse_file', 'Browse CSV or Excel file') }}</button>
+                <input type="file" id="import-file-input" style="display:none;" accept=".xlsx,.csv" onchange="handleImportFile(this)">
+            </div>
+            <div id="import-validation-state" class="import-validation-state" role="status" aria-live="polite"></div>
+            <!-- Loading -->
+            <div id="import-loading" style="display:none;text-align:center;padding:20px;">
+                <div class="spinner"></div>
+                <p style="margin-top:10px;color:var(--muted);">{{ t.import_parsing }}</p>
+            </div>
+            <!-- Preview -->
+            <div id="import-preview" style="display:none;">
+                <div class="import-info" id="import-info"></div>
+                <div class="import-controls">
+                    <label class="import-select-all">
+                        <input type="checkbox" id="import-select-all" checked onchange="toggleImportAll(this.checked)">
+                        {{ t.import_select_all }}
+                    </label>
+                </div>
+                <div class="import-table-wrap">
+                    <table class="import-table" id="import-table">
+                        <thead><tr>
+                            <th style="width:40px;"></th>
+                            <th style="width:36px;"></th>
+                            <th>{{ t.incident_date }}</th>
+                            <th>{{ t.incident_title }}</th>
+                            <th class="journal-hide-mobile">{{ t.incident_description }}</th>
+                        </tr></thead>
+                        <tbody id="import-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="incident-modal-footer" id="import-footer" style="display:none;">
+            <div class="modal-footer-left"></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-muted" onclick="closeImportModal()">{{ t.cancel }}</button>
+                <button class="btn btn-accent" id="import-confirm-btn" onclick="confirmImport()">{{ t.import_selected }}</button>
+            </div>
+        </div>
+    </div>
+</dialog>
+
+<!-- ═══ View: Speedtest ═══ -->
+{% if speedtest_configured %}
+<div id="view-speedtest" class="view">
+    <div class="view-page-header">
+        <div class="view-page-header-left">
+            <h2 class="view-page-title">{{ t.speedtest_tracker }}</h2>
+        </div>
+        <div class="view-page-actions speedtest-controls">
+            <div class="trend-tabs" id="speedtest-tabs">
+                <button class="trend-tab" data-value="1" onclick="selectPill(this, filterSpeedtestData)">1d</button>
+                <button class="trend-tab active" data-value="7" onclick="selectPill(this, filterSpeedtestData)">7d</button>
+                <button class="trend-tab" data-value="14" onclick="selectPill(this, filterSpeedtestData)">14d</button>
+                <button class="trend-tab" data-value="30" onclick="selectPill(this, filterSpeedtestData)">30d</button>
+                <button class="trend-tab" data-value="90" onclick="selectPill(this, filterSpeedtestData)">90d</button>
+                <button class="trend-tab" data-value="all" onclick="selectPill(this, filterSpeedtestData)">{{ t.fetch_all }}</button>
+            </div>
+            <button class="btn btn-primary btn-sm" id="speedtest-run-btn" onclick="runSpeedtest()"><i data-lucide="play"></i> {{ t.run_speedtest }}</button>
+            <button class="refresh-btn" id="speedtest-refresh-btn" title="{{ t.refresh }}" onclick="loadSpeedtestHistory()"><i data-lucide="refresh-cw"></i></button>
+        </div>
+    </div>
+    <div id="speedtest-loading" class="waiting" style="display:none;">
+        <div class="skeleton skel-chart"></div>
+    </div>
+    <div id="speedtest-no-data" class="no-data-msg speedtest-empty-state" style="display:none;">
+        <i data-lucide="wifi-off" style="width:40px;height:40px;color:var(--text-muted);margin-bottom:12px;"></i>
+        <div class="speedtest-empty-title">{{ t.speedtest_empty_title or 'No speedtest results yet' }}</div>
+        <div class="speedtest-empty-desc">{{ t.speedtest_empty_desc or 'Automated tests will appear here once the schedule runs. You can also start a manual test.' }}</div>
+        <button class="btn btn-primary btn-sm" onclick="runSpeedtest()" style="margin-top:12px;"><i data-lucide="play"></i> {{ t.run_speedtest }}</button>
+    </div>
+    <div id="speedtest-chart-container" style="display:none;">
+        <!-- Phase 4.2: Modern card wrapper for speedtest chart -->
+        <div class="speedtest-chart-card">
+            <div class="chart-card-header">
+                <div class="chart-header-content">
+                    <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                    <div class="chart-label">{{ t.speedtest_history }}</div>
+                </div>
+            </div>
+            <div class="speedtest-chart-wrap">
+                <canvas id="speedtest-chart"></canvas>
+                <div class="speedtest-chart-tooltip" id="speedtest-chart-tooltip"></div>
+                <div class="speedtest-chart-legend">
+                    <span class="legend-dl">{{ t.legend_download }}</span>
+                    <span class="legend-ul">{{ t.legend_upload }}</span>
+                    <span class="legend-ping">{{ t.legend_ping }}</span>
+                    <span class="legend-thresh">{{ t.legend_threshold }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Phase 4.2: Table card wrapper -->
+    <div id="speedtest-table-wrap" class="table-card">
+        <table id="speedtest-table" class="sortable" style="display:none;">
+            <thead><tr>
+                <th class="st-expand-col"></th>
+                <th data-col="timestamp">{{ t.timestamp }}<span class="sort-indicator">▼</span></th>
+                <th data-col="server_id">{{ t.server or 'Server' }}<span class="sort-indicator"></span></th>
+                <th data-col="download_mbps">{{ t.download }}<span class="sort-indicator"></span></th>
+                <th data-col="upload_mbps">{{ t.upload }}<span class="sort-indicator"></span></th>
+                <th data-col="ping_ms">{{ t.ping }}<span class="sort-indicator"></span></th>
+                <th data-col="jitter_ms">{{ t.jitter }}<span class="sort-indicator"></span></th>
+                <th data-col="packet_loss_pct">{{ t.packet_loss }}<span class="sort-indicator"></span></th>
+                <th class="st-sc-col"></th>
+            </tr></thead>
+            <tbody id="speedtest-tbody"></tbody>
+        </table>
+        <div id="speedtest-show-more" style="text-align:center; padding:12px; display:none;">
+            <button class="btn btn-muted" id="speedtest-more-btn" onclick="showMoreSpeedtest()"></button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if gaming_quality_enabled %}
+<div id="view-gaming" class="view">
+    <div class="view-page-header">
+        <div class="view-page-header-left">
+            <h2 class="view-page-title">{{ t.gaming_quality_label }}</h2>
+        </div>
+    </div>
+    {% if gaming_index %}
+    {% set s = gaming_index.score %}
+    {% set g = gaming_index.grade|lower %}
+    <!-- Gauge hero -->
+    <div class="gaming-overview">
+        <div class="gaming-gauge">
+            <div class="gaming-gauge-band">
+                <div class="gaming-gauge-segment gauge-f"><span>F</span></div>
+                <div class="gaming-gauge-segment gauge-d"><span>D</span></div>
+                <div class="gaming-gauge-segment gauge-c"><span>C</span></div>
+                <div class="gaming-gauge-segment gauge-b"><span>B</span></div>
+                <div class="gaming-gauge-segment gauge-a"><span>A</span></div>
+            </div>
+            <div class="gaming-gauge-track">
+                <div class="gaming-gauge-marker" style="left:{{ s }}%;">
+                    <div class="gaming-gauge-needle"></div>
+                    <div class="gaming-gauge-score">{{ s }}</div>
+                </div>
+            </div>
+            {% if not gaming_index.has_speedtest %}
+            <p class="gaming-no-speedtest-hint"><i data-lucide="info"></i> {{ t.gaming_no_speedtest_detail }}</p>
+            {% endif %}
+        </div>
+        <div class="gaming-grade-big gaming-{{ g }}">
+            <span class="gaming-grade-letter">{{ gaming_index.grade }}</span>
+            <span class="gaming-grade-text">{{ t['gaming_grade_' ~ g] }}</span>
+        </div>
+    </div>
+
+    <!-- Compact score breakdown (collapsed descriptions) -->
+    <div class="gaming-components">
+        <h3 class="gaming-section-title">{{ t.gaming_components_title }}</h3>
+        <div class="gaming-comp-grid">
+        {% for key, comp in gaming_index.components.items()|sort(attribute='1.weight', reverse=true) %}
+            <div class="gaming-comp-row" tabindex="0" role="button" aria-expanded="false" onclick="this.classList.toggle('open');this.setAttribute('aria-expanded',this.classList.contains('open'))" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+                <span class="gaming-comp-icon">
+                    {% if key == 'latency' %}<i data-lucide="timer"></i>
+                    {% elif key == 'jitter' %}<i data-lucide="waves"></i>
+                    {% elif key == 'packet_loss' %}<i data-lucide="package-x"></i>
+                    {% elif key == 'docsis_health' %}<i data-lucide="heart-pulse"></i>
+                    {% elif key == 'snr_headroom' %}<i data-lucide="signal"></i>
+                    {% endif %}
+                </span>
+                <span class="gaming-comp-name">{{ t['gaming_comp_' ~ key] }}</span>
+                <span class="gaming-comp-weight">{{ comp.weight }}%</span>
+                <div class="gaming-comp-bar-inline">
+                    <div class="gaming-comp-fill {% if comp.score >= 80 %}fill-good{% elif comp.score >= 50 %}fill-warn{% else %}fill-crit{% endif %}" style="width:{{ comp.score }}%;"></div>
+                </div>
+                <span class="gaming-comp-score {% if comp.score >= 80 %}score-good{% elif comp.score >= 50 %}score-warn{% else %}score-crit{% endif %}">{{ comp.score }}</span>
+                <i data-lucide="chevron-down" class="gaming-comp-chevron"></i>
+            </div>
+            <p class="gaming-comp-detail">{{ t['gaming_comp_' ~ key ~ '_detail'] }}</p>
+        {% endfor %}
+        </div>
+    </div>
+
+    <!-- Game compatibility (collapsed when all green) -->
+    <div class="gaming-genres">
+        <h3 class="gaming-section-title">{{ t.gaming_genres_title }}</h3>
+        {% set all_ok = g in ['a', 'b'] %}
+        {% if all_ok %}
+        <div class="gaming-genres-summary genre-ok">
+            <i data-lucide="check-circle"></i>
+            <span>{{ t.get('gaming_genres_all_ok', 'All game genres: Excellent connection for all types of online gaming.') }}</span>
+        </div>
+        {% endif %}
+        <div class="gaming-genre-cards {% if all_ok %}gaming-genres-collapsed{% endif %}">
+            <div class="gaming-genre-card {% if g in ['a', 'b'] %}genre-ok{% elif g in ['c'] %}genre-warn{% else %}genre-bad{% endif %}">
+                <span class="gaming-genre-icon"><i data-lucide="crosshair"></i></span>
+                <span class="gaming-genre-name">{{ t.gaming_genre_fps }}</span>
+                <span class="gaming-genre-examples">CS2, Valorant, Fortnite</span>
+                <span class="gaming-genre-verdict">{{ t['gaming_genre_fps_' ~ g] }}</span>
+            </div>
+            <div class="gaming-genre-card {% if g in ['a', 'b', 'c'] %}genre-ok{% else %}genre-bad{% endif %}">
+                <span class="gaming-genre-icon"><i data-lucide="swords"></i></span>
+                <span class="gaming-genre-name">{{ t.gaming_genre_moba }}</span>
+                <span class="gaming-genre-examples">LoL, Dota 2, HotS</span>
+                <span class="gaming-genre-verdict">{{ t['gaming_genre_moba_' ~ g] }}</span>
+            </div>
+            <div class="gaming-genre-card {% if g in ['a', 'b', 'c', 'd'] %}genre-ok{% else %}genre-bad{% endif %}">
+                <span class="gaming-genre-icon"><i data-lucide="globe"></i></span>
+                <span class="gaming-genre-name">{{ t.gaming_genre_mmo }}</span>
+                <span class="gaming-genre-examples">WoW, FFXIV, GW2</span>
+                <span class="gaming-genre-verdict">{{ t['gaming_genre_mmo_' ~ g] }}</span>
+            </div>
+            <div class="gaming-genre-card {% if g in ['a', 'b', 'c'] %}genre-ok{% elif g in ['d'] %}genre-warn{% else %}genre-bad{% endif %}">
+                <span class="gaming-genre-icon"><i data-lucide="crown"></i></span>
+                <span class="gaming-genre-name">{{ t.gaming_genre_strategy }}</span>
+                <span class="gaming-genre-examples">Civilization, AoE, Chess</span>
+                <span class="gaming-genre-verdict">{{ t['gaming_genre_strategy_' ~ g] }}</span>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="no-data-msg">{{ t.gaming_no_data }}</div>
+    {% endif %}
+</div>
+{% endif %}
+
+{# ══════════════════════════════════════════════════════════════════════════
+   MODULE VIEWS - Dynamically rendered from enabled modules with tab template
+   ══════════════════════════════════════════════════════════════════════════ #}
+{% for mod in modules if mod.template_paths.get('tab') %}
+<div id="{% if mod.id == 'mire.modulation' %}view-modulation{% elif mod.id == 'mire.comparison' %}view-comparison{% elif mod.id == 'mire.connection_monitor' %}view-connection-monitor{% elif mod.id == 'mire.evidence' %}view-evidence{% else %}view-mod-{{ mod.id|replace('.', '-') }}{% endif %}" class="view">
+    {% include mod.template_paths['tab'] %}
+</div>
+{% endfor %}
+
+</div><!-- /main-content -->
+</main><!-- /app-main -->
+</div><!-- /app-layout -->
+
+<!-- Speedtest Setup Modal -->
+<dialog class="modal-overlay" id="speedtest-setup-modal" role="dialog" aria-modal="true" aria-labelledby="speedtest-setup-modal-title">
+    <div class="modal modal-wide setup-guide-modal">
+        <div class="modal-header">
+            <h2 id="speedtest-setup-modal-title">⚡ {{ t.get('speedtest_setup_guided_title', 'Speedtest Tracker setup') }}</h2>
+            <button class="modal-close" onclick="closeSpeedtestSetupModal()" aria-label="{{ t.close }}">&times;</button>
+        </div>
+        <p class="modal-hint">{{ t.get('speedtest_setup_guided_intro', 'Connect your existing Speedtest Tracker instance so Mire can correlate real throughput with modem signal health.') }}</p>
+        <div class="modal-body setup-guide-body">
+            <section class="setup-guide-card">
+                <h3>{{ t.get('setup_why_title', 'Why connect it') }}</h3>
+                <ul>
+                    <li>{{ t.get('speedtest_setup_benefit_1', 'Correlate speed tests with DOCSIS signal levels') }}</li>
+                    <li>{{ t.get('speedtest_setup_benefit_2', 'Spot peak-hour performance drops') }}</li>
+                    <li>{{ t.get('speedtest_setup_benefit_3', 'Add throughput evidence to reports') }}</li>
+                </ul>
+            </section>
+            <section class="setup-guide-card">
+                <h3>{{ t.get('setup_requirements_title', 'Requirements') }}</h3>
+                <ul>
+                    <li>{{ t.get('speedtest_setup_requirement_url', 'A reachable Speedtest Tracker URL') }}</li>
+                    <li>{{ t.get('speedtest_setup_requirement_api', 'API access enabled in Speedtest Tracker') }}</li>
+                </ul>
+            </section>
+            <section class="setup-guide-card setup-guide-command">
+                <h3>{{ t.get('setup_configure_title', 'Configure') }}</h3>
+                <p>{{ t.get('speedtest_setup_configure_text', 'Paste the Speedtest Tracker base URL in Settings, then save the integration.') }}</p>
+                <code id="speedtest-setup-command">docker run --name speedtest-tracker -p 8080:80 lscr.io/linuxserver/speedtest-tracker:latest</code>
+                <button class="btn btn-secondary" onclick="copySetupSnippet('speedtest-setup-command', 'speedtest-setup-status')">{{ t.get('speedtest_setup_copy_command', 'Copy Docker command') }}</button>
+            </section>
+            <section class="setup-guide-card">
+                <h3>{{ t.get('setup_validate_title', 'Validate') }}</h3>
+                <p>{{ t.get('speedtest_setup_validate_text', 'Use Settings to save the URL, then confirm Mire can read recent speed test results.') }}</p>
+                <button class="btn btn-muted" onclick="validateSetupGuidance('speedtest-setup-status', 'speedtest')">{{ t.get('speedtest_setup_test_guidance', 'Review validation path') }}</button>
+            </section>
+        </div>
+        <div id="speedtest-setup-status" class="setup-validation-status" role="status" aria-live="polite"></div>
+        <div class="modal-footer">
+            <button class="btn btn-muted" onclick="closeSpeedtestSetupModal()">{{ t.close }}</button>
+            <a class="btn btn-accent" href="{{ url_for('settings', _anchor='mod-mire_speedtest') }}">⚙ {{ t.get('speedtest_setup_open_settings', 'Open Speedtest settings') }}</a>
+        </div>
+    </div>
+</dialog>
+
+<!-- BQM Setup Modal -->
+<dialog class="modal-overlay" id="bqm-setup-modal" role="dialog" aria-modal="true" aria-labelledby="bqm-setup-modal-title">
+    <div class="modal modal-wide setup-guide-modal">
+        <div class="modal-header">
+            <h2 id="bqm-setup-modal-title">📈 {{ t.get('bqm_setup_guided_title', 'ThinkBroadband BQM setup') }}</h2>
+            <button class="modal-close" onclick="closeBqmSetupModal()" aria-label="{{ t.close }}">&times;</button>
+        </div>
+        <p class="modal-hint">{{ t.get('bqm_setup_guided_intro', 'Link an existing ThinkBroadband Broadband Quality Monitor so Mire can show latency and packet loss beside modem evidence.') }}</p>
+        <div class="modal-body setup-guide-body">
+            <section class="setup-guide-card"><h3>{{ t.get('setup_why_title', 'Why connect it') }}</h3><ul><li>{{ t.get('bqm_setup_benefit_1', 'Track latency, packet loss, and outages') }}</li><li>{{ t.get('bqm_setup_benefit_2', 'Compare external reachability with modem signal state') }}</li><li>{{ t.get('bqm_setup_benefit_3', 'Attach graphs to ISP evidence packages') }}</li></ul></section>
+            <section class="setup-guide-card"><h3>{{ t.get('setup_requirements_title', 'Requirements') }}</h3><ul><li>{{ t.get('bqm_setup_requirement_monitor', 'A ThinkBroadband CSV Yesterday share URL') }}</li><li>{{ t.get('bqm_setup_requirement_static_ip', 'A stable public IP or DDNS target monitored by BQM') }}</li></ul></section>
+            <section class="setup-guide-card setup-guide-command"><h3>{{ t.get('setup_configure_title', 'Configure') }}</h3><p>{{ t.get('bqm_setup_configure_text', 'Create or open your BQM monitor, copy the CSV Yesterday share URL, then save it in Settings. CSV Live is for spot checks only.') }}</p><code id="bqm-setup-url">https://www.thinkbroadband.com/broadband/monitoring/quality/share/abc123def456789012345678901234567890abcd-2-y.csv</code><button class="btn btn-secondary" onclick="copySetupSnippet('bqm-setup-url', 'bqm-setup-status')">{{ t.get('bqm_setup_copy_url', 'Copy example URL format') }}</button></section>
+            <section class="setup-guide-card"><h3>{{ t.get('setup_validate_title', 'Validate') }}</h3><p>{{ t.get('bqm_setup_validate_text', 'After saving a CSV Yesterday URL, Mire performs one initial fetch. Use CSV bulk import for up to 12 months of history or longer gaps.') }}</p><button class="btn btn-muted" onclick="validateSetupGuidance('bqm-setup-status', 'bqm')">{{ t.get('setup_validate_source', 'Review validation path') }}</button></section>
+        </div>
+        <div id="bqm-setup-status" class="setup-validation-status" role="status" aria-live="polite"></div>
+        <div class="modal-footer"><button class="btn btn-muted" onclick="closeBqmSetupModal()">{{ t.close }}</button><a class="btn btn-accent" href="{{ url_for('settings', _anchor='mod-mire_bqm') }}">⚙ {{ t.get('bqm_setup_open_settings', 'Open BQM settings') }}</a></div>
+    </div>
+</dialog>
+
+<!-- Smokeping Setup Modal -->
+{% if modules|selectattr('id', 'equalto', 'mire.smokeping')|list %}
+<dialog class="modal-overlay" id="smokeping-setup-modal" role="dialog" aria-modal="true" aria-labelledby="smokeping-setup-modal-title">
+    <div class="modal modal-wide setup-guide-modal">
+        <div class="modal-header">
+            <h2 id="smokeping-setup-modal-title">📡 {{ t.get('smokeping_setup_guided_title', 'SmokePing setup') }}</h2>
+            <button class="modal-close" onclick="closeSmokepingSetupModal()" aria-label="{{ t.close }}">&times;</button>
+        </div>
+        <p class="modal-hint">{{ t.get('smokeping_setup_guided_intro', 'Connect an existing SmokePing target to compare latency history with DOCSIS signal and outage evidence.') }}</p>
+        <div class="modal-body setup-guide-body">
+            <section class="setup-guide-card"><h3>{{ t.get('setup_why_title', 'Why connect it') }}</h3><ul><li>{{ t.get('smokeping_setup_benefit_1', 'See long-term latency and packet loss trends') }}</li><li>{{ t.get('smokeping_setup_benefit_2', 'Correlate external symptoms with modem health') }}</li><li>{{ t.get('smokeping_setup_benefit_3', 'Use graphs as supporting ISP evidence') }}</li></ul></section>
+            <section class="setup-guide-card"><h3>{{ t.get('setup_requirements_title', 'Requirements') }}</h3><ul><li>{{ t.get('smokeping_setup_requirement_url', 'A reachable SmokePing web endpoint') }}</li><li>{{ t.get('smokeping_setup_requirement_target', 'At least one configured target graph') }}</li></ul></section>
+            <section class="setup-guide-card setup-guide-command"><h3>{{ t.get('setup_configure_title', 'Configure') }}</h3><p>{{ t.get('smokeping_setup_configure_text', 'Save the SmokePing base URL and target name in Settings.') }}</p><code id="smokeping-setup-target">https://smokeping.example.net/smokeping?target=Home.Router</code><button class="btn btn-secondary" onclick="copySetupSnippet('smokeping-setup-target', 'smokeping-setup-status')">{{ t.get('smokeping_setup_copy_target', 'Copy SmokePing target') }}</button></section>
+            <section class="setup-guide-card"><h3>{{ t.get('setup_validate_title', 'Validate') }}</h3><p>{{ t.get('smokeping_setup_validate_text', 'After saving the endpoint, validate that Mire can discover target graphs.') }}</p><button class="btn btn-muted" onclick="validateSetupGuidance('smokeping-setup-status', 'smokeping')">{{ t.get('setup_validate_source', 'Review validation path') }}</button></section>
+        </div>
+        <div id="smokeping-setup-status" class="setup-validation-status" role="status" aria-live="polite"></div>
+        <div class="modal-footer"><button class="btn btn-muted" onclick="closeSmokepingSetupModal()">{{ t.close }}</button><a class="btn btn-accent" href="{{ url_for('settings', _anchor='mod-mire_smokeping') }}">⚙ {{ t.get('smokeping_setup_open_settings', 'Open SmokePing settings') }}</a></div>
+    </div>
+</dialog>
+{% endif %}
+
+<!-- Report Modal -->
+<dialog class="modal-overlay" id="report-modal" role="dialog" aria-modal="true" aria-labelledby="report-modal-title" onclick="if(event.target===this)closeReportModal()" oncancel="event.preventDefault(); closeReportModal()">
+    <div class="modal" style="max-width:800px;">
+        <div class="modal-header">
+            <h2 id="report-modal-title">{{ t.get('report_builder_title', 'ISP-ready evidence package') }}</h2>
+            <button class="modal-close" onclick="closeReportModal()" aria-label="{{ t.close }}">&times;</button>
+        </div>
+        <p class="modal-hint">{{ t.get('report_builder_intro', 'Build a local evidence package for ISP support or complaint escalation.') }}</p>
+        <div id="report-builder-status" class="report-builder-status" role="status" aria-live="polite"></div>
+        <div class="modal-body" style="padding: 10px 0;">
+            <!-- Step 1: Settings & Customer Info -->
+            <div id="report-step1">
+                <section id="report-fixed-scope" class="report-fixed-scope" aria-labelledby="report-fixed-period-title" hidden>
+                    <div class="report-period-card">
+                        <div>
+                            <h3 id="report-fixed-period-title">{{ t.get('report_fixed_period_title', 'Problem window') }}</h3>
+                            <strong id="report-period-label"></strong>
+                            <p class="report-period-range">
+                                <time id="report-period-from"></time>
+                                <span aria-hidden="true">–</span>
+                                <time id="report-period-to"></time>
+                            </p>
+                        </div>
+                        <button class="btn btn-muted report-change-window" type="button" onclick="changeReportProblemWindow()">
+                            {{ t.get('report_change_problem_window', 'Change problem window') }}
+                        </button>
+                    </div>
+                    <div class="report-readiness" aria-labelledby="report-readiness-title">
+                        <h3 id="report-readiness-title">{{ t.get('report_readiness_title', 'Evidence readiness') }}</h3>
+                        <div id="report-readiness-summary" class="report-readiness-summary"></div>
+                        <ul id="report-readiness-list" class="report-readiness-list"></ul>
+                    </div>
+                </section>
+                <div class="report-builder-preview" aria-labelledby="report-builder-preview-title">
+                    <div>
+                        <h3 id="report-builder-preview-title">{{ t.get('report_builder_preview_title', 'What Mire will include') }}</h3>
+                        <ul class="report-builder-list">
+                            <li>{{ t.get('report_builder_section_signal', 'Signal summary') }}</li>
+                            <li>{{ t.get('report_builder_section_incidents', 'Incident timeline and journal notes') }}</li>
+                            <li>{{ t.get('report_builder_section_measurements', 'BQM, SmokePing, and Speedtest evidence when available') }}</li>
+                            <li>{{ t.get('report_builder_section_letter', 'Editable complaint letter text plus a PDF package') }}</li>
+                        </ul>
+                    </div>
+                    <div class="report-builder-privacy">
+                        <strong>{{ t.get('report_builder_privacy_title', 'Generated locally') }}</strong>
+                        <span>{{ t.get('report_builder_privacy_note', 'Mire builds the report from local monitoring data and does not send it to your ISP automatically.') }}</span>
+                    </div>
+                </div>
+                <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:14px;">
+                    <div id="report-days-field">
+                        <label style="font-size:13px; color:var(--muted);">{{ t.report_days }}</label><br>
+                        <select id="report-days" style="margin-top:4px; padding:6px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text);">
+                            <option value="1">1</option><option value="3">3</option>
+                            <option value="7" selected>7</option><option value="14">14</option>
+                            <option value="30">30</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:13px; color:var(--muted);">{{ t.report_language }}</label><br>
+                        <select id="report-lang" style="margin-top:4px; padding:6px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text);">
+                            {% for code, name in languages.items() %}
+                            <option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ lang_flags.get(code, '') }} {{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div style="background:var(--bg); border-radius:8px; padding:14px; margin-bottom:10px;">
+                    <p style="font-size:13px; color:var(--muted); margin-bottom:10px;">{{ t.report_customer_hint }}</p>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <input id="report-name" type="text" value="{{ report_customer_name }}" placeholder="{{ t.report_name }}" style="padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-family:inherit;">
+                        <input id="report-number" type="text" value="{{ report_customer_number }}" placeholder="{{ t.report_customer_number }}" style="padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-family:inherit;">
+                        <textarea id="report-address" rows="3" placeholder="{{ t.report_address }}" style="padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-family:inherit; resize:vertical;">{{ report_customer_address }}</textarea>
+                    </div>
+                </div>
+                <section class="report-supporting-evidence" aria-labelledby="report-supporting-evidence-title">
+                    <h3 id="report-supporting-evidence-title">{{ t.get('report_supporting_evidence_title', 'Supporting evidence') }}</h3>
+                    <p>{{ t.get('report_supporting_evidence_hint', 'These optional sources support the report; they do not replace its problem window.') }}</p>
+                    <div>
+                        <label>
+                            <input type="checkbox" id="report-include-comparison">
+                            {{ t.get('report_include_comparison', 'Include active before/after comparison') }}
+                        </label>
+                        <div id="report-comparison-note" class="report-supporting-note">
+                            {{ t.get('report_include_comparison_hint', 'Run a comparison first to attach the current before/after evidence.') }}
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <!-- Step 2: Generated complaint text (hidden initially) -->
+            <div id="report-step2" style="display:none;">
+                <p style="font-size:13px; color:var(--muted); margin-bottom:8px;">{{ t.report_edit_hint }}</p>
+                <textarea id="report-complaint-text" style="width:100%; min-height:320px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:12px; font-size:0.85em; font-family:var(--font-mono); resize:vertical; line-height:1.5;"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-muted" onclick="closeReportModal()">{{ t.close }}</button>
+            <button class="btn btn-accent" id="report-generate-btn" onclick="generateComplaint()">&#9998; {{ t.get('report_build_package', 'Build evidence package') }}</button>
+            <button class="btn btn-accent" id="report-copy-btn" style="display:none;" onclick="copyComplaint()">&#128203; {{ t.get('report_copy_letter_text', 'Copy letter text') }}</button>
+            <button class="btn btn-accent" id="report-pdf-btn" style="display:none;" onclick="downloadReport()">&#128196; {{ t.get('report_download_package', 'Download PDF package') }}</button>
+        </div>
+    </div>
+</dialog>
+
+<!-- Chart Zoom Modal -->
+<dialog class="chart-zoom-overlay" id="chart-zoom-overlay" role="dialog" aria-modal="true" aria-labelledby="chart-zoom-title" onclick="if(event.target===this)closeChartZoom()" oncancel="event.preventDefault(); closeChartZoom()">
+    <div class="chart-zoom-modal">
+        <div class="modal-header">
+            <h2 id="chart-zoom-title"></h2>
+            <button class="modal-close" onclick="closeChartZoom()" aria-label="{{ t.close }}">&times;</button>
+        </div>
+        <div id="chart-zoom-canvas" style="flex:1;min-height:0;width:100%;"></div>
+    </div>
+</dialog>
+
+<!-- Export Modal -->
+<dialog class="modal-overlay" id="export-modal" role="dialog" aria-modal="true" aria-labelledby="export-modal-title">
+    <div class="modal modal-wide">
+        <div class="modal-header">
+            <h2 id="export-modal-title">{{ t.export_title }}</h2>
+            <button class="modal-close" onclick="closeExportModal()" aria-label="{{ t.close }}">&times;</button>
+        </div>
+        <div class="modal-body export-modal-body">
+            <p class="modal-hint">{{ t.export_hint }}</p>
+            <div class="export-privacy-note">
+                <strong>{{ t.get('export_privacy_title', 'Generated locally') }}</strong>
+                <span>{{ t.get('export_privacy_text', 'Mire builds this export in your browser from local monitoring data. You decide where to paste or upload it.') }}</span>
+            </div>
+            <div class="export-mode-selector" role="radiogroup" aria-label="{{ t.get('export_scope_label', 'Export scope') }}">
+                <label>
+                    <input type="radio" name="export-mode" value="full" checked onchange="exportForLLM()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+                    {{ t.export_full }}
+                </label>
+                <label>
+                    <input type="radio" name="export-mode" value="update" onchange="exportForLLM()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    {{ t.export_update }}
+                </label>
+            </div>
+            <div class="export-scope-grid">
+                <section class="export-scope-card">
+                    <h3>{{ t.get('export_included_title', 'Included in this export') }}</h3>
+                    <ul>
+                        <li>{{ t.get('export_included_signal', 'DOCSIS signal summary') }}</li>
+                        <li>{{ t.get('export_included_channels', 'Downstream and upstream channel tables') }}</li>
+                        <li>{{ t.get('export_included_history', 'Recent events, speedtests, incidents, and reference thresholds when available') }}</li>
+                    </ul>
+                </section>
+                <section class="export-scope-card">
+                    <h3>{{ t.get('export_excluded_title', 'Excluded by default') }}</h3>
+                    <ul>
+                        <li>{{ t.get('export_excluded_remote', 'Remote upload to AI services') }}</li>
+                        <li>{{ t.get('export_excluded_credentials', 'Admin passwords, API tokens, and Mire credentials') }}</li>
+                        <li>{{ t.get('export_excluded_raw_logs', 'Raw logs or files outside the generated diagnostic summary') }}</li>
+                    </ul>
+                </section>
+            </div>
+            <fieldset class="export-redaction-controls">
+                <legend>{{ t.get('export_redaction_title', 'Redaction controls') }}</legend>
+                <label><input type="checkbox" id="export-redact-ips" onchange="refreshExportPreview()"> {{ t.get('export_redact_ips', 'Redact IP addresses') }}</label>
+                <label><input type="checkbox" id="export-redact-hostnames" onchange="refreshExportPreview()"> {{ t.get('export_redact_hostnames', 'Redact hostnames') }}</label>
+                <label><input type="checkbox" id="export-redact-customers" onchange="refreshExportPreview()"> {{ t.get('export_redact_customers', 'Redact account or customer details') }}</label>
+            </fieldset>
+            <div class="export-output-meta">
+                <span id="export-size-indicator">0 {{ t.get('export_size_characters', 'characters') }}</span>
+                <span id="export-status" role="status" aria-live="polite"></span>
+            </div>
+            <textarea id="export-text" readonly aria-label="{{ t.get('export_preview_label', 'Export preview') }}"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-muted" onclick="closeExportModal()">{{ t.close }}</button>
+            <button class="btn btn-secondary" id="export-download-btn" onclick="downloadExportMarkdown()">{{ t.get('export_download_markdown', 'Download Markdown') }}</button>
+            <button class="btn btn-accent" id="export-copy-btn" onclick="copyExport()">{{ t.get('export_copy', 'Copy export') }}</button>
+        </div>
+    </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/uPlot.min.css', v=version) }}">
+<script src="{{ url_for('static', filename='vendor/uPlot.min.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/hero-chart.js') }}?v={{ version|urlencode }}"></script>
+<script src="{{ url_for('static', filename='js/sparklines.js') }}?v={{ version|urlencode }}"></script>
+
+{# ── Channel Health Donut Charts - Phase 3 Task 3.4 ── #}
+<script src="{{ url_for('static', filename='js/dashboard-donuts.js', v=version) }}"></script>
+
+<script src="{{ url_for('static', filename='js/chart-engine.js', v=version) }}"></script>
+<script type="application/json" id="mire-dashboard-bootstrap">{{ {
+    'translations': t,
+    'language': lang,
+    'temperatureUnit': temperature_unit,
+    'connectionMonitorAvailable': connection_monitor_installed|length > 0
+}|tojson }}</script>
+<script src="{{ url_for('static', filename='js/browser-contracts.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/modals.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/journal.js', v=version) }}"></script>
+{% if modules|selectattr('id', 'equalto', 'mire.bqm')|list %}
+<script src="{{ module_static_url('mire.bqm', 'js/bqm-chart.js', v=version) }}"></script>
+{% endif %}
+<script src="{{ url_for('static', filename='js/bqm.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/trends.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/channels.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/events.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/utils.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/notices.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/speedtest.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/correlation.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/glossary-page.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/glossary.js', v=version) }}"></script>
+
+{% for mod in modules if mod.has_js %}
+<script src="{{ module_static_url(mod.id, 'main.js', v=version) }}"></script>
+{% endfor %}
+
+<script src="{{ url_for('static', filename='js/dashboard-routing.js', v=version) }}"></script>
+
+
+<script src="{{ url_for('static', filename='js/service-worker-registration.js', v=version) }}"></script>
+</body>
+</html>

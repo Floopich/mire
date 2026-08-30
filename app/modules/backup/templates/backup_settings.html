@@ -1,0 +1,113 @@
+<!-- ═══ Panel: Backup (Module) ═══ -->
+<div class="settings-panel" id="panel-mod-mire_backup">
+    <!-- Manual Backup -->
+    <div class="settings-card glass">
+        <div class="card-header">
+            <div class="card-title-group">
+                <div class="card-icon green">
+                    <i data-lucide="hard-drive-download"></i>
+                </div>
+                <div>
+                    <div class="card-title">{{ t['mire.backup.backup_title'] or 'Backup & Restore' }}</div>
+                    <div class="card-subtitle">{{ t['mire.backup.backup_desc'] or 'Download or schedule automatic backups of your Mire data' }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="btn-row">
+            <button type="button" class="btn btn-primary" onclick="downloadBackup()" id="backup-download-btn">
+                <i data-lucide="download" style="width:16px;height:16px;"></i>
+                {{ t['mire.backup.backup_download'] or 'Download Backup' }}
+            </button>
+        </div>
+        <div class="test-result" id="backup-download-result"></div>
+    </div>
+
+    <!-- Automatic Backups -->
+    <div class="settings-card glass">
+        <div class="card-header">
+            <div class="card-title-group">
+                <div class="card-icon blue">
+                    <i data-lucide="clock"></i>
+                </div>
+                <div>
+                    <div class="card-title">{{ t['mire.backup.backup_auto_label'] or 'Automatic Backups' }}</div>
+                    <div class="card-subtitle">{{ t['mire.backup.backup_auto_hint'] or 'Periodically save backups to a server directory' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="toggle-row">
+            <div class="toggle-info">
+                <span class="toggle-title" id="backup-enabled-label">{{ t.enabled }}</span>
+            </div>
+            <input type="hidden" name="backup_enabled" value="false">
+            <label class="toggle">
+                <input type="checkbox" id="backup_enabled" name="backup_enabled" value="true" aria-labelledby="backup-enabled-label" {% if config.backup_enabled %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+
+        <div id="backup-auto-settings" style="{% if not config.backup_enabled %}opacity:0.5;pointer-events:none;{% endif %}">
+            <div class="form-field" style="margin-top: var(--space-md);">
+                <label class="form-label" for="backup_path">{{ t['mire.backup.backup_path'] or 'Backup Path' }}</label>
+                <div class="input-with-action">
+                    <input class="form-input" type="text" id="backup_path" name="backup_path" value="{{ config.backup_path }}" readonly style="cursor:pointer;">
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="openBrowseModal(this)">
+                        <i data-lucide="folder-open" style="width:14px;height:14px;"></i>
+                        {{ t['mire.backup.backup_browse'] or 'Browse' }}
+                    </button>
+                </div>
+                <span class="form-hint">{{ t['mire.backup.backup_path_hint'] or 'Server directory where backups are stored' }}</span>
+            </div>
+            <div class="form-grid cols-2" style="margin-top: var(--space-md);">
+                <div class="form-field">
+                    <label class="form-label" for="backup_interval_hours">{{ t['mire.backup.backup_interval'] or 'Interval' }}</label>
+                    <select class="form-input form-select" id="backup_interval_hours" name="backup_interval_hours">
+                        <option value="24" {% if config.backup_interval_hours == 24 or not config.backup_interval_hours %}selected{% endif %}>{{ t['mire.backup.backup_daily'] or 'Daily' }}</option>
+                        <option value="168" {% if config.backup_interval_hours == 168 %}selected{% endif %}>{{ t['mire.backup.backup_weekly'] or 'Weekly' }}</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label class="form-label" for="backup_retention">{{ t['mire.backup.backup_retention'] or 'Keep backups' }}</label>
+                    <input class="form-input" type="number" id="backup_retention" name="backup_retention" value="{{ config.backup_retention or 5 }}" min="1" max="100">
+                    <span class="form-hint">{{ t['mire.backup.backup_retention_hint'] or 'Number of backup files to keep' }}</span>
+                </div>
+            </div>
+            <div style="margin-top: var(--space-lg);">
+                <button type="button" class="btn btn-ghost" onclick="backupNow()">
+                    <i data-lucide="save" style="width:14px;height:14px;"></i>
+                    {{ t['mire.backup.backup_now'] or 'Backup Now' }}
+                </button>
+            </div>
+            <div class="test-result" id="backup-now-result"></div>
+
+            <div style="margin-top: var(--space-xl);">
+                <div class="section-label">{{ t['mire.backup.backup_existing'] or 'Existing Backups' }}</div>
+                <div id="backup-list" class="backup-list"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ Directory Browser Modal ═══ -->
+<dialog id="browse-modal" class="browse-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="browse-modal-title" aria-describedby="browse-status">
+    <div class="browse-modal">
+        <div class="browse-modal-header">
+            <h3 id="browse-modal-title">{{ t['mire.backup.backup_select_dir'] or 'Select Directory' }}</h3>
+            <button type="button" class="btn-icon" onclick="closeBrowseModal()" aria-label="{{ t.close or 'Close' }}">
+                <i data-lucide="x" aria-hidden="true"></i>
+            </button>
+        </div>
+        <div class="browse-modal-summary">
+            <span>{{ t['mire.backup.backup_path'] or 'Backup Path' }}</span>
+            <code id="browse-selected-path">{{ config.backup_path or '/backup' }}</code>
+        </div>
+        <div id="browse-status" class="browse-modal-status" role="status" aria-live="polite"></div>
+        <div id="browse-breadcrumb" class="browse-modal-path"></div>
+        <div id="browse-dirs" class="browse-modal-body" tabindex="0"></div>
+        <div class="browse-modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeBrowseModal()">{{ t.cancel }}</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="selectBrowsePath()">{{ t['mire.backup.backup_select'] or 'Select' }}</button>
+        </div>
+    </div>
+</dialog>

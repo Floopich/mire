@@ -1,0 +1,390 @@
+{
+  "categories": [
+    {
+      "description": "Termes de protocole, signal, canaux et événements câble/DOCSIS expliqués par Mire.",
+      "id": "docsis_terms",
+      "title": "Termes DOCSIS"
+    },
+    {
+      "description": "Vues, intégrations et outils de preuve fournis par Mire.",
+      "id": "mire_features",
+      "title": "Fonctions Mire"
+    }
+  ],
+  "terms": [
+    {
+      "aliases": [
+        "Internet par câble",
+        "Spécification de l'interface de service de données sur câble"
+      ],
+      "category": "cable_basics",
+      "id": "docsis",
+      "levels": {
+        "advanced": "DOCSIS combine plusieurs familles de canaux descendants et montants, telles que SC-QAM, OFDM et OFDMA. Chaque famille fournit des preuves différentes, c'est pourquoi Mire distingue le type de canal, le sens et le statut de prise en charge.",
+        "basic": "DOCSIS achemine le service internet via le câble coaxial. Mire lit les données de modem, de canaux et de signal des appareils DOCSIS pris en charge ; ses preuves concernent donc la liaison d'accès câble, et non le DSL.",
+        "eli5": "DOCSIS est le langage internet par câble utilisé entre un modem câble et le réseau du fournisseur.",
+        "technician": "Utilisez les preuves DOCSIS comme contexte RF/MAC côté modem : verrouillage des canaux, puissance, MER/SNR, modulation, erreurs et événements. Le provisionnement du fournisseur, la politique du CMTS, la charge du segment et le routage IP nécessitent encore des sources justificatives explicites."
+      },
+      "misconceptions": [
+        "DOCSIS n'est pas DSL ; Les valeurs DSL et les valeurs des canaux câblés ne doivent pas être comparées une à une."
+      ],
+      "protected_terms": [
+        "DOCSIS",
+        "DSL",
+        "Mire"
+      ],
+      "title": "DOCSIS"
+    },
+    {
+      "aliases": [
+        "CMTS",
+        "PHY distant",
+        "Tête de réseau du fournisseur"
+      ],
+      "category": "cable_basics",
+      "id": "cmts",
+      "levels": {
+        "advanced": "Le comportement du CMTS/CCAP peut affecter la disponibilité des canaux, les profils, l'ordonnancement et le provisionnement, mais ces décisions côté fournisseur ne sont que partiellement visibles via la télémétrie du modem.",
+        "basic": "Un CMTS ou un système d'accès apparenté gère les modems DOCSIS, les canaux, l'ordonnancement et la configuration du service. Mire ne voit généralement que le côté modem.",
+        "eli5": "Le CMTS est le système côté fournisseur avec lequel votre modem câble communique.",
+        "technician": "Ne déduisez pas l'état exact du CMTS à partir des seules preuves du modem. N'employez une formulation liée au CMTS que si elle est étayée par des données explicites du fournisseur, un contexte d'événement, ou des champs du modem qui l'exposent réellement."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "CMTS",
+        "DOCSIS",
+        "Mire"
+      ],
+      "title": "CMTS"
+    },
+    {
+      "aliases": [
+        "Segment",
+        "Groupe de services",
+        "Nœud de câble",
+        "Nœud divisé"
+      ],
+      "category": "cable_basics",
+      "id": "node_segment",
+      "levels": {
+        "advanced": "Les limites du groupe de service influencent la contention, la charge des canaux et la planification des mises à niveau. Un modem local peut révéler des symptômes, mais pas l'ensemble de la population du segment ni l'état de l'ordonnanceur du fournisseur.",
+        "basic": "Les personnes situées sur le même segment câblé partagent une partie de la capacité du réseau d'accès. Une scission de nœud peut réduire le nombre d'utilisateurs partageant les mêmes ressources.",
+        "eli5": "Un nœud ou segment est la partie du réseau câblé partagée par un groupe de foyers.",
+        "technician": "Employez le vocabulaire de segment avec prudence : établissez d'abord l'état du signal local, puis comparez la chronologie, les preuves de débit/latence et les informations du fournisseur avant d'attribuer un problème à l'utilisation du segment."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "DOCSIS",
+        "CMTS",
+        "Mire"
+      ],
+      "title": "Nœud/segment"
+    },
+    {
+      "aliases": [
+        "Segment de câble",
+        "Nœud",
+        "Réseau d'accès partagé"
+      ],
+      "category": "cable_basics",
+      "id": "shared_medium",
+      "levels": {
+        "advanced": "Le comportement d'un support partagé dépend de la taille du groupe de service, de l'ordonnancement, de la capacité des canaux, de la demande active et de la politique du fournisseur. Un seul modem ne peut pas mesurer directement l'ensemble du segment.",
+        "basic": "Un support partagé peut être saturé même si le signal de votre propre modem semble propre. Mire distingue les preuves locales du modem des affirmations d'utilisation côté fournisseur.",
+        "eli5": "L'internet par câble partage certaines parties du réseau d'accès de quartier avec d'autres utilisateurs.",
+        "technician": "Distinguez les preuves RF propres des preuves de congestion. Corrélez les tendances horaires, les données de speedtest/BQM/monitoring et les retours du fournisseur avant de considérer le support partagé comme cause principale."
+      },
+      "misconceptions": [
+        "Un bon niveau de signal ne prouve pas que le segment des fournisseurs n'est pas encombré."
+      ],
+      "protected_terms": [
+        "DOCSIS",
+        "CMTS",
+        "Mire"
+      ],
+      "title": "Support partagé"
+    },
+    {
+      "aliases": [
+        "Sens de téléchargement",
+        "DS",
+        "Canaux en aval"
+      ],
+      "category": "modulation_channels",
+      "id": "downstream",
+      "levels": {
+        "advanced": "Les preuves downstream peuvent provenir des canaux SC-QAM et OFDM. La puissance, le SNR/MER, les données de modulation/profil et le verrouillage du canal indiquent si le modem reçoit la porteuse proprement.",
+        "basic": "Les canaux downstream transportent les téléchargements et autre trafic entrant. Mire affiche leur état de verrouillage et leur qualité de signal séparément des canaux upstream.",
+        "eli5": "Le downstream désigne les données qui circulent du réseau du fournisseur vers votre modem.",
+        "technician": "Diagnostiquez les problèmes downstream en corrélant les canaux affectés, les variations de MER/SNR, la croissance des erreurs corrigibles/incorrigibles, les changements de profil OFDM et l'horodatage des événements, plutôt qu'en fondant le diagnostic sur une seule valeur de réception."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "DOCSIS",
+        "SC-QAM",
+        "OFDM"
+      ],
+      "title": "en aval"
+    },
+    {
+      "aliases": [
+        "Direction du téléchargement",
+        "US",
+        "Canaux amont"
+      ],
+      "category": "modulation_channels",
+      "id": "upstream",
+      "levels": {
+        "advanced": "L'upstream peut utiliser SC-QAM ou OFDMA. La puissance d'émission, les baisses de modulation, le comportement du ranging et les symptômes de bruit sur la voie retour comptent souvent plus que les valeurs côté réception.",
+        "basic": "Les canaux upstream transportent les envois, les requêtes et le ranging du modem. Mire les utilise comme preuves de signal côté envoi.",
+        "eli5": "L'upstream désigne les données qui circulent de votre modem vers le réseau du fournisseur.",
+        "technician": "Pour les défauts upstream, comparez les variations de puissance, les pertes de canaux, les lacunes de prise en charge OFDMA, les événements T3/T4 et les fenêtres de latence ou de perte de paquets. L'absence de champs upstream signifie non pris en charge ou non rapporté, jamais automatiquement zéro."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "DOCSIS",
+        "SC-QAM",
+        "OFDMA"
+      ],
+      "title": "Amont"
+    },
+    {
+      "aliases": [
+        "Canaux liés",
+        "Forfait de chaînes",
+        "Liaison DOCSIS"
+      ],
+      "category": "modulation_channels",
+      "id": "channel_bonding",
+      "levels": {
+        "advanced": "Le bonding additionne la capacité des canaux, mais le résultat réellement exploitable dépend du sens, de la famille de canaux, de l'état de verrouillage, des profils, du comportement du scheduler et de la configuration du service.",
+        "basic": "Les modems DOCSIS utilisent souvent plusieurs canaux descendants et montants à la fois. Mire regroupe les canaux visibles pour montrer ce qui est agrégé, verrouillé et en bon état.",
+        "eli5": "Le channel bonding permet à un modem d'utiliser plusieurs canaux câble ensemble.",
+        "technician": "Lors de l'examen des preuves de bonding, recherchez les membres manquants ou dégradés dans le groupe, l'état de santé propre à chaque famille, et si les symptômes touchent un seul canal, un seul sens, ou l'ensemble du groupe de service."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "DOCSIS",
+        "SC-QAM",
+        "OFDM",
+        "OFDMA"
+      ],
+      "title": "Liaison de canaux"
+    },
+    {
+      "aliases": [
+        "Canal QAM",
+        "DOCSIS 3.0 à porteuse unique Canal QAM",
+        "QAM",
+        "Layer-1",
+        "SC-QAM"
+      ],
+      "category": "modulation_channels",
+      "id": "sc_qam",
+      "levels": {
+        "advanced": "SC-QAM utilise une seule porteuse avec une largeur de canal fixe et un ordre QAM donné. Cela rend le contexte global du canal plus simple à interpréter que pour les canaux OFDM/OFDMA basés sur des profils, lorsque le modem expose suffisamment de champs.",
+        "basic": "Les canaux SC-QAM sont les canaux traditionnels de type DOCSIS 3.0. Mire peut généralement afficher leur puissance, le SNR/MER, la modulation, l'état de verrouillage et l'état de santé.",
+        "eli5": "SC-QAM est le type de canal DOCSIS étroit classique.",
+        "technician": "Utilisez les lignes SC-QAM pour isoler une dégradation propre à un canal : comparez les canaux adjacents, les changements de modulation, le MER/SNR et la croissance des erreurs avant de passer d'une seule valeur médiocre à une conclusion valable pour tout le réseau."
+      },
+      "misconceptions": [
+        "Une estimation de capacité SC-QAM n'est pas un résultat de Speedtest."
+      ],
+      "protected_terms": [
+        "SC-QAM",
+        "DOCSIS",
+        "QAM",
+        "Layer-1"
+      ],
+      "title": "SC-QAM"
+    },
+    {
+      "aliases": [
+        "DOCSIS 3.1 en aval",
+        "Multiplexage par répartition orthogonale de la fréquence"
+      ],
+      "category": "modulation_channels",
+      "id": "ofdm",
+      "levels": {
+        "advanced": "L'état de santé de l'OFDM dépend des profils, des sous-porteuses exclues, de l'état PLC/verrouillage, et de la disponibilité des profils. Une information de profil manquante doit rester marquée comme inconnue plutôt que remplacée par une capacité estimée.",
+        "basic": "DOCSIS 3.1 utilise l'OFDM pour les larges canaux de réception descendants. Mire l'affiche séparément car les preuves OFDM diffèrent des lignes SC-QAM classiques.",
+        "eli5": "OFDM est le type de canal descendant DOCSIS 3.1 composé de nombreuses petites sous-porteuses.",
+        "technician": "Pour le diagnostic OFDM, comparez les changements de profil, les indicateurs de type MER, le comportement des codewords/erreurs, et les preuves SC-QAM adjacentes. Traitez les champs de profil non pris en charge comme une limite des données disponibles, pas comme une preuve de bon ou de mauvais service."
+      },
+      "misconceptions": [
+        "Une capacité OFDM manquante ne signifie pas que le canal est inutilisé ; Mire peut simplement manquer de données sécurisées au niveau du profil."
+      ],
+      "protected_terms": [
+        "OFDM",
+        "DOCSIS",
+        "SC-QAM"
+      ],
+      "title": "OFDM"
+    },
+    {
+      "aliases": [
+        "DOCSIS 3.1 en amont",
+        "Accès multiple par répartition orthogonale de la fréquence"
+      ],
+      "category": "modulation_channels",
+      "id": "ofdma",
+      "levels": {
+        "advanced": "OFDMA dépend des profils, des sous-porteuses, des minislots, du bruit de la voie retour et du contexte du scheduler. Les champs manquants, None ou null signifient non pris en charge ou non rapporté, pas une mesure à zéro.",
+        "basic": "OFDMA permet à de nombreux modems de partager des portions d'un large bloc montant. Mire l'affiche séparément des canaux montants SC-QAM.",
+        "eli5": "OFDMA est le type de canal montant DOCSIS 3.1.",
+        "technician": "Diagnostiquez l'OFDMA à partir des événements montants, du comportement d'émission, de la disponibilité des profils et du timing de latence/perte. Évitez les estimations de capacité de type SC-QAM sauf si le modem expose les détails OFDMA requis."
+      },
+      "misconceptions": [
+        "Un canal OFDMA sans numéro de capacité affiché peut toujours être actif et important."
+      ],
+      "protected_terms": [
+        "OFDMA",
+        "DOCSIS",
+        "SC-QAM"
+      ],
+      "title": "OFDMA"
+    },
+    {
+      "aliases": [
+        "QAM",
+        "256-QAM",
+        "4096-QAM",
+        "Modulation"
+      ],
+      "category": "modulation_channels",
+      "id": "qam_modulation_order",
+      "levels": {
+        "advanced": "L'ordre QAM doit être interprété avec la famille de canal et le SNR/MER. SC-QAM a une relation à canal fixe plus simple que les canaux OFDM/OFDMA basés sur des profils.",
+        "basic": "Des niveaux QAM plus élevés transportent plus de bits par symbole, mais exigent un signal plus propre. Mire affiche la modulation pour rendre visibles les chutes ou les états Low-QAM.",
+        "eli5": "La modulation indique la quantité de données regroupées dans chaque palier du signal câble.",
+        "technician": "Utilisez les changements de modulation comme un élément de preuve, pas comme un verdict isolé. Corrélez-les avec le MER/SNR, la puissance, la croissance des erreurs, la famille de canal, et le fait que la valeur soit actuelle ou seulement le dernier état rapporté par le modem."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "QAM",
+        "DOCSIS",
+        "SC-QAM",
+        "OFDM",
+        "OFDMA"
+      ],
+      "title": "QAM / ordre de modulation"
+    },
+    {
+      "aliases": [
+        "Niveau de signal",
+        "dBmV",
+        "Puissance de réception",
+        "Puissance d'émission"
+      ],
+      "category": "signal_quality",
+      "id": "power_level",
+      "levels": {
+        "advanced": "La puissance doit être interprétée selon le sens et le type de canal. Un niveau de réception descendant, un niveau d'émission montant et un champ de report-power OFDMA ne sont pas des mesures interchangeables.",
+        "basic": "Mire peut afficher la puissance de réception descendante et la puissance d'émission montante lorsque le modem les rapporte. Les deux sens ont des significations différentes.",
+        "eli5": "Le niveau de puissance indique à quel point le signal câble semble fort, ou à quel point le modem doit forcer pour répondre.",
+        "technician": "Utilisez les preuves de puissance avec le MER/SNR, la modulation, l'état de verrouillage, l'historique des splitters/câblage et le timing. Ne transformez pas des champs de puissance non pris en charge ou manquants en mesures à zéro."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "dBmV",
+        "DOCSIS",
+        "Mire"
+      ],
+      "title": "Niveau de puissance"
+    },
+    {
+      "aliases": [
+        "Rapport signal/bruit",
+        "Taux d'erreur de modulation",
+        "MER",
+        "RSB"
+      ],
+      "category": "signal_quality",
+      "id": "snr_mer",
+      "levels": {
+        "advanced": "Le SNR/MER prend tout son sens lorsqu'il est lu avec la modulation, la famille de canaux, les compteurs d'erreurs et les tendances temporelles. Une valeur ponctuelle correcte peut masquer un bruit intermittent ou des changements de profil.",
+        "basic": "Le SNR et le MER sont des mesures de la qualité du signal. De meilleures valeurs signifient généralement que le modem peut décoder le canal de manière plus fiable.",
+        "eli5": "Le SNR/MER décrit la clarté avec laquelle le modem perçoit le signal à travers le bruit.",
+        "technician": "Pour une escalade, relevez le MER/SNR avec les identifiants de canaux concernés, les horodatages, les variations de taux d'erreur, la puissance et les événements. Évitez de mélanger la sémantique du SNR/MER entre familles de canaux sans vérifier ce que le modem rapporte réellement."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "SNR",
+        "MER",
+        "DOCSIS",
+        "QAM"
+      ],
+      "title": "SNR/MER"
+    },
+    {
+      "aliases": [
+        "Corrigables",
+        "Mots de code corrigés",
+        "FEC corrigé"
+      ],
+      "category": "error_counters",
+      "id": "correctable_errors",
+      "levels": {
+        "advanced": "Les erreurs corrigibles reflètent le travail du FEC, et non une perte directe de paquets. Une augmentation récente lors d'événements de bruit constitue une preuve plus solide qu'un total cumulé important hérité du passé.",
+        "basic": "Les compteurs d'erreurs corrigibles peuvent augmenter même sur une ligne fonctionnelle. Mire les rend exploitables en montrant le taux, le moment, les canaux concernés et si les erreurs non corrigibles augmentent également.",
+        "eli5": "Les erreurs corrigibles sont des erreurs de signal que le modem a pu réparer.",
+        "technician": "Comparez l'augmentation des mots de code corrigés par canal et par fenêtre temporelle. Associez-la au MER/SNR, à la modulation et aux erreurs non corrigibles pour distinguer une correction de fond inoffensive d'une dégradation active."
+      },
+      "misconceptions": [
+        "Un ancien total corrigible élevé ne constitue pas automatiquement un défaut actif."
+      ],
+      "protected_terms": [
+        "DOCSIS",
+        "FEC",
+        "Mire"
+      ],
+      "title": "Erreurs corrigibles"
+    },
+    {
+      "aliases": [
+        "Incorrigibles",
+        "Mots de code non corrigés",
+        "FEC non corrigé"
+      ],
+      "category": "error_counters",
+      "id": "uncorrectable_errors",
+      "levels": {
+        "advanced": "Les preuves doivent séparer les compteurs cumulés bruts de la croissance dérivée. Les réinitialisations, les débordements de compteur et les redémarrages du modem peuvent modifier les totaux bruts sans représenter une nouvelle panne.",
+        "basic": "Les erreurs non corrigibles peuvent signifier une perte de données au niveau du canal, surtout lorsqu'elles augmentent pendant la fenêtre d'observation. Mire accorde plus d'importance à l'évolution et au moment qu'à un ancien total isolé.",
+        "eli5": "Les erreurs non corrigibles sont des erreurs de signal que le modem n'a pas pu réparer.",
+        "technician": "Utilisez les erreurs non corrigibles comme preuve d'escalade lorsque leur récente augmentation coïncide avec un MER/SNR faible, une baisse de modulation, des journaux d'événements ou une latence/perte visible pour l'utilisateur. Conservez le compteur brut lors de l'export des preuves."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "DOCSIS",
+        "FEC",
+        "Mire"
+      ],
+      "title": "Erreurs non corrigibles"
+    },
+    {
+      "aliases": [
+        "Test de vitesse",
+        "Télécharger l'essai",
+        "Télécharger un test",
+        "Ookla"
+      ],
+      "category": "capacity_throughput",
+      "id": "speedtest",
+      "levels": {
+        "advanced": "Un speedtest mesure la performance IP de bout en bout à un instant donné. Cela ne correspond ni à la capacité des canaux DOCSIS, ni au débit contractuel, ni à l'état de la santé RF locale.",
+        "basic": "Mire peut enregistrer le débit descendant, le débit montant, la latence et la gigue afin de comparer les performances perçues par l'utilisateur avec les preuves DOCSIS.",
+        "eli5": "Le Speedtest mesure le débit et la latence perçus par l'utilisateur pendant un test.",
+        "technician": "Interprétez les résultats du speedtest en tenant compte du serveur de test, de l'heure, des données du moniteur de connexion, des indices de segment et des preuves du modem. Évitez d'utiliser un seul résultat faible comme preuve d'un défaut de signal DOCSIS."
+      },
+      "misconceptions": [],
+      "protected_terms": [
+        "Speedtest",
+        "IP",
+        "DOCSIS",
+        "Mire"
+      ],
+      "title": "Test de vitesse"
+    }
+  ]
+}

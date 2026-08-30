@@ -1,0 +1,410 @@
+"""Tests for incident report generation."""
+
+import io
+import sys
+import os
+
+from pypdf import PdfReader
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from app.modules.reports.report import (
+    IncidentReport, generate_report, generate_incident_report, generate_complaint_text,
+    _compute_worst_values, _find_worst_channels,
+    _format_threshold_table, _default_warn_thresholds,
+)
+
+
+MOCK_ANALYSIS = {
+    "summary": {
+        "ds_total": 2, "us_total": 1,
+        "ds_power_min": -1.2, "ds_power_max": 5.3, "ds_power_avg": 2.1,
+        "us_power_min": 42.0, "us_power_max": 48.5, "us_power_avg": 45.0,
+        "ds_snr_min": 33.5, "ds_snr_avg": 37.2,
+        "ds_correctable_errors": 12543, "ds_uncorrectable_errors": 23,
+        "health": "good", "health_issues": [],
+    },
+    "ds_channels": [
+        {"channel_id": 1, "frequency": "114 MHz", "power": 2.1, "snr": 37.2,
+         "modulation": "256QAM", "correctable_errors": 100, "uncorrectable_errors": 0, "health": "good"},
+        {"channel_id": 2, "frequency": "122 MHz", "power": -8.5, "snr": 26.1,
+         "modulation": "256QAM", "correctable_errors": 5000, "uncorrectable_errors": 23, "health": "warning"},
+    ],
+    "us_channels": [
+        {"channel_id": 1, "frequency": "37 MHz", "power": 45.0,
+         "modulation": "64QAM", "multiplex": "ATDMA", "health": "good"},
+    ],
+}
+
+MOCK_SNAPSHOTS = [
+    {"timestamp": "2026-02-04T10:00:00", "summary": MOCK_ANALYSIS["summary"],
+     "ds_channels": MOCK_ANALYSIS["ds_channels"], "us_channels": MOCK_ANALYSIS["us_channels"]},
+    {"timestamp": "2026-02-05T10:00:00", "summary": {
+        **MOCK_ANALYSIS["summary"], "health": "critical", "ds_snr_min": 22.0,
+        "us_power_max": 55.0, "ds_uncorrectable_errors": 50000,
+        "health_issues": ["snr_critical", "us_power_critical_high"]},
+     "ds_channels": MOCK_ANALYSIS["ds_channels"], "us_channels": MOCK_ANALYSIS["us_channels"]},
+]
+
+
+def test_generate_report_returns_pdf():
+    pdf = generate_report(MOCK_SNAPSHOTS, MOCK_ANALYSIS)
+    assert isinstance(pdf, bytes)
+    assert pdf[:5] == b"%PDF-"
+    assert len(pdf) > 1000
+
+
+def test_generate_report_no_snapshots():
+    pdf = generate_report([], MOCK_ANALYSIS)
+    assert pdf[:5] == b"%PDF-"
+
+
+def test_report_worst_values_keep_raw_mixed_counter_totals():
+    analysis = {
+        **MOCK_ANALYSIS,
+        "summary": {
+            **MOCK_ANALYSIS["summary"],
+            "errors_supported": True,
+            "ds_correctable_errors": 9900,
+            "ds_uncorrectable_errors": 1100,
+            "ds_uncorr_pct": 1.0,
+        },
+    }
+
+    worst = _compute_worst_values([analysis])
+
+    assert worst["ds_correctable_max"] == 9900
+    assert worst["ds_uncorrectable_max"] == 1100
+
+
+def test_generate_report_with_config():
+    pdf = generate_report(MOCK_SNAPSHOTS, MOCK_ANALYSIS,
+                          config={"isp_name": "Vodafone", "modem_type": "FRITZ!Box 6690"},
+                          connection_info={"max_downstream_kbps": 1000000, "max_upstream_kbps": 50000})
+    assert pdf[:5] == b"%PDF-"
+    assert len(pdf) > 5000
+
+
+def test_generate_report_wraps_long_german_health_issues(monkeypatch):
+    issue_render = {}
+    downstream_heading = {}
+    original_multi_cell = IncidentReport.multi_cell
+    original_cell = IncidentReport.cell
+
+    def spy_multi_cell(self, w, h=None, text="", *args, **kwargs):
+        is_issue_line = text.startswith("Probleme:")
+        if is_issue_line:
+            issue_render.update({
+                "w": w,
+                "h": h,
+                "align": kwargs.get("align"),
+                "new_x": kwargs.get("new_x"),
+                "new_y": kwargs.get("new_y"),
+                "before_x": self.x,
+                "before_y": self.y,
+                "left_margin": self.l_margin,
+            })
+        result = original_multi_cell(self, w, h, text, *args, **kwargs)
+        if is_issue_line:
+            issue_render.update({"after_x": self.x, "after_y": self.y})
+        return result
+
+    def spy_cell(self, w=None, h=None, text="", *args, **kwargs):
+        if text == "Downstream-Kanäle":
+            downstream_heading.update({"x": self.x, "y": self.y})
+        return original_cell(self, w, h, text, *args, **kwargs)
+
+    monkeypatch.setattr(IncidentReport, "multi_cell", spy_multi_cell)
+    monkeypatch.setattr(IncidentReport, "cell", spy_cell)
+    analysis = {
+        **MOCK_ANALYSIS,
+        "summary": {
+            **MOCK_ANALYSIS["summary"],
+            "health_issues": [
+                "ds_power_critical",
+                "ds_power_marginal",
+                "ds_power_tolerated",
+                "us_power_critical_low",
+                "us_power_critical_high",
+                "us_power_marginal_low",
+                "us_power_marginal_high",
+                "us_power_tolerated_low",
+                "us_power_tolerated_high",
+                "snr_critical",
+                "snr_marginal",
+                "snr_tolerated",
+                "us_modulation_critical",
+                "us_modulation_marginal",
+                "uncorr_errors_high",
+                "uncorr_errors_critical",
+            ],
+        },
+    }
+
+    generate_report(
+        [{"timestamp": "2026-05-01T00:00:00Z", **analysis}],
+        lang="de",
+    )
+
+    assert issue_render["w"] == 0
+    assert issue_render["h"] == 6
+    assert issue_render["align"] == "L"
+    assert issue_render["new_x"] == "LMARGIN"
+    assert issue_render["new_y"] == "NEXT"
+    assert issue_render["before_x"] == issue_render["left_margin"]
+    assert issue_render["after_x"] == issue_render["left_margin"]
+    assert issue_render["after_y"] > issue_render["before_y"] + 6
+    assert downstream_heading == {
+        "x": issue_render["left_margin"],
+        "y": issue_render["after_y"] + 2,
+    }
+
+
+def test_compute_worst_values():
+    worst = _compute_worst_values(MOCK_SNAPSHOTS)
+    assert worst["health_critical_count"] == 1
+    assert worst["total_snapshots"] == 2
+    assert worst["us_power_max"] == 55.0
+    assert worst["ds_snr_min"] == 22.0
+    assert worst["ds_uncorrectable_max"] == 50000
+
+
+def test_find_worst_channels():
+    ds_worst, us_worst = _find_worst_channels(MOCK_SNAPSHOTS)
+    # Channel 2 should appear as problematic (health: warning in both snapshots)
+    assert len(ds_worst) > 0
+    assert ds_worst[0][0] == 2  # channel_id 2
+
+
+def test_format_threshold_table_uses_real_values():
+    rows = _format_threshold_table()
+    assert len(rows) > 0
+    categories = {r["category"] for r in rows}
+    assert "DS Power" in categories
+    assert "US Power" in categories
+    assert "SNR/MER" in categories
+    # Check that values come from active thresholds, not hardcoded
+    ds_256 = [r for r in rows if r["category"] == "DS Power" and r["variant"] == "256QAM"]
+    assert len(ds_256) == 1
+    assert "-8.0" in ds_256[0]["good"]
+    assert "8.0" in ds_256[0]["good"]
+    # Upstream modulation thresholds
+    us_mod = [r for r in rows if r["category"] == "US Modulation"]
+    assert len(us_mod) == 1
+    assert "16" in us_mod[0]["tolerated"]
+    assert "4" in us_mod[0]["critical"]
+
+
+def test_default_warn_thresholds():
+    warn = _default_warn_thresholds()
+    assert "ds_power" in warn
+    assert "us_power" in warn
+    assert "snr" in warn
+    # Profil VOO (valeurs empiriques, non normatives) : 256QAM warning -10.0 a 10.0
+    assert "-10.0" in warn["ds_power"]
+    assert "10.0" in warn["ds_power"]
+    # Voie retour VOO : warning 27.0 a 51.0 dBmV (plafond a 51)
+    assert "27.0" in warn["us_power"]
+    assert "51.0" in warn["us_power"]
+    # SNR 256QAM warning_min VOO : 33.0
+    assert "33.0" in warn["snr"]
+
+
+def test_generate_report_with_none_channel_values():
+    """Regression test for #112: Arris CM3500B sends None for some channel fields."""
+    analysis_with_nones = {
+        "summary": MOCK_ANALYSIS["summary"],
+        "ds_channels": [
+            {"channel_id": 1, "frequency": None, "power": None, "snr": None,
+             "modulation": None, "correctable_errors": None, "uncorrectable_errors": None, "health": "good"},
+        ],
+        "us_channels": [
+            {"channel_id": 1, "frequency": None, "power": None,
+             "modulation": None, "multiplex": None, "health": "good"},
+        ],
+    }
+    snapshots_with_nones = [
+        {"timestamp": "2026-02-27T12:00:00", "summary": MOCK_ANALYSIS["summary"],
+         "ds_channels": analysis_with_nones["ds_channels"],
+         "us_channels": analysis_with_nones["us_channels"]},
+    ]
+    pdf = generate_report(snapshots_with_nones, analysis_with_nones)
+    assert isinstance(pdf, bytes)
+    assert pdf[:5] == b"%PDF-"
+
+    text = "\n".join(
+        page.extract_text() or ""
+        for page in PdfReader(io.BytesIO(pdf)).pages
+    )
+    assert "1 - - N/A N/A good" in text
+    assert "1 - good" in text
+    assert "1 0.0" not in text
+
+
+def test_complaint_text_uses_real_thresholds():
+    """Le courrier imprime les seuils VOO actifs, pas des valeurs codees en dur.
+
+    Valeurs empiriques du profil mire.thresholds_voo (forum.voo.be), non normatives.
+    """
+    text = generate_complaint_text(MOCK_SNAPSHOTS)
+    assert "-10.0 to 10.0 dBmV" in text
+    assert "27.0 to 51.0 dBmV" in text
+    assert ">= 33.0 dB" in text
+
+
+def test_complaint_text_includes_comparison_evidence():
+    comparison_data = {
+        "period_a": {
+            "from": "2026-03-01T00:00:00Z",
+            "to": "2026-03-01T23:59:00Z",
+            "snapshots": 2,
+            "health_distribution": {"good": 2},
+        },
+        "period_b": {
+            "from": "2026-03-08T00:00:00Z",
+            "to": "2026-03-08T23:59:00Z",
+            "snapshots": 1,
+            "health_distribution": {"critical": 1},
+        },
+        "delta": {
+            "ds_power": 1.1,
+            "ds_snr": -2.7,
+            "us_power": 0.3,
+            "uncorr_errors": 127,
+            "verdict": "degraded",
+        },
+    }
+
+    text = generate_complaint_text(MOCK_SNAPSHOTS, comparison_data=comparison_data)
+
+    assert "Before/After comparison evidence:" in text
+    assert "Overall verdict: Degraded." in text
+    assert "Average DS SNR delta: -2.70 dB." in text
+    assert "Uncorrectable error delta: 127." in text
+
+
+def test_complaint_text_localizes_comparison_evidence_in_german():
+    comparison_data = {
+        "period_a": {
+            "from": "2026-03-17T23:00:00Z",
+            "to": "2026-03-18T22:59:00Z",
+            "snapshots": 23,
+            "health_distribution": {"good": 20, "tolerated": 3},
+        },
+        "period_b": {
+            "from": "2026-03-18T23:00:00Z",
+            "to": "2026-03-19T20:11:00Z",
+            "snapshots": 29,
+            "health_distribution": {"good": 29},
+        },
+        "delta": {
+            "ds_power": 0.8,
+            "ds_snr": -1.2,
+            "us_power": -0.4,
+            "uncorr_errors": 11,
+            "verdict": "degraded",
+        },
+    }
+
+    text = generate_complaint_text(
+        MOCK_SNAPSHOTS,
+        lang="de",
+        comparison_data=comparison_data,
+    )
+
+    assert "Vorher/Nachher-Vergleich als Nachweis:" in text
+    assert "Verglichen wurde 2026-03-17 23:00 bis 2026-03-18 22:59 mit 2026-03-18 23:00 bis 2026-03-19 20:11." in text
+    assert "Messpunkte: Zeitraum A 23, Zeitraum B 29." in text
+    assert "Gesamtbewertung: Verschlechtert." in text
+    assert "Dominanter Gesundheitsstatus wechselte von Gut (87%) zu Gut (100%)." in text
+
+
+def test_complaint_text_falls_back_to_english_for_unknown_language():
+    text = generate_complaint_text(MOCK_SNAPSHOTS, lang="zz")
+    assert "Key findings:" in text
+    assert "Worst downstream power:" in text
+
+
+def test_generate_report_accepts_comparison_evidence():
+    comparison_data = {
+        "period_a": {
+            "from": "2026-03-01T00:00:00Z",
+            "to": "2026-03-01T23:59:00Z",
+            "snapshots": 2,
+            "health_distribution": {"good": 2},
+        },
+        "period_b": {
+            "from": "2026-03-08T00:00:00Z",
+            "to": "2026-03-08T23:59:00Z",
+            "snapshots": 1,
+            "health_distribution": {"critical": 1},
+        },
+        "delta": {
+            "ds_power": 1.1,
+            "ds_snr": -2.7,
+            "us_power": 0.3,
+            "uncorr_errors": 127,
+            "verdict": "degraded",
+        },
+    }
+
+    pdf = generate_report(MOCK_SNAPSHOTS, MOCK_ANALYSIS, comparison_data=comparison_data)
+
+    assert pdf[:5] == b"%PDF-"
+    assert len(pdf) > 1000
+
+def test_generate_report_embeds_customer_details_in_complaint_closing():
+    pdf = generate_report(
+        MOCK_SNAPSHOTS,
+        MOCK_ANALYSIS,
+        lang="de",
+        customer_name="Max Mustermann",
+        customer_number="KD-123456",
+        customer_address="Musterstraße 1\n12345 Musterstadt",
+    )
+    text = "\n".join(
+        page.extract_text() or ""
+        for page in PdfReader(io.BytesIO(pdf)).pages
+    )
+
+    assert "Max Mustermann" in text
+    assert "KD-123456" in text
+    assert "Musterstraße 1" in text
+    assert "12345 Musterstadt" in text
+    assert "[Ihr Name]" not in text
+    assert "[Kundennummer]" not in text
+    assert "[Adresse]" not in text
+
+
+def test_generate_incident_report_embeds_customer_details_in_complaint_closing():
+    incident = {
+        "name": "Repeated outages",
+        "status": "open",
+        "description": "Recurring signal loss during the evening.",
+        "start_date": "2026-05-01",
+        "end_date": "2026-05-03",
+    }
+    pdf = generate_incident_report(
+        incident,
+        entries=[],
+        snapshots=MOCK_SNAPSHOTS,
+        speedtests=[],
+        config={"isp_name": "Vodafone", "modem_type": "FRITZ!Box 6690"},
+        connection_info={"max_downstream_kbps": 1000000, "max_upstream_kbps": 50000},
+        lang="de",
+        customer_name="Max Mustermann",
+        customer_number="KD-123456",
+        customer_address="Musterstraße 1\n12345 Musterstadt",
+    )
+    text = "\n".join(
+        page.extract_text() or ""
+        for page in PdfReader(io.BytesIO(pdf)).pages
+    )
+
+    assert "Max Mustermann" in text
+    assert "KD-123456" in text
+    assert "Musterstraße 1" in text
+    assert "12345 Musterstadt" in text
+    assert "[Ihr Name]" not in text
+    assert "[Kundennummer]" not in text
+    assert "[Adresse]" not in text

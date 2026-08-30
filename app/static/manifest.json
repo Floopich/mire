@@ -1,0 +1,67 @@
+{
+  "name": "Mire — Diagnostic câble",
+  "short_name": "Mire",
+  "description": "Cable Internet monitoring and diagnostics for local DOCSIS connections.",
+  "lang": "en",
+  "dir": "ltr",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#06080f",
+  "theme_color": "#7c3aed",
+  "start_url": "../?source=pwa",
+  "scope": "../",
+  "categories": ["network-monitoring", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Live dashboard",
+      "short_name": "Live",
+      "description": "Open the current cable diagnostics dashboard.",
+      "url": "../?source=pwa#live",
+      "icons": [{"src": "icon.png", "sizes": "512x512", "type": "image/png"}]
+    },
+    {
+      "name": "Event log",
+      "short_name": "Events",
+      "description": "Review connection events and incidents.",
+      "url": "../?source=pwa#events",
+      "icons": [{"src": "icon.png", "sizes": "512x512", "type": "image/png"}]
+    },
+    {
+      "name": "Channels",
+      "short_name": "Channels",
+      "description": "Inspect DOCSIS channel levels and modulation.",
+      "url": "../?source=pwa#channels",
+      "icons": [{"src": "icon.png", "sizes": "512x512", "type": "image/png"}]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/dashboard-narrow.png",
+      "sizes": "393x852",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mire mobile dashboard"
+    },
+    {
+      "src": "screenshots/dashboard-wide.png",
+      "sizes": "1440x1000",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Mire desktop dashboard"
+    }
+  ]
+}

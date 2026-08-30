@@ -1,0 +1,126 @@
+"""Collector discovery.
+
+Instantiates core collectors from runtime configuration and adds collector
+contributions from enabled modules.
+"""
+
+import logging
+
+from .base import Collector, CollectorResult
+from .modem import ModemCollector
+from .. import config as _config
+
+log = logging.getLogger("docsis.collectors")
+
+
+class _ModuleConfigProxy:
+    """Read-only config proxy that hides secret values from community modules."""
+
+    def __init__(self, config_mgr, module_id=None):
+        self._cfg = config_mgr
+        self._module_id = module_id
+
+    def get(self, key, default=None):
+        if key in _config.SECRET_KEYS | _config.HASH_KEYS | _config.PRIVATE_KEYS:
+            return default
+        if (
+            key in _config.MODULE_SECRET_KEYS
+            and _config.MODULE_SECRET_OWNERS.get(key) != self._module_id
+        ):
+            return default
+        return self._cfg.get(key, default)
+
+    def get_all(self, mask_secrets=False):
+        result = self._cfg.get_all(mask_secrets=True)
+        for key in _config.SECRET_KEYS | _config.HASH_KEYS | _config.PRIVATE_KEYS:
+            result.pop(key, None)
+        for key in _config.MODULE_SECRET_KEYS:
+            if _config.MODULE_SECRET_OWNERS.get(key) != self._module_id:
+                result.pop(key, None)
+            elif not mask_secrets and key in result:
+                result[key] = self._cfg.get(key)
+        return result
+
+    def is_configured(self):
+        return self._cfg.is_configured()
+
+    @property
+    def data_dir(self):
+        return self._cfg.data_dir
+
+
+def discover_collectors(config_mgr, storage, event_detector, mqtt_pub, web, analyzer, notifier=None, smart_capture=None):
+    """Discover and instantiate all available collectors based on config.
+
+    Args:
+        config_mgr: Configuration manager instance
+        storage: SnapshotStorage instance
+        event_detector: EventDetector instance
+        mqtt_pub: MQTTPublisher instance (or None)
+        web: Web module reference
+        analyzer: Analyzer module reference
+        notifier: NotificationDispatcher instance (or None)
+
+    Returns:
+        List of instantiated Collector objects ready to poll.
+    """
+    collectors = []
+    config = config_mgr.get_all()
+
+    # Modem collector (available if modem configured)
+    if config_mgr.is_configured():
+        from ..drivers import driver_registry
+
+        modem_type = config.get("modem_type", "generic")
+        driver = driver_registry.load_driver(
+            modem_type,
+            config["modem_url"],
+            config["modem_user"],
+            config["modem_password"],
+        )
+        log.info("Modem driver: %s", modem_type)
+
+        collectors.append(ModemCollector(
+            driver=driver,
+            analyzer_fn=analyzer.analyze,
+            event_detector=event_detector,
+            storage=storage,
+            mqtt_pub=mqtt_pub,
+            web=web,
+            poll_interval=config["poll_interval"],
+            notifier=notifier,
+            smart_capture=smart_capture,
+        ))
+
+
+    # ── Module collectors ──
+    module_loader = web.get_module_loader() if hasattr(web, 'get_module_loader') else None
+    if module_loader:
+        for mod in module_loader.get_enabled_modules():
+            if mod.collector_class:
+                try:
+                    # Community modules get a restricted config proxy that
+                    # hides core secret and hash-backed settings.
+                    if mod.builtin:
+                        mod_cfg = config_mgr
+                    else:
+                        mod_cfg = _ModuleConfigProxy(config_mgr, mod.id)
+                    c = mod.collector_class(
+                        config_mgr=mod_cfg,
+                        storage=storage,
+                        web=web,
+                    )
+                    collectors.append(c)
+                    log.info("Module collector: %s (%s)", mod.id, c.name)
+                except Exception as e:
+                    log.warning("Module collector '%s' failed to init: %s", mod.id, e)
+
+    return collectors
+
+
+__all__ = [
+    "Collector",
+    "CollectorResult",
+    "discover_collectors",
+    "ModemCollector",
+]

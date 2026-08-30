@@ -1,0 +1,112 @@
+{% macro term_list(panel_id, search_id, count_id, no_results_id, extra_class='') -%}
+<div class="glossary-term-panel {{ extra_class }}" data-glossary-panel>
+    <div class="glossary-search-block">
+        <label for="{{ search_id }}">{{ t.get('glossary_search_label', 'Search terms') }}</label>
+        <input id="{{ search_id }}" class="glossary-search" data-glossary-search type="search" autocomplete="off" placeholder="{{ t.get('glossary_search_placeholder', 'Search DOCSIS, SNR, Speedtest...') }}" aria-describedby="{{ count_id }}">
+        <p id="{{ count_id }}" class="glossary-result-count" aria-live="polite" data-singular-template="{{ t.get('glossary_result_singular', '{count} term shown') }}" data-plural-template="{{ t.get('glossary_result_plural', '{count} terms shown') }}">{{ t.get('glossary_result_plural', '{count} terms shown').replace('{count}', glossary_terms|length|string) }}</p>
+        <p id="{{ no_results_id }}" class="glossary-no-results" hidden>{{ t.get('glossary_no_results', 'No matching glossary terms. Try a broader word such as DOCSIS, signal, speed, or errors.') }}</p>
+    </div>
+    <p class="glossary-list-label">{{ t.get('glossary_alphabetical_terms', 'Alphabetical') }}</p>
+    <nav class="glossary-term-list" id="{{ panel_id }}" aria-label="{{ t.get('glossary_alphabetical_terms', 'Alphabetical') }}">
+        {% for term in glossary_terms %}
+        {% set category = glossary_category_by_id[term.category] %}
+        {% set search_text = term.title ~ ' ' ~ term.id ~ ' ' ~ category.title ~ ' ' ~ (term.aliases|join(' ')) ~ ' ' ~ (term.tags|join(' ')) ~ ' ' ~ (term.source_pages|join(' ')) ~ ' ' ~ (term.ui_contexts|join(' ')) %}
+        <a data-glossary-term data-term-id="{{ term.id }}" data-category="{{ term.category }}" data-tags="{{ term.tags|join(' ') }}" data-source-pages="{{ term.source_pages|join(' ') }}" data-ui-contexts="{{ term.ui_contexts|join(' ') }}" data-search-title="{{ term.title|e }}" data-search-aliases="{{ term.aliases|join(' ')|e }}" data-search-alias-values="{{ term.aliases|join('|||')|e }}" data-search-id="{{ term.id|e }}" data-search-metadata="{{ (category.title ~ ' ' ~ (term.tags|join(' ')) ~ ' ' ~ (term.source_pages|join(' ')) ~ ' ' ~ (term.ui_contexts|join(' ')))|e }}" data-search="{{ search_text|e }}" class="glossary-term-link {{ 'active' if glossary_selected_term and glossary_selected_term.id == term.id else '' }}" href="{{ url_for('index', lang=lang, _anchor='glossary?term=' ~ term.id) }}" aria-current="{{ 'page' if glossary_selected_term and glossary_selected_term.id == term.id else 'false' }}">
+            {{ term.title }}
+        </a>
+        {% endfor %}
+    </nav>
+</div>
+{%- endmacro %}
+
+<div class="view-page-header glossary-view-header">
+    <div class="view-page-header-left">
+        <h2 class="view-page-title" id="glossary-title">{{ t.get('glossary_page_title', 'Glossary') }}</h2>
+        <span class="view-page-subtitle">{{ t.get('glossary_page_intro', 'Search cable and DOCSIS terms, then read a short summary and the actual explanation.') }}</span>
+    </div>
+</div>
+
+{% if glossary_selected_term %}
+<button type="button" class="glossary-mobile-picker-trigger" data-glossary-picker-open aria-controls="glossary-mobile-picker" aria-expanded="false" data-glossary-selected-prefix="{{ t.get('glossary_selected_term', 'Selected term') }}">
+    <span data-glossary-mobile-selected>{{ t.get('glossary_selected_term', 'Selected term') }}: {{ glossary_selected_term.title }}</span>
+    <strong>{{ t.get('glossary_change_term', 'Search or change term') }}</strong>
+</button>
+{% endif %}
+
+<section class="glossary-layout" aria-label="{{ t.get('glossary_page_title', 'Glossary') }}">
+    <aside class="glossary-index glossary-index-desktop" aria-label="{{ t.get('glossary_filter_title', 'Find a term') }}">
+        <h3>{{ t.get('glossary_filter_title', 'Find a term') }}</h3>
+        {{ term_list('glossary-desktop-terms', 'glossary-search', 'glossary-result-count', 'glossary-no-results') }}
+    </aside>
+
+    <article class="glossary-article" aria-live="polite">
+        <section class="glossary-card glossary-empty-state" data-glossary-missing hidden>
+            <h3>{{ t.get('glossary_no_term_selected', 'No glossary term selected') }}</h3>
+            <p>{{ t.get('glossary_no_results', 'No matching glossary terms. Try a broader word such as DOCSIS, signal, speed, or errors.') }}</p>
+        </section>
+        {% for term in glossary_terms %}
+        <section class="glossary-term-article" data-glossary-article data-term-id="{{ term.id }}" data-title="{{ term.title }}" data-category="{{ term.category }}" data-tags="{{ term.tags|join(' ') }}" data-source-pages="{{ term.source_pages|join(' ') }}" data-ui-contexts="{{ term.ui_contexts|join(' ') }}" data-related="{{ term.related|join(' ') }}" {{ 'hidden' if not glossary_selected_term or glossary_selected_term.id != term.id else '' }}>
+            <section class="glossary-card glossary-term-header-card">
+                <h3 id="glossary-term-title-{{ term.id }}">{{ term.title }}</h3>
+                {% if term.aliases %}
+                <p class="glossary-aliases"><span>{{ t.get('glossary_aliases_heading', 'Also searched as') }}:</span> {{ term.aliases|join(', ') }}</p>
+                {% endif %}
+            </section>
+
+            <section class="glossary-card glossary-summary-card" aria-labelledby="summary-heading-{{ term.id }}">
+                <h4 id="summary-heading-{{ term.id }}">{{ t.get('glossary_summary_heading', 'Quick summary') }}</h4>
+                <p>{{ term.levels.eli5 }}</p>
+            </section>
+
+            <section class="glossary-card glossary-explanation-card" aria-labelledby="explanation-heading-{{ term.id }}">
+                <h4 id="explanation-heading-{{ term.id }}">{{ t.get('glossary_explanation_heading', 'Explanation') }}</h4>
+                <p>{{ term.levels.basic }}</p>
+                {% if term.levels.advanced and term.levels.advanced != term.levels.basic %}
+                <p>{{ term.levels.advanced }}</p>
+                {% endif %}
+                {% if term.levels.technician and term.levels.technician != term.levels.basic and term.levels.technician != term.levels.advanced %}
+                <p>{{ term.levels.technician }}</p>
+                {% endif %}
+            </section>
+
+            {% if term.media %}
+            <section class="glossary-card glossary-media-card" aria-label="{{ term.title }} media">
+                {% for item in term.media %}
+                <figure class="glossary-media-item">
+                    <img src="{{ item.src }}" alt="{{ item.alt }}" loading="lazy">
+                    {% if item.caption %}<figcaption>{{ item.caption }}</figcaption>{% endif %}
+                </figure>
+                {% endfor %}
+            </section>
+            {% endif %}
+
+            {% if term.related %}
+            <nav class="glossary-related-row" aria-label="{{ t.get('glossary_related_heading', 'Related terms') }}">
+                <span>{{ t.get('glossary_related_heading', 'Related terms') }}:</span>
+                {% for related_id in term.related %}
+                {% set related = glossary_term_by_id.get(related_id) %}
+                {% if related %}
+                <a class="glossary-related-link" data-glossary-related-term href="{{ url_for('index', lang=lang, _anchor='glossary?term=' ~ related.id) }}">{{ related.title }}</a>
+                {% endif %}
+                {% endfor %}
+            </nav>
+            {% endif %}
+        </section>
+        {% endfor %}
+        {% if not glossary_terms %}
+        <section class="glossary-card">
+            <h3>{{ t.get('glossary_no_term_selected', 'No glossary term selected') }}</h3>
+        </section>
+        {% endif %}
+    </article>
+</section>
+
+<div id="glossary-mobile-picker" class="glossary-mobile-picker" data-glossary-picker hidden>
+    <div class="glossary-mobile-picker-backdrop" data-glossary-picker-close></div>
+    <section class="glossary-mobile-picker-sheet" role="dialog" aria-modal="true" aria-labelledby="glossary-mobile-picker-title">
+        <button type="button" class="glossary-mobile-picker-close" data-glossary-picker-close aria-label="{{ t.get('glossary_close_picker', 'Close term picker') }}">&times;</button>
+        <div class="glossary-mobile-picker-handle" aria-hidden="true"></div>
+        <h3 id="glossary-mobile-picker-title">{{ t.get('glossary_filter_title', 'Find a term') }}</h3>
+        {{ term_list('glossary-mobile-terms', 'glossary-mobile-search', 'glossary-mobile-result-count', 'glossary-mobile-no-results', 'glossary-term-panel-mobile') }}
+    </section>
+</div>

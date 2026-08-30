@@ -1,0 +1,492 @@
+"""Tests for modulation performance API routes (v2)."""
+
+import json
+from datetime import datetime, timedelta, timezone
+
+import pytest
+
+from app.config import ConfigManager
+from app.storage import SnapshotStorage
+from app.app_factory import create_app, default_module_loader_factory
+
+
+def _ts_days_ago(days):
+    """Return a UTC ISO timestamp for N days ago at 10:00."""
+    dt = datetime.now(timezone.utc) - timedelta(days=days)
+    return dt.replace(hour=10, minute=0, second=0, microsecond=0).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+@pytest.fixture
+def config_mgr(tmp_path):
+    data_dir = str(tmp_path / "data")
+    mgr = ConfigManager(data_dir)
+    mgr.save({"modem_password": "test", "modem_type": "fritzbox", "timezone": "UTC"})
+    return mgr
+
+
+@pytest.fixture
+def client_no_storage(config_mgr):
+    app = create_app(
+        config_manager=config_mgr,
+        module_loader_factory=default_module_loader_factory(config_mgr, search_paths=[]),
+        environ={}, testing=True,
+    )
+    with app.test_client() as client:
+        yield client
+
+
+@pytest.fixture
+def client_with_storage(tmp_path, config_mgr):
+    db_path = str(tmp_path / "modulation_test.db")
+    storage = SnapshotStorage(db_path, max_days=7)
+    storage.set_timezone("UTC")
+    app = create_app(
+        config_manager=config_mgr,
+        storage=storage,
+        module_loader_factory=default_module_loader_factory(config_mgr, search_paths=[]),
+        environ={}, testing=True,
+    )
+    with app.test_client() as client:
+        yield client, storage
+
+
+def _store_snapshot(storage, timestamp, us_channels=None, ds_channels=None):
+    """Insert a snapshot directly into the database with a specific timestamp."""
+    import sqlite3
+    summary = {"ds_total": len(ds_channels or []), "us_total": len(us_channels or [])}
+    with sqlite3.connect(storage.db_path) as conn:
+        conn.execute(
+            "INSERT INTO snapshots (timestamp, summary_json, ds_channels_json, us_channels_json) VALUES (?, ?, ?, ?)",
+            (timestamp, json.dumps(summary), json.dumps(ds_channels or []), json.dumps(us_channels or [])),
+        )
+
+
+# ── Distribution endpoint (v2) ──
+
+class TestDistributionEndpoint:
+    def test_no_storage_returns_503(self, client_no_storage):
+        resp = client_no_storage.get("/api/modulation/distribution")
+        assert resp.status_code == 503
+
+    def test_empty_storage_returns_empty(self, client_with_storage):
+        client, _ = client_with_storage
+        resp = client.get("/api/modulation/distribution")
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["sample_count"] == 0
+        assert data["protocol_groups"] == []
+
+    def test_default_params(self, client_with_storage):
+        client, storage = client_with_storage
+        _store_snapshot(storage, _ts_days_ago(1),
+                        us_channels=[{"modulation": "64QAM", "channel_id": 1, "docsis_version": "3.0"}])
+        resp = client.get("/api/modulation/distribution")
+        data = resp.get_json()
+        assert data["direction"] == "us"
+
+    def test_direction_param_ds(self, client_with_storage):
+        client, storage = client_with_storage
+        _store_snapshot(storage, _ts_days_ago(1),
+                        us_channels=[{"modulation": "64QAM", "channel_id": 1, "docsis_version": "3.0"}],
+                        ds_channels=[{"modulation": "256QAM", "channel_id": 1, "docsis_version": "3.0"}])
+        resp = client.get("/api/modulation/distribution?direction=ds")
+        data = resp.get_json()
+        assert data["direction"] == "ds"
+        assert len(data["protocol_groups"]) > 0
+        pg = data["protocol_groups"][0]
+        assert "256QAM" in pg["distribution"]
+
+    def test_invalid_direction_defaults_to_us(self, client_with_storage):
+        client, _ = client_with_storage
+        resp = client.get("/api/modulation/distribution?direction=invalid")
+        data = resp.get_json()
+        assert data["direction"] == "us"
+
+    def test_days_param(self, client_with_storage):
+        client, _ = client_with_storage
+        resp = client.get("/api/modulation/distribution?days=1")
+        assert resp.status_code == 200
+
+    def test_response_has_protocol_groups(self, client_with_storage):
+        client, storage = client_with_storage
+        _store_snapshot(storage, _ts_days_ago(1),
+                        us_channels=[{"modulation": "64QAM", "channel_id": 1, "docsis_version": "3.0"}])
+        resp = client.get("/api/modulation/distribution")
+        data = resp.get_json()
+        assert "protocol_groups" in data
+        assert "aggregate" in data
+        assert "sample_count" in data
+        assert "expected_samples" in data
+        assert "sample_density" in data
+        assert "disclaimer" in data
+        assert "capacity_history" in data
+        assert "downstream" in data["capacity_history"]
+        assert "upstream" in data["capacity_history"]
+
+    def test_capacity_history_includes_both_directions_and_tariff_status(self, client_with_storage, config_mgr):
+        client, storage = client_with_storage
+        config_mgr.save({
+            "modem_password": "test",
+            "modem_type": "fritzbox",
+            "timezone": "UTC",
+            "booked_download": 50,
+            "booked_upload": 25,
+        })
+        day = _ts_days_ago(1)[:10]
+        _store_snapshot(
+            storage,
+            f"{day}T10:00:00Z",
+            ds_channels=[{"modulation": "256QAM", "channel_id": 1, "docsis_version": "3.0"}],
+            us_channels=[{"modulation": "64QAM", "channel_id": 1, "docsis_version": "3.0"}],
+        )
+        _store_snapshot(
+            storage,
+            f"{day}T11:00:00Z",
+            ds_channels=[{"modulation": "64QAM", "channel_id": 1, "docsis_version": "3.0"}],
+            us_channels=[{"modulation": "16QAM", "channel_id": 1, "docsis_version": "3.0"}],
+        )
+
+        resp = client.get("/api/modulation/distribution?days=7&direction=us")
+        data = resp.get_json()
+
+        ds = data["capacity_history"]["downstream"]
+        us = data["capacity_history"]["upstream"]
+        assert ds["capacity_min_mbps"] == 41.7
+        assert ds["tariff_met_pct"] == 50.0
+        assert ds["status"] == "below_some_samples"
+        assert us["capacity_max_mbps"] == 30.7
+        assert us["tariff_met_pct"] == 50.0
+
+    def test_capacity_history_reports_unsupported_channel_families_for_partial_estimates(self, client_with_storage):
+        client, storage = client_with_storage
+        day = _ts_days_ago(1)[:10]
+        _store_snapshot(
+            storage,
+            f"{day}T10:00:00Z",
+            ds_channels=[
+                {"modulation": "256QAM", "channel_id": 1, "docsis_version": "3.0"},
+                {"modulation": "4096QAM", "type": "OFDM", "channel_id": 33, "docsis_version": "3.1"},
+            ],
+            us_channels=[
+                {"modulation": "64QAM", "channel_id": 1, "docsis_version": "3.0"},
+                {"modulation": "1024QAM", "type": "OFDMA", "channel_id": 5, "docsis_version": "3.1"},
+            ],
+        )
+
+        resp = client.get("/api/modulation/distribution?days=7&direction=ds")
+        data = resp.get_json()
+
+        ds = data["capacity_history"]["downstream"]
+        us = data["capacity_history"]["upstream"]
+        assert ds["coverage_pct"] == 50.0
+        assert ds["unsupported_channel_samples"] == 1
+        assert ds["unsupported_channel_families"] == {"ofdm": 1}
+        assert us["coverage_pct"] == 50.0
+        assert us["unsupported_channel_samples"] == 1
+        assert us["unsupported_channel_families"] == {"ofdma": 1}
+
+    def test_capacity_history_uses_detected_connection_speed_when_booked_tariff_empty(self, client_with_storage):
+        client, storage = client_with_storage
+        from app.web import reset_modem_state, update_state
+
+        with client.application.app_context():
+            update_state(connection_info={"max_downstream_kbps": 50000, "max_upstream_kbps": 25000})
+        day = _ts_days_ago(1)[:10]
+        _store_snapshot(
+            storage,
+            f"{day}T10:00:00Z",
+            ds_channels=[{"modulation": "64QAM", "channel_id": 1, "docsis_version": "3.0"}],
+            us_channels=[{"modulation": "16QAM", "channel_id": 1, "docsis_version": "3.0"}],
+        )
+
+        try:
+            resp = client.get("/api/modulation/distribution?days=7&direction=us")
+            data = resp.get_json()
+
+            ds = data["capacity_history"]["downstream"]
+            us = data["capacity_history"]["upstream"]
+            assert ds["tariff_mbps"] == 50.0
+            assert ds["tariff_met_pct"] == 0.0
+            assert ds["status"] == "below_some_samples"
+            assert us["tariff_mbps"] == 25.0
+            assert us["tariff_met_pct"] == 0.0
+            assert us["status"] == "below_some_samples"
+        finally:
+            with client.application.app_context():
+                reset_modem_state()
+
+
+    def test_aggregate_low_qam_pct_weighted_across_protocol_sample_counts(self, client_with_storage):
+        client, storage = client_with_storage
+        day = _ts_days_ago(1)[:10]
+        _store_snapshot(
+            storage,
+            f"{day}T08:00:00Z",
+            us_channels=[{"modulation": "16QAM", "channel_id": 1, "docsis_version": "3.0"}],
+        )
+        for idx in range(100):
+            _store_snapshot(
+                storage,
+                f"{day}T09:{idx % 60:02d}:00Z",
+                us_channels=[
+                    {"modulation": "1024QAM", "channel_id": 10, "docsis_version": "3.1"},
+                ],
+            )
+
+        resp = client.get("/api/modulation/distribution?days=7&direction=us")
+        data = resp.get_json()
+
+        assert data["aggregate"]["low_qam_pct"] == 1.0
+        assert data["aggregate"]["low_qam_pct"] != 50.0
+
+
+    def test_us_docsis31_128qam_does_not_count_as_low_qam_in_distribution_trend(self, client_with_storage):
+        client, storage = client_with_storage
+        day = _ts_days_ago(1)[:10]
+        for minute in range(4):
+            _store_snapshot(
+                storage,
+                f"{day}T10:{minute:02d}:00Z",
+                us_channels=[
+                    {"modulation": "64QAM", "channel_id": 1, "docsis_version": "3.1"},
+                ],
+            )
+        for minute in range(4, 10):
+            _store_snapshot(
+                storage,
+                f"{day}T10:{minute:02d}:00Z",
+                us_channels=[
+                    {"modulation": "128QAM", "channel_id": 1, "docsis_version": "3.1"},
+                ],
+            )
+
+        resp = client.get("/api/modulation/distribution?days=7&direction=us")
+        data = resp.get_json()
+        pg = data["protocol_groups"][0]
+
+        assert pg["docsis_version"] == "3.1"
+        assert pg["distribution"] == {"128QAM": 60.0, "64QAM": 40.0}
+        assert pg["days"][0]["low_qam_pct"] == 40.0
+        assert pg["low_qam_pct"] == 40.0
+        assert data["aggregate"]["low_qam_pct"] == 40.0
+        assert pg["low_qam_pct"] != 100.0
+
+    def test_protocol_group_structure(self, client_with_storage):
+        client, storage = client_with_storage
+        _store_snapshot(storage, _ts_days_ago(1),
+                        us_channels=[{"modulation": "64QAM", "channel_id": 1, "docsis_version": "3.0"}])
+        resp = client.get("/api/modulation/distribution")
+        data = resp.get_json()
+        pg = data["protocol_groups"][0]
+        assert "docsis_version" in pg
+        assert "max_qam" in pg
+        assert "channel_count" in pg
+        assert "health_index" in pg
+        assert "distribution" in pg
+        assert "days" in pg
+        assert "degraded_channel_count" in pg
+
+    def test_disclaimer_present(self, client_with_storage):
+        client, _ = client_with_storage
+        resp = client.get("/api/modulation/distribution")
+        data = resp.get_json()
+        assert "disclaimer" in data
+        assert len(data["disclaimer"]) > 0
+
+
+# ── Intraday endpoint ──
+
+class TestIntradayEndpoint:
+    def test_no_storage_returns_503(self, client_no_storage):
+        resp = client_no_storage.get("/api/modulation/intraday")
+        assert resp.status_code == 503
+
+    def test_empty_storage_returns_empty(self, client_with_storage):
+        client, _ = client_with_storage
+        resp = client.get("/api/modulation/intraday?date=2026-03-01")
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["protocol_groups"] == []
+        assert data["date"] == "2026-03-01"
+
+    def test_returns_channel_timeline(self, client_with_storage):
+        client, storage = client_with_storage
+        _store_snapshot(storage, "2026-03-05T10:00:00Z",
+                        us_channels=[{"modulation": "64QAM", "channel_id": 1,
+                                      "docsis_version": "3.0", "frequency": "51.000"}])
+        _store_snapshot(storage, "2026-03-05T14:00:00Z",
+                        us_channels=[{"modulation": "16QAM", "channel_id": 1,
+                                      "docsis_version": "3.0", "frequency": "51.000"}])
+        resp = client.get("/api/modulation/intraday?direction=us&date=2026-03-05")
+        data = resp.get_json()
+        assert len(data["protocol_groups"]) == 1
+        pg = data["protocol_groups"][0]
+        assert len(pg["channels"]) == 1
+        ch = pg["channels"][0]
+        assert ch["channel_id"] == 1
+        assert len(ch["timeline"]) >= 1
+        assert data["capacity_history"]["upstream"]["sample_count"] == 2
+        assert data["capacity_history"]["upstream"]["capacity_min_mbps"] == 20.5
+
+    def test_direction_param(self, client_with_storage):
+        client, storage = client_with_storage
+        _store_snapshot(storage, "2026-03-05T10:00:00Z",
+                        ds_channels=[{"modulation": "256QAM", "channel_id": 1,
+                                      "docsis_version": "3.0", "frequency": "114.000"}])
+        resp = client.get("/api/modulation/intraday?direction=ds&date=2026-03-05")
+        data = resp.get_json()
+        assert data["direction"] == "ds"
+        assert len(data["protocol_groups"]) > 0
+
+    def test_disclaimer_present(self, client_with_storage):
+        client, _ = client_with_storage
+        resp = client.get("/api/modulation/intraday?date=2026-03-01")
+        data = resp.get_json()
+        assert "disclaimer" in data
+
+
+# ── Trend endpoint (legacy) ──
+
+class TestTrendEndpoint:
+    def test_no_storage_returns_503(self, client_no_storage):
+        resp = client_no_storage.get("/api/modulation/trend")
+        assert resp.status_code == 503
+
+    def test_empty_storage_returns_empty_list(self, client_with_storage):
+        client, _ = client_with_storage
+        resp = client.get("/api/modulation/trend")
+        assert resp.status_code == 200
+        assert resp.get_json() == []
+
+    def test_returns_per_day_entries(self, client_with_storage):
+        client, storage = client_with_storage
+        ts_2 = _ts_days_ago(2)
+        ts_1 = _ts_days_ago(1)
+        _store_snapshot(storage, ts_2,
+                        us_channels=[{"modulation": "64QAM", "channel_id": 1, "docsis_version": "3.0"}])
+        _store_snapshot(storage, ts_1,
+                        us_channels=[{"modulation": "256QAM", "channel_id": 1, "docsis_version": "3.0"}])
+        resp = client.get("/api/modulation/trend?days=7")
+        data = resp.get_json()
+        assert len(data) == 2
+        assert data[0]["date"] == ts_2[:10]
+        assert data[1]["date"] == ts_1[:10]
+
+    def test_trend_entry_fields(self, client_with_storage):
+        client, storage = client_with_storage
+        _store_snapshot(storage, _ts_days_ago(1),
+                        us_channels=[{"modulation": "64QAM", "channel_id": 1, "docsis_version": "3.0"}])
+        resp = client.get("/api/modulation/trend")
+        data = resp.get_json()
+        assert len(data) == 1
+        entry = data[0]
+        assert "date" in entry
+        assert "health_index" in entry
+        assert "low_qam_pct" in entry
+        assert "dominant_modulation" in entry
+        assert "sample_count" in entry
+
+    def test_weighted_low_qam_pct_preserved_for_partial_exposure(self, client_with_storage):
+        client, storage = client_with_storage
+        day = _ts_days_ago(1)[:10]
+        for hour in range(10, 14):
+            _store_snapshot(
+                storage,
+                f"{day}T{hour:02d}:00:00Z",
+                us_channels=[
+                    {"modulation": "64QAM", "channel_id": 1, "docsis_version": "3.0"},
+                    {"modulation": "64QAM", "channel_id": 2, "docsis_version": "3.0"},
+                ],
+            )
+        _store_snapshot(
+            storage,
+            f"{day}T14:00:00Z",
+            us_channels=[
+                {"modulation": "16QAM", "channel_id": 1, "docsis_version": "3.0"},
+                {"modulation": "64QAM", "channel_id": 2, "docsis_version": "3.0"},
+            ],
+        )
+
+        resp = client.get("/api/modulation/trend?days=7&direction=us")
+        data = resp.get_json()
+
+        assert len(data) == 1
+        assert data[0]["low_qam_pct"] == 10.0
+        assert data[0]["low_qam_pct"] != 100.0
+
+
+    def test_trend_keeps_unknown_in_visible_low_qam_denominator(self, client_with_storage):
+        client, storage = client_with_storage
+        day = _ts_days_ago(1)[:10]
+        for hour in range(19):
+            _store_snapshot(
+                storage,
+                f"{day}T{hour:02d}:00:00Z",
+                us_channels=[
+                    {"modulation": "Unknown", "channel_id": 1, "docsis_version": "3.1"},
+                ],
+            )
+        _store_snapshot(
+            storage,
+            f"{day}T20:00:00Z",
+            us_channels=[
+                {"modulation": "64QAM", "channel_id": 1, "docsis_version": "3.1"},
+            ],
+        )
+
+        resp = client.get("/api/modulation/trend?days=7&direction=us")
+        data = resp.get_json()
+
+        assert len(data) == 1
+        assert data[0]["low_qam_pct"] == 5.0
+        assert data[0]["low_qam_pct"] != 100.0
+        assert data[0]["dominant_modulation"] == "Unknown"
+
+    def test_trend_us_docsis31_128qam_does_not_count_as_low_qam(self, client_with_storage):
+        client, storage = client_with_storage
+        day = _ts_days_ago(1)[:10]
+        for minute in range(4):
+            _store_snapshot(
+                storage,
+                f"{day}T10:{minute:02d}:00Z",
+                us_channels=[
+                    {"modulation": "64QAM", "channel_id": 1, "docsis_version": "3.1"},
+                ],
+            )
+        for minute in range(4, 10):
+            _store_snapshot(
+                storage,
+                f"{day}T10:{minute:02d}:00Z",
+                us_channels=[
+                    {"modulation": "128QAM", "channel_id": 1, "docsis_version": "3.1"},
+                ],
+            )
+
+        resp = client.get("/api/modulation/trend?days=7&direction=us")
+        data = resp.get_json()
+
+        assert len(data) == 1
+        assert data[0]["low_qam_pct"] == 40.0
+        assert data[0]["low_qam_pct"] != 100.0
+        assert data[0]["health_index"] < 100.0
+
+
+
+
+# ── JSON response format ──
+
+class TestResponseFormat:
+    def test_content_type_json(self, client_with_storage):
+        client, _ = client_with_storage
+        resp = client.get("/api/modulation/distribution")
+        assert resp.content_type.startswith("application/json")
+
+    def test_trend_content_type_json(self, client_with_storage):
+        client, _ = client_with_storage
+        resp = client.get("/api/modulation/trend")
+        assert resp.content_type.startswith("application/json")
+
+    def test_intraday_content_type_json(self, client_with_storage):
+        client, _ = client_with_storage
+        resp = client.get("/api/modulation/intraday?date=2026-03-01")
+        assert resp.content_type.startswith("application/json")

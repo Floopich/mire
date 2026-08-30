@@ -1,0 +1,346 @@
+"""Prometheus text format exposition formatter for Mire metrics.
+
+Pure function -- no Flask dependency, no side effects.
+"""
+
+from __future__ import annotations
+
+from .docsis_utils import parse_qam_order as _parse_qam_order
+from .types import AnalysisResult, ConnectionInfo, DeviceInfo
+
+# Health string to numeric mapping
+_HEALTH_MAP = {"good": 0, "tolerated": 1, "marginal": 2, "critical": 3}
+
+
+def _frequency_label(value):
+    """Normalize channel frequency for Prometheus labels.
+
+    Returns a string in MHz where possible, without the trailing unit.
+    """
+    if value is None:
+        return None
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    lowered = text.lower()
+    if lowered.endswith("mhz"):
+        text = text[:-3].strip()
+        return text or None
+
+    try:
+        numeric = float(text)
+    except ValueError:
+        return text
+
+    if abs(numeric) >= 1_000_000:
+        numeric /= 1_000_000
+
+    if numeric.is_integer():
+        return str(int(numeric))
+
+    return f"{numeric:.3f}".rstrip("0").rstrip(".")
+
+
+def _channel_labels(channel):
+    """Build Prometheus labels for a DOCSIS channel metric."""
+    labels = {"channel_id": str(channel["channel_id"])}
+    frequency = _frequency_label(channel.get("frequency"))
+    if frequency is not None:
+        labels["frequency"] = frequency
+    return labels
+
+
+def _escape_label_value(value):
+    """Escape a Prometheus label value per the text exposition spec:
+    backslash, double-quote, and newline."""
+    return (
+        str(value)
+        .replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("\n", "\\n")
+    )
+
+
+def _format_labels(labels):
+    return ",".join(f'{k}="{_escape_label_value(v)}"' for k, v in labels.items())
+
+
+def _metric(lines, help_text, metric_type, name, value, labels=None):
+    """Append HELP, TYPE, and a single value line to lines list."""
+    lines.append(f"# HELP {name} {help_text}")
+    lines.append(f"# TYPE {name} {metric_type}")
+    if labels:
+        lines.append(f"{name}{{{_format_labels(labels)}}} {value}")
+    else:
+        lines.append(f"{name} {value}")
+
+
+def _metric_family_open(lines, help_text, metric_type, name):
+    """Append HELP and TYPE for a multi-value metric family."""
+    lines.append(f"# HELP {name} {help_text}")
+    lines.append(f"# TYPE {name} {metric_type}")
+
+
+def _metric_value(lines, name, value, labels=None):
+    """Append a single value line for an already-opened metric family."""
+    if labels:
+        lines.append(f"{name}{{{_format_labels(labels)}}} {value}")
+    else:
+        lines.append(f"{name} {value}")
+
+
+def format_metrics(
+    analysis: AnalysisResult | None,
+    device_info: DeviceInfo | None,
+    connection_info: ConnectionInfo | None,
+    last_poll_timestamp: float,
+) -> str:
+    """Format Mire state as Prometheus text exposition format.
+
+    Args:
+        analysis: AnalysisResult from analyzer.analyze() or None
+        device_info: DeviceInfo from driver.get_device_info() or None
+        connection_info: ConnectionInfo from driver.get_connection_info() or None
+        last_poll_timestamp: float (Unix epoch) or 0.0
+
+    Returns:
+        str: Prometheus text exposition format string, ending with newline
+    """
+    lines = []
+
+    # --- Health status ---
+    if analysis is not None:
+        health_str = analysis.get("summary", {}).get("health", "good")
+        health_val = _HEALTH_MAP.get(health_str, 4)
+    else:
+        health_val = 4
+
+    _metric(
+        lines,
+        "DOCSIS signal health status: 0=good 1=tolerated 2=marginal 3=critical 4=unknown",
+        "gauge",
+        "mire_health_status",
+        health_val,
+    )
+
+    # --- Channel counts ---
+    if analysis is not None:
+        summary = analysis.get("summary", {})
+        ds_total = summary.get("ds_total", 0)
+        us_total = summary.get("us_total", 0)
+    else:
+        ds_total = 0
+        us_total = 0
+
+    _metric(
+        lines,
+        "Number of active downstream channels",
+        "gauge",
+        "mire_downstream_channels_total",
+        ds_total,
+    )
+    _metric(
+        lines,
+        "Number of active upstream channels",
+        "gauge",
+        "mire_upstream_channels_total",
+        us_total,
+    )
+
+    # --- Downstream channel metrics ---
+    ds_channels = analysis.get("ds_channels", []) if analysis else []
+
+    if ds_channels:
+        _metric_family_open(
+            lines,
+            "Downstream channel receive power level in dBmV",
+            "gauge",
+            "mire_downstream_power_dbmv",
+        )
+        for ch in ds_channels:
+            ch["channel_id"]
+            if ch.get("power") is not None:
+                _metric_value(lines, "mire_downstream_power_dbmv", ch["power"],
+                              _channel_labels(ch))
+
+        _metric_family_open(
+            lines,
+            "Downstream channel signal-to-noise ratio in dB",
+            "gauge",
+            "mire_downstream_snr_db",
+        )
+        for ch in ds_channels:
+            if ch.get("snr") is not None:
+                _metric_value(lines, "mire_downstream_snr_db", ch["snr"],
+                              _channel_labels(ch))
+
+        _metric_family_open(
+            lines,
+            "Downstream channel correctable codeword errors (cumulative)",
+            "counter",
+            "mire_downstream_corrected_errors_total",
+        )
+        for ch in ds_channels:
+            if ch.get("correctable_errors") is not None:
+                _metric_value(lines, "mire_downstream_corrected_errors_total",
+                              ch["correctable_errors"],
+                              _channel_labels(ch))
+
+        _metric_family_open(
+            lines,
+            "Downstream channel uncorrectable codeword errors (cumulative)",
+            "counter",
+            "mire_downstream_uncorrected_errors_total",
+        )
+        for ch in ds_channels:
+            if ch.get("uncorrectable_errors") is not None:
+                _metric_value(lines, "mire_downstream_uncorrected_errors_total",
+                              ch["uncorrectable_errors"],
+                              _channel_labels(ch))
+
+        _metric_family_open(
+            lines,
+            "Downstream channel QAM modulation order (e.g. 256 for 256-QAM)",
+            "gauge",
+            "mire_downstream_modulation",
+        )
+        for ch in ds_channels:
+            qam = _parse_qam_order(ch.get("modulation", ""))
+            if qam is not None:
+                _metric_value(lines, "mire_downstream_modulation", qam,
+                              _channel_labels(ch))
+
+    # --- Upstream channel metrics ---
+    us_channels = analysis.get("us_channels", []) if analysis else []
+
+    if us_channels:
+        _metric_family_open(
+            lines,
+            "Upstream channel transmit power level in dBmV",
+            "gauge",
+            "mire_upstream_power_dbmv",
+        )
+        for ch in us_channels:
+            if ch.get("power") is not None:
+                _metric_value(lines, "mire_upstream_power_dbmv", ch["power"],
+                              _channel_labels(ch))
+
+        _metric_family_open(
+            lines,
+            "Upstream channel QAM modulation order (e.g. 64 for 64-QAM)",
+            "gauge",
+            "mire_upstream_modulation",
+        )
+        for ch in us_channels:
+            qam = _parse_qam_order(ch.get("modulation", ""))
+            if qam is not None:
+                _metric_value(lines, "mire_upstream_modulation", qam,
+                              _channel_labels(ch))
+
+    # --- Device info ---
+    if device_info is not None:
+        # mire_device_info holds only immutable identifying labels.
+        # Mutable fields (docsis_status, reboot_reason) are exposed as
+        # separate metrics below so they refresh on every scrape.
+        labels = {
+            "model": device_info.get("model"),
+            "hw_version": device_info.get("hw_version"),
+            "sw_version": device_info.get("sw_version"),
+        }
+        labels = {k: v for k, v in labels.items() if v not in (None, "")}
+        _metric(
+            lines,
+            "Device identification (model, hw/sw version)",
+            "gauge",
+            "mire_device_info",
+            1,
+            labels,
+        )
+
+        docsis_status = device_info.get("docsis_status")
+        if docsis_status not in (None, ""):
+            _metric(
+                lines,
+                "1 when the modem reports DOCSIS online, 0 otherwise",
+                "gauge",
+                "mire_docsis_online",
+                1 if str(docsis_status).lower() == "online" else 0,
+            )
+
+        # dynamic numeric metric: uptime
+        uptime = device_info.get("uptime_seconds")
+        if uptime is not None:
+            _metric(
+                lines,
+                "Device uptime in seconds",
+                "gauge",
+                "mire_device_uptime_seconds",
+                uptime,
+            )
+
+        reboot_reason = device_info.get("reboot_reason")
+        if reboot_reason not in (None, ""):
+            _metric(
+                lines,
+                "Reason reported for the last modem reboot (label carries the value, metric is always 1)",
+                "gauge",
+                "mire_last_reboot_reason_info",
+                1,
+                {"reason": reboot_reason},
+            )
+
+        wan_ipv4 = device_info.get("wan_ipv4")
+        if wan_ipv4 not in (None, ""):
+            _metric(
+                lines,
+                "WAN IPv4 address (label carries the value, metric is always 1)",
+                "gauge",
+                "mire_device_wan_ipv4_info",
+                1,
+                {"wan_ipv4": wan_ipv4},
+            )
+
+        wan_ipv6 = device_info.get("wan_ipv6")
+        if wan_ipv6 not in (None, ""):
+            _metric(
+                lines,
+                "WAN IPv6 address (label carries the value, metric is always 1)",
+                "gauge",
+                "mire_device_wan_ipv6_info",
+                1,
+                {"wan_ipv6": wan_ipv6},
+            )
+
+    # --- Connection info ---
+    if connection_info is not None:
+        ds_kbps = connection_info.get("max_downstream_kbps")
+        us_kbps = connection_info.get("max_upstream_kbps")
+        if ds_kbps is not None:
+            _metric(
+                lines,
+                "Maximum downstream speed in kbps as reported by modem",
+                "gauge",
+                "mire_connection_max_downstream_kbps",
+                ds_kbps,
+            )
+        if us_kbps is not None:
+            _metric(
+                lines,
+                "Maximum upstream speed in kbps as reported by modem",
+                "gauge",
+                "mire_connection_max_upstream_kbps",
+                us_kbps,
+            )
+
+    # --- Poll timestamp ---
+    _metric(
+        lines,
+        "Unix timestamp of the last successful modem data poll",
+        "gauge",
+        "mire_last_poll_timestamp_seconds",
+        float(last_poll_timestamp),
+    )
+
+    return "\n".join(lines) + "\n"

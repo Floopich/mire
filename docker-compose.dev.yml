@@ -1,0 +1,21 @@
+services:
+  mire-v2-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mire-v2-dev
+    restart: unless-stopped
+    ports:
+      - "8767:8765"
+    volumes:
+      - mire_v2_dev_data:/data
+      - mire_v2_dev_backup:/backup
+    cap_add:
+      - NET_RAW
+    environment:
+      - TZ=Europe/Berlin
+      - DEMO_MODE=true
+
+volumes:
+  mire_v2_dev_data:
+  mire_v2_dev_backup:

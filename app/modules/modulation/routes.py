@@ -1,0 +1,158 @@
+"""Modulation performance API routes (v2)."""
+
+import logging
+from datetime import datetime, timedelta, timezone
+
+from flask import Blueprint, request, jsonify
+
+from app.tz import to_local, utc_now, utc_cutoff
+from app.web import require_auth, get_storage, get_config_manager, get_state
+
+from .engine import (
+    compute_capacity_history,
+    compute_distribution_v2,
+    compute_intraday,
+    compute_trend,
+)
+
+log = logging.getLogger("docsis.web")
+
+bp = Blueprint("modulation_bp", __name__)
+
+
+def _get_tz():
+    """Get the configured timezone name."""
+    cm = get_config_manager()
+    if cm:
+        return cm.get("timezone", "")
+    return ""
+
+
+def _positive_number(value):
+    """Return positive numeric config/state values, else None."""
+    if value in (None, ""):
+        return None
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None
+
+
+def _get_capacity_tariffs():
+    """Return configured or detected tariff values for capacity comparison."""
+    cm = get_config_manager()
+    booked_download = _positive_number(cm.get("booked_download")) if cm else None
+    booked_upload = _positive_number(cm.get("booked_upload")) if cm else None
+    if booked_download and booked_upload:
+        return booked_download, booked_upload
+
+    state = get_state()
+    conn_info = state.get("connection_info") if isinstance(state, dict) else {}
+    conn_info = conn_info or {}
+    detected_download = _positive_number(conn_info.get("max_downstream_kbps"))
+    detected_upload = _positive_number(conn_info.get("max_upstream_kbps"))
+    if detected_download is not None:
+        detected_download = detected_download / 1000
+    if detected_upload is not None:
+        detected_upload = detected_upload / 1000
+
+    return booked_download or detected_download, booked_upload or detected_upload
+
+
+@bp.route("/api/modulation/distribution")
+@require_auth
+def api_modulation_distribution():
+    """Return per-protocol-group distribution, health index, and trend per day."""
+    storage = get_storage()
+    if not storage:
+        return jsonify({"error": "No storage available"}), 503
+
+    days = request.args.get("days", 7, type=int)
+    days = max(1, min(days, 30))
+    direction = request.args.get("direction", "us")
+    if direction not in ("us", "ds"):
+        direction = "us"
+
+    end_ts = utc_now()
+    start_ts = utc_cutoff(days=days)
+
+    snapshots = storage.get_range_data(start_ts, end_ts)
+    tz_name = _get_tz()
+
+    result = compute_distribution_v2(snapshots, direction, tz_name)
+    booked_download, booked_upload = _get_capacity_tariffs()
+    result["capacity_history"] = compute_capacity_history(
+        snapshots,
+        tz_name,
+        booked_download=booked_download,
+        booked_upload=booked_upload,
+    )
+    return jsonify(result)
+
+
+@bp.route("/api/modulation/intraday")
+@require_auth
+def api_modulation_intraday():
+    """Return per-channel modulation timeline for a single day."""
+    storage = get_storage()
+    if not storage:
+        return jsonify({"error": "No storage available"}), 503
+
+    direction = request.args.get("direction", "us")
+    if direction not in ("us", "ds"):
+        direction = "us"
+
+    tz_name = _get_tz()
+
+    # Date parameter: defaults to today in local timezone
+    date_str = request.args.get("date", "")
+    if not date_str:
+        now_local = to_local(utc_now(), tz_name) if tz_name else utc_now().rstrip("Z")
+        date_str = now_local[:10]
+
+    # Fetch data covering the requested date (± 1 day for timezone edge cases)
+    try:
+        target = datetime.strptime(date_str, "%Y-%m-%d")
+    except (ValueError, TypeError):
+        target = datetime.now(timezone.utc)
+    start_ts = (target - timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z")
+    end_ts = (target + timedelta(days=2)).strftime("%Y-%m-%dT00:00:00Z")
+
+    snapshots = storage.get_range_data(start_ts, end_ts)
+
+    result = compute_intraday(snapshots, direction, tz_name, date_str)
+    booked_download, booked_upload = _get_capacity_tariffs()
+    result["capacity_history"] = compute_capacity_history(
+        snapshots,
+        tz_name,
+        booked_download=booked_download,
+        booked_upload=booked_upload,
+        target_date=date_str,
+    )
+    return jsonify(result)
+
+
+# Legacy trend endpoint kept for backwards compatibility
+@bp.route("/api/modulation/trend")
+@require_auth
+def api_modulation_trend():
+    """Return per-day trend data (health index + low-QAM %) for the trend chart."""
+    storage = get_storage()
+    if not storage:
+        return jsonify({"error": "No storage available"}), 503
+
+    days = request.args.get("days", 7, type=int)
+    days = max(1, min(days, 30))
+    direction = request.args.get("direction", "us")
+    if direction not in ("us", "ds"):
+        direction = "us"
+
+    end_ts = utc_now()
+    start_ts = utc_cutoff(days=days)
+
+    snapshots = storage.get_range_data(start_ts, end_ts)
+    tz_name = _get_tz()
+
+    result = compute_trend(snapshots, direction, tz_name)
+    return jsonify(result)

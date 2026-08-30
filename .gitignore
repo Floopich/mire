@@ -1,0 +1,71 @@
+.env
+.env.local
+*.db
+__pycache__/
+*.pyc
+.pytest_cache/
+.vscode/
+.idea/
+deploy.sh
+.config_key
+config.json
+
+# Docs (local drafts stay ignored unless explicitly public)
+docs/*.md
+docs/**/*.md
+!docs/community-proof-templates.md
+!docs/proof-pack.md
+!docs/feature-matrix.md
+!docs/self-hosted-directory-submission.md
+!docs/public-launch-follow-up-issues.md
+!docs/notifications-apprise.md
+!docs/windows-desktop-preview.md
+!docs/reverse-proxy.md
+docs/superpowers/
+
+# Internal development docs (belong in workspace, not repo)
+PHASE-*.md
+*-review-*.md
+*-audit-*.md
+*-status.md
+*-tomorrow.md
+QUICK-TEST-*.md
+phase*.png
+mockup*.png
+
+# Virtual environments
+.venv/
+venv/
+
+# Development artifacts
+*.backup*
+*.bak
+*.old
+*~
+.claude/
+.worktrees/
+
+# Windows Desktop Preview build outputs
+packaging/windows/build/
+packaging/windows/dist/
+
+# GSD planning (local only)
+.planning/
+.codex/
+CLAUDE.md
+AGENTS.md.export*
+
+# Internal task tracking (local only)
+tasks/
+
+# Generated translation helper files
+app/i18n/template.json
+
+# E2E test screenshots (generated, local only)
+tests/e2e/screenshots/
+
+.superpowers/
+.agents/
+
+# Campagnes de mesure
+sites/

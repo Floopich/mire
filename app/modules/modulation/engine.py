@@ -1,0 +1,905 @@
+"""Modulation performance computation engine — v2.
+
+Pure functions — no Flask dependencies. Per-protocol-group health index,
+multi-day overview distribution, and intraday per-channel timeline.
+"""
+
+import math
+from datetime import datetime
+from collections import defaultdict
+
+from app.docsis_utils import (
+    canonical_modulation_label as _canonical_label,
+    classify_channel_family as _classify_channel_family,
+    parse_qam_order as _parse_qam_order,
+    sc_qam_capacity_family as _sc_qam_capacity_family,
+)
+from app.tz import to_local
+
+
+# Maximum QAM order per (direction, docsis_version) — used for health index scaling.
+MAX_QAM = {
+    ("ds", "3.0"): 256,    # log2 = 8
+    ("ds", "3.1"): 4096,   # log2 = 12
+    ("us", "3.0"): 64,     # log2 = 6
+    ("us", "3.1"): 1024,   # log2 = 10
+}
+
+DEGRADED_QAM_THRESHOLDS = {
+    ("us", "3.1"): 64,
+}
+
+DISCLAIMER = (
+    "Health indices and modulation statistics are estimates based on periodic "
+    "polling samples and may not reflect every modulation change between polls."
+)
+
+DEFAULT_CAPACITY_SYMBOL_RATES = {
+    "ds": 6952,  # EuroDOCSIS downstream SC-QAM kSym/s
+    "us": 5120,  # upstream SC-QAM kSym/s
+}
+
+
+
+# ── Parsing helpers ──────────────────────────────────────────────────
+
+def _channel_modulation(ch):
+    """Return the modulation value to use for modulation analytics."""
+    return ch.get("profile_modulation") or ch.get("modulation") or ch.get("type") or ""
+
+
+def _capacity_channel_family(ch, direction):
+    """Return whether channel capacity can use the SC-QAM formula."""
+    return _sc_qam_capacity_family(direction, ch)
+
+
+def _capacity_symbol_rate(ch, direction):
+    raw = ch.get("symbolRate", ch.get("symbol_rate"))
+    if raw not in (None, ""):
+        try:
+            return float(raw)
+        except (TypeError, ValueError):
+            pass
+    return DEFAULT_CAPACITY_SYMBOL_RATES[direction]
+
+
+def _channel_capacity_mbps(ch, direction):
+    """Return SC-QAM Layer-1 gross capacity for one channel, or None."""
+    if _capacity_channel_family(ch, direction) != "sc_qam":
+        return None
+
+    existing = ch.get("theoretical_bitrate")
+    if existing is not None:
+        try:
+            return round(float(existing), 2)
+        except (TypeError, ValueError):
+            pass
+
+    qam_order = _parse_qam_order(_channel_modulation(ch))
+    if qam_order is None:
+        return None
+    symbol_rate = _capacity_symbol_rate(ch, direction)
+    return round(symbol_rate * math.log2(qam_order) / 1000, 2)
+
+
+def _snapshot_capacity(channels, direction):
+    calculated = 0
+    capacities = []
+    unsupported_families = defaultdict(int)
+    for ch in channels:
+        capacity = _channel_capacity_mbps(ch, direction)
+        if capacity is None:
+            family = _classify_channel_family(direction, ch)
+            unsupported_families[family] += 1
+            continue
+        calculated += 1
+        capacities.append(capacity)
+    total = len(channels)
+    capacity_mbps = round(sum(capacities), 1) if capacities else None
+    return {
+        "capacity_mbps": capacity_mbps,
+        "calculated": calculated,
+        "total": total,
+        "unsupported": max(0, total - calculated),
+        "unsupported_families": dict(sorted(unsupported_families.items())),
+    }
+
+
+def _capacity_status(tariff_mbps, capacity_samples, below_count):
+    if capacity_samples <= 0:
+        return "unavailable"
+    if tariff_mbps:
+        if below_count > 0:
+            return "below_some_samples"
+        return "above_tariff_throughout"
+    return "observed"
+
+
+def _capacity_tariff_value(raw):
+    if raw in (None, ""):
+        return None
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+def _capacity_history_for_direction(snapshots, direction, tariff_mbps, tz_name, target_date=None):
+    tariff_mbps = _capacity_tariff_value(tariff_mbps)
+    channel_key = "ds_channels" if direction == "ds" else "us_channels"
+    capacities = []
+    sample_count = 0
+    calculated_channel_samples = 0
+    total_channel_samples = 0
+    unsupported_family_samples = defaultdict(int)
+    snapshots_with_full_coverage = 0
+    last_capacity = None
+
+    for snap in snapshots:
+        ts = snap.get("timestamp", "")
+        local_ts = to_local(ts, tz_name) if tz_name else ts.rstrip("Z")
+        if target_date and local_ts[:10] != target_date:
+            continue
+        channels = snap.get(channel_key, [])
+        if not channels:
+            continue
+        sample_count += 1
+        snapshot = _snapshot_capacity(channels, direction)
+        calculated_channel_samples += snapshot["calculated"]
+        total_channel_samples += snapshot["total"]
+        for family, count in snapshot["unsupported_families"].items():
+            unsupported_family_samples[family] += count
+        if snapshot["total"] and snapshot["calculated"] == snapshot["total"]:
+            snapshots_with_full_coverage += 1
+        if snapshot["capacity_mbps"] is not None:
+            capacities.append(snapshot["capacity_mbps"])
+            last_capacity = snapshot["capacity_mbps"]
+
+    capacity_samples = len(capacities)
+    below_count = 0
+    met_count = 0
+    if tariff_mbps and capacity_samples:
+        below_count = sum(1 for capacity in capacities if capacity < tariff_mbps)
+        met_count = capacity_samples - below_count
+
+    coverage_pct = (
+        round(calculated_channel_samples / total_channel_samples * 100, 1)
+        if total_channel_samples else 0
+    )
+    tariff_met_pct = (
+        round(met_count / capacity_samples * 100, 1)
+        if tariff_mbps and capacity_samples else None
+    )
+
+    return {
+        "direction": "downstream" if direction == "ds" else "upstream",
+        "sample_count": sample_count,
+        "capacity_sample_count": capacity_samples,
+        "capacity_min_mbps": round(min(capacities), 1) if capacities else None,
+        "capacity_avg_mbps": round(sum(capacities) / capacity_samples, 1) if capacities else None,
+        "capacity_max_mbps": round(max(capacities), 1) if capacities else None,
+        "capacity_current_mbps": last_capacity,
+        "tariff_mbps": tariff_mbps,
+        "tariff_met_sample_count": met_count if tariff_mbps else None,
+        "below_tariff_sample_count": below_count if tariff_mbps else None,
+        "tariff_met_pct": tariff_met_pct,
+        "calculated_channel_samples": calculated_channel_samples,
+        "total_channel_samples": total_channel_samples,
+        "unsupported_channel_samples": max(0, total_channel_samples - calculated_channel_samples),
+        "unsupported_channel_families": dict(sorted(unsupported_family_samples.items())),
+        "coverage_pct": coverage_pct,
+        "full_coverage_sample_count": snapshots_with_full_coverage,
+        "status": _capacity_status(tariff_mbps, capacity_samples, below_count),
+    }
+
+
+def compute_capacity_history(
+    snapshots,
+    tz_name,
+    booked_download=None,
+    booked_upload=None,
+    target_date=None,
+):
+    """Compute range-aware theoretical SC-QAM capacity summaries."""
+    return {
+        "downstream": _capacity_history_for_direction(
+            snapshots, "ds", booked_download, tz_name, target_date=target_date
+        ),
+        "upstream": _capacity_history_for_direction(
+            snapshots, "us", booked_upload, tz_name, target_date=target_date
+        ),
+    }
+
+
+# ── Health index (per-protocol-group) ────────────────────────────────
+
+
+def _health_index_for_group(observations, direction, docsis_version):
+    """Compute health index scaled to the protocol group's max QAM.
+
+    Formula: 100 * (log2(observed_avg) - 2) / (log2(max_qam) - 2)
+
+    This ensures US 3.0 at 64QAM → 100, DS 3.0 at 256QAM → 100, etc.
+    Returns None if no numeric-QAM observations.
+    """
+    numeric = [(label, qam) for label, qam in observations if qam is not None]
+    if not numeric:
+        return None
+
+    max_qam = MAX_QAM.get((direction, docsis_version))
+    if not max_qam:
+        max_qam = 4096  # fallback
+
+    max_bits = math.log2(max_qam)
+    denominator = max_bits - 2  # log2(QPSK)=2 is the floor
+    if denominator <= 0:
+        return 100.0
+
+    total_bits = sum(math.log2(qam) for _, qam in numeric)
+    avg_bits = total_bits / len(numeric)
+
+    index = 100 * (avg_bits - 2) / denominator
+    return round(max(0, min(100, index)), 1)
+
+
+def _health_index_for_channel_baselines(observations, channel_baselines):
+    """Compute health index relative to each channel's observed baseline.
+
+    Used for downstream groups where some channels are expected to top out at a
+    lower QAM order (for example fixed 64QAM channels in mixed DOCSIS 3.0
+    segments). Each observation is scored against the highest numeric QAM seen
+    for that channel in the selected dataset.
+    """
+    numeric = [
+        (channel_id, qam)
+        for channel_id, _, qam in observations
+        if channel_id is not None and qam is not None
+    ]
+    if not numeric:
+        return None
+
+    scores = []
+    for channel_id, qam in numeric:
+        baseline_qam = channel_baselines.get(channel_id) or qam
+        baseline_bits = math.log2(max(baseline_qam, 4))
+        denominator = baseline_bits - 2
+        if denominator <= 0:
+            score = 100.0
+        else:
+            score = 100 * (math.log2(qam) - 2) / denominator
+        scores.append(max(0, min(100, score)))
+
+    return round(sum(scores) / len(scores), 1)
+
+
+# ── Distribution helpers ─────────────────────────────────────────────
+
+
+def _distribution_pct(observations):
+    """Compute percentage distribution of modulation labels."""
+    if not observations:
+        return {}
+    counts = defaultdict(int)
+    for label, _ in observations:
+        counts[label] += 1
+    total = len(observations)
+    return {label: round(count / total * 100, 1) for label, count in sorted(counts.items())}
+
+
+def _low_qam_counts(observations, threshold):
+    """Return (low_count, numeric_count) for numeric-QAM observations."""
+    numeric = [(label, qam) for label, qam in observations if qam is not None]
+    if not numeric:
+        return 0, 0
+    low_count = sum(1 for _, qam in numeric if qam <= threshold)
+    return low_count, len(numeric)
+
+
+def _degraded_qam_threshold(direction, docsis_version, default_threshold):
+    """Return the Mire Low-QAM Exposure threshold for a protocol group.
+
+    Low-QAM Exposure is a product heuristic, not a DOCSIS standard metric.
+    Most groups keep the legacy <=16QAM threshold. US DOCSIS 3.1 counts 64QAM
+    as Low-QAM but excludes 128QAM; 128QAM is reflected through Health Index.
+    """
+    return DEGRADED_QAM_THRESHOLDS.get((direction, docsis_version), default_threshold)
+
+
+def _channel_identity(ch):
+    """Return a stable per-channel identity for modulation baselines."""
+    return ch.get("channel_id", ch.get("frequency"))
+
+
+def _build_channel_baselines(by_date, version):
+    """Return highest numeric QAM observed per channel across the full range."""
+    baselines = {}
+    for date_groups in by_date.values():
+        for channels in date_groups:
+            for ch in channels:
+                if ch.get("docsis_version", "3.0") != version:
+                    continue
+                channel_id = _channel_identity(ch)
+                if channel_id is None:
+                    continue
+                _, qam = _canonical_label(_channel_modulation(ch))
+                if qam is None:
+                    continue
+                baselines[channel_id] = max(baselines.get(channel_id, 0), qam)
+    return baselines
+
+
+# ── Multi-day overview (distribution v2) ─────────────────────────────
+
+
+def compute_distribution_v2(snapshots, direction, tz_name, low_qam_threshold=16):
+    """Compute per-protocol-group daily distribution from snapshot data.
+
+    Returns dict with protocol_groups[], aggregate{}, sample metadata, disclaimer.
+    """
+    channel_key = "us_channels" if direction == "us" else "ds_channels"
+
+    # Collect all snapshots grouped by local date
+    by_date = defaultdict(list)  # date_str → [(channels_list, timestamp), ...]
+    for snap in snapshots:
+        ts = snap.get("timestamp", "")
+        local_ts = to_local(ts, tz_name) if tz_name else ts.rstrip("Z")
+        date_str = local_ts[:10]
+        channels = snap.get(channel_key, [])
+        if channels:
+            by_date[date_str].append(channels)
+
+    if not by_date:
+        return {
+            "direction": direction,
+            "protocol_groups": [],
+            "aggregate": {"health_index": None, "low_qam_pct": 0},
+            "sample_count": 0,
+            "expected_samples": 0,
+            "sample_density": 0,
+            "disclaimer": DISCLAIMER,
+        }
+
+    sorted_dates = sorted(by_date.keys())
+
+    # Discover all protocol groups from all snapshots
+    all_versions = set()
+    for date_groups in by_date.values():
+        for channels in date_groups:
+            for ch in channels:
+                all_versions.add(ch.get("docsis_version", "3.0"))
+
+    # Build per-protocol-group results
+    protocol_groups = []
+    all_health_indices = []
+    total_sample_count = 0
+
+    for version in sorted(all_versions):
+        group = _build_protocol_group(
+            version, direction, by_date, sorted_dates, low_qam_threshold
+        )
+        protocol_groups.append(group)
+        if group["health_index"] is not None:
+            all_health_indices.append((group["health_index"], group["channel_count"]))
+
+    # Total samples = number of snapshots (each snapshot is one poll)
+    total_sample_count = sum(len(groups) for groups in by_date.values())
+    num_days = len(sorted_dates)
+
+    # Estimate expected samples from actual poll cadence rather than assuming 15min
+    if num_days >= 2:
+        # Use median daily count from complete days (exclude first/last partial days)
+        daily_counts = sorted(len(by_date[d]) for d in sorted_dates)
+        # Use the median of all days as the expected per-day rate
+        mid = len(daily_counts) // 2
+        expected_per_day = daily_counts[mid] if daily_counts else 96
+    elif num_days == 1 and total_sample_count > 0:
+        expected_per_day = total_sample_count
+    else:
+        expected_per_day = 96
+    expected_samples = num_days * expected_per_day
+    density = round(total_sample_count / expected_samples, 2) if expected_samples > 0 else 0
+    density = min(density, 1.0)
+
+    # Weighted aggregate across groups
+    agg_hi = _weighted_avg(all_health_indices)
+    total_low_qam_samples = sum(
+        group.get("low_qam_sample_count", 0) or 0 for group in protocol_groups
+    )
+    total_sample_exposure = sum(
+        group.get("sample_count", 0) or 0 for group in protocol_groups
+    )
+    agg_lq = _weighted_pct_from_counts(total_low_qam_samples, total_sample_exposure)
+
+    return {
+        "direction": direction,
+        "protocol_groups": protocol_groups,
+        "aggregate": {
+            "health_index": round(agg_hi, 1) if agg_hi is not None else None,
+            "low_qam_pct": round(agg_lq, 1) if agg_lq is not None else 0,
+        },
+        "sample_count": total_sample_count,
+        "expected_samples": expected_samples,
+        "sample_density": density,
+        "disclaimer": DISCLAIMER,
+    }
+
+
+def _weighted_avg(values_weights):
+    """Compute weighted average from list of (value, weight) tuples."""
+    total_w = sum(w for _, w in values_weights if w > 0)
+    if total_w == 0:
+        return None
+    return sum(v * w for v, w in values_weights) / total_w
+
+
+def _build_protocol_group(version, direction, by_date, sorted_dates, threshold):
+    """Build a single protocol group result dict."""
+    effective_threshold = _degraded_qam_threshold(direction, version, threshold)
+    channel_baselines = _build_channel_baselines(by_date, version)
+
+    # Collect observations per day, only for channels of this version
+    all_observations = []
+    all_health_observations = []
+    channel_ids = set()
+    days = []
+
+    for date_str in sorted_dates:
+        day_observations = []
+        day_health_observations = []
+
+        for channels in by_date[date_str]:
+            group_channels = [ch for ch in channels if ch.get("docsis_version", "3.0") == version]
+            if not group_channels:
+                continue
+            for ch in group_channels:
+                channel_id = _channel_identity(ch)
+                channel_ids.add(channel_id)
+                mod_str = _channel_modulation(ch)
+                label, qam = _canonical_label(mod_str)
+                day_observations.append((label, qam))
+                day_health_observations.append((channel_id, label, qam))
+
+        if not day_observations:
+            continue
+
+        all_observations.extend(day_observations)
+        all_health_observations.extend(day_health_observations)
+        if direction == "ds":
+            hi = _health_index_for_channel_baselines(day_health_observations, channel_baselines)
+        else:
+            hi = _health_index_for_group(day_observations, direction, version)
+        low_qam_count, numeric_sample_count = _low_qam_counts(day_observations, effective_threshold)
+        # Keep the Low-QAM percentage on the same visible denominator as the
+        # distribution chart. Unknown/non-numeric samples remain in the total
+        # instead of turning one low numeric sample into 100% exposure.
+        lq = _weighted_pct_from_counts(low_qam_count, len(day_observations))
+
+        # Count degraded channels for this day
+        degraded = _count_degraded_channels_day(
+            by_date[date_str],
+            version,
+            direction,
+            effective_threshold,
+        )
+
+        days.append({
+            "date": date_str,
+            "health_index": hi,
+            "low_qam_pct": lq,
+            "distribution": _distribution_pct(day_observations),
+            "degraded_channel_count": degraded,
+            "sample_count": len(day_observations),
+            "numeric_sample_count": numeric_sample_count,
+            "low_qam_sample_count": low_qam_count,
+        })
+
+    max_qam = MAX_QAM.get((direction, version), 4096)
+    max_qam_label = f"{max_qam}QAM"
+    if direction == "ds":
+        overall_hi = _health_index_for_channel_baselines(all_health_observations, channel_baselines)
+    else:
+        overall_hi = _health_index_for_group(all_observations, direction, version)
+    overall_low_qam_count, overall_numeric_sample_count = _low_qam_counts(
+        all_observations, effective_threshold
+    )
+    overall_lq = _weighted_pct_from_counts(overall_low_qam_count, len(all_observations))
+    overall_dist = _distribution_pct(all_observations)
+    dominant = max(overall_dist, key=overall_dist.get) if overall_dist else None
+
+    # Overall degraded channels
+    degraded_overall = _count_degraded_channels_overall(
+        by_date,
+        sorted_dates,
+        version,
+        direction,
+        effective_threshold,
+    )
+
+    return {
+        "docsis_version": version,
+        "max_qam": max_qam_label,
+        "channel_count": len(channel_ids),
+        "channel_ids": sorted(channel_ids),
+        "health_index": overall_hi,
+        "low_qam_pct": overall_lq,
+        "dominant_modulation": dominant,
+        "degraded_channel_count": degraded_overall,
+        "distribution": overall_dist,
+        "sample_count": len(all_observations),
+        "numeric_sample_count": overall_numeric_sample_count,
+        "low_qam_sample_count": overall_low_qam_count,
+        "days": days,
+    }
+
+
+def _count_degraded_channels_day(snapshot_groups, version, direction, threshold):
+    """Count how many channels had any observation at or below the low-QAM threshold."""
+    degraded = set()
+    for channels in snapshot_groups:
+        for ch in channels:
+            if ch.get("docsis_version", "3.0") != version:
+                continue
+            mod_str = _channel_modulation(ch)
+            _, qam = _canonical_label(mod_str)
+            if qam is not None and qam <= threshold:
+                degraded.add(ch.get("channel_id"))
+    return len(degraded)
+
+
+def _count_degraded_channels_overall(by_date, sorted_dates, version, direction, threshold):
+    """Count channels that were degraded on any day in the range."""
+    degraded = set()
+    for date_str in sorted_dates:
+        for channels in by_date[date_str]:
+            for ch in channels:
+                if ch.get("docsis_version", "3.0") != version:
+                    continue
+                mod_str = _channel_modulation(ch)
+                _, qam = _canonical_label(mod_str)
+                if qam is not None and qam <= threshold:
+                    degraded.add(ch.get("channel_id"))
+    return len(degraded)
+
+
+# ── Intraday per-channel timeline ────────────────────────────────────
+
+
+def compute_intraday(snapshots, direction, tz_name, date_str, low_qam_threshold=16):
+    """Compute per-channel modulation timeline for a single day.
+
+    Returns dict with protocol_groups[] each containing channels[] with timeline.
+    """
+    channel_key = "us_channels" if direction == "us" else "ds_channels"
+
+    # Filter snapshots for the requested day, sorted by time
+    day_snapshots = []
+    for snap in snapshots:
+        ts = snap.get("timestamp", "")
+        local_ts = to_local(ts, tz_name) if tz_name else ts.rstrip("Z")
+        snap_date = local_ts[:10]
+        if snap_date == date_str:
+            local_time = local_ts[11:16]  # HH:MM
+            channels = snap.get(channel_key, [])
+            if channels:
+                day_snapshots.append((local_time, channels))
+
+    day_snapshots.sort(key=lambda x: x[0])
+
+    if not day_snapshots:
+        return {
+            "direction": direction,
+            "date": date_str,
+            "protocol_groups": [],
+            "disclaimer": DISCLAIMER,
+        }
+
+    # Build per-channel timelines, grouped by protocol
+    # channel_id → {version, frequency, timeline: [(time, label, qam)]}
+    channel_data = {}
+    for local_time, channels in day_snapshots:
+        for ch in channels:
+            cid = ch.get("channel_id")
+            if cid not in channel_data:
+                channel_data[cid] = {
+                    "version": ch.get("docsis_version", "3.0"),
+                    "frequency": ch.get("frequency", ""),
+                    "timeline": [],
+                }
+            mod_str = _channel_modulation(ch)
+            label, qam = _canonical_label(mod_str)
+            channel_data[cid]["timeline"].append((local_time, label, qam))
+
+    # Group by protocol version
+    by_version = defaultdict(list)
+    for cid, cdata in channel_data.items():
+        by_version[cdata["version"]].append((cid, cdata))
+
+    protocol_groups = []
+    for version in sorted(by_version.keys()):
+        max_qam = MAX_QAM.get((direction, version), 4096)
+        max_qam_label = f"{max_qam}QAM"
+        channels_result = []
+
+        for cid, cdata in sorted(by_version[version], key=lambda x: x[0]):
+            timeline = cdata["timeline"]
+            periods = _modulation_periods(timeline)
+            if direction == "ds":
+                channel_baseline = max((q for _, _, q in timeline if q is not None), default=None)
+                hi = _health_index_for_channel_baselines(
+                    [(cid, label, q) for _, label, q in timeline],
+                    {cid: channel_baseline} if channel_baseline is not None else {},
+                )
+            else:
+                hi = _health_index_for_group(
+                    [(label, q) for _, label, q in timeline], direction, version
+                )
+            degraded_threshold = _degraded_qam_threshold(direction, version, low_qam_threshold)
+            degraded_events = _build_degraded_events(periods, degraded_threshold)
+            degraded = len(degraded_events) > 0
+            summary = _channel_summary(periods, max_qam, degraded_threshold)
+            degraded_sample_pct = round(sum(evt["pct"] for evt in degraded_events))
+            worst_event = min(
+                degraded_events,
+                key=lambda evt: (evt["qam"], -evt["count"]),
+            ) if degraded_events else None
+
+            # Simplify timeline to transition points only
+            simplified = _simplify_timeline(timeline)
+
+            channels_result.append({
+                "channel_id": cid,
+                "frequency": cdata["frequency"],
+                "health_index": hi,
+                "degraded": degraded,
+                "summary": summary,
+                "degraded_events": degraded_events,
+                "degraded_sample_pct": degraded_sample_pct,
+                "worst_modulation": worst_event["label"] if worst_event else "",
+                "timeline": [{"time": t, "modulation": label} for t, label in simplified],
+            })
+
+        protocol_groups.append({
+            "docsis_version": version,
+            "max_qam": max_qam_label,
+            "channels": channels_result,
+        })
+
+    return {
+        "direction": direction,
+        "date": date_str,
+        "protocol_groups": protocol_groups,
+        "disclaimer": DISCLAIMER,
+    }
+
+
+def _modulation_periods(timeline):
+    """Collapse consecutive same-modulation observations into periods.
+
+    Input: [(time, label, qam), ...]
+    Returns: [(start_time, end_time, label, qam, count)]
+    """
+    if not timeline:
+        return []
+
+    periods = []
+    current_start = timeline[0][0]
+    current_label = timeline[0][1]
+    current_qam = timeline[0][2]
+    current_end = current_start
+    count = 1
+
+    for i in range(1, len(timeline)):
+        t, label, qam = timeline[i]
+        if label == current_label:
+            current_end = t
+            count += 1
+        else:
+            periods.append((current_start, current_end, current_label, current_qam, count))
+            current_start = t
+            current_label = label
+            current_qam = qam
+            current_end = t
+            count = 1
+
+    periods.append((current_start, current_end, current_label, current_qam, count))
+    return periods
+
+
+def _simplify_timeline(timeline):
+    """Reduce timeline to only transition points (where modulation changes).
+
+    Returns [(time, label), ...] — first point always included.
+    """
+    if not timeline:
+        return []
+
+    result = [(timeline[0][0], timeline[0][1])]
+    for i in range(1, len(timeline)):
+        if timeline[i][1] != timeline[i - 1][1]:
+            result.append((timeline[i][0], timeline[i][1]))
+    return result
+
+
+def _channel_summary(periods, max_qam, threshold=16):
+    """Generate human-readable summary of degraded periods for a channel.
+
+    Example: "4.5h (30%) at 16QAM between 14:00–18:30"
+    Returns empty string if channel never hit the low-QAM threshold.
+    """
+    degraded_periods = [
+        p for p in periods if p[3] is not None and p[3] <= threshold
+    ]
+    if not degraded_periods:
+        return ""
+
+    # Estimate total observation count
+    total_obs = sum(p[4] for p in periods)
+
+    parts = []
+    for start, end, label, qam, count in degraded_periods:
+        pct = round(count / total_obs * 100) if total_obs > 0 else 0
+        # Estimate hours (each observation ≈ 15 min)
+        hours = round(count * 0.25, 1)
+        if start == end:
+            parts.append(f"{hours}h ({pct}%) at {label} around {start}")
+        else:
+            parts.append(f"{hours}h ({pct}%) at {label} between {start}\u2013{end}")
+
+    return "; ".join(parts)
+
+
+def _event_duration_minutes(start, end):
+    """Return the observed clock duration between two HH:MM timestamps."""
+    try:
+        start_dt = datetime.strptime(start, "%H:%M")
+        end_dt = datetime.strptime(end, "%H:%M")
+    except (TypeError, ValueError):
+        return 0
+
+    minutes = int((end_dt - start_dt).total_seconds() // 60)
+    if minutes < 0:
+        minutes += 24 * 60
+    return minutes
+
+
+def _build_degraded_events(periods, threshold=16):
+    """Return structured degraded periods for UI rendering."""
+    degraded_periods = [
+        p for p in periods if p[3] is not None and p[3] <= threshold
+    ]
+    if not degraded_periods:
+        return []
+
+    total_obs = sum(p[4] for p in periods)
+    events = []
+    for start, end, label, qam, count in degraded_periods:
+        pct = round(count / total_obs * 100) if total_obs > 0 else 0
+        duration_minutes = _event_duration_minutes(start, end)
+        hours = round(count * 0.25, 1)
+        events.append({
+            "start": start,
+            "end": end,
+            "label": label,
+            "qam": qam,
+            "count": count,
+            "hours": hours,
+            "duration_minutes": duration_minutes,
+            "pct": pct,
+            "point_in_time": start == end,
+        })
+    return events
+
+
+def _weighted_pct_from_counts(low_count, total_count):
+    """Return a rounded percentage from weighted sample counts."""
+    if total_count <= 0:
+        return 0
+    return round(low_count / total_count * 100, 1)
+
+
+def compute_distribution(snapshots, direction, tz_name, low_qam_threshold=16):
+    """Legacy v1 distribution — delegates to v2 and reshapes for backwards compat.
+
+    Keep weighted daily exposure intact. Older code reconstructed observations from
+    percentage bucket labels, which could turn a day with one small Low-QAM slice
+    into 100% Low-QAM exposure when only one low bucket existed.
+    """
+    v2 = compute_distribution_v2(snapshots, direction, tz_name, low_qam_threshold)
+
+    by_date = {}
+    for pg in v2.get("protocol_groups", []):
+        for day in pg.get("days", []):
+            date_str = day["date"]
+            entry = by_date.setdefault(date_str, {
+                "date": date_str,
+                "sample_count": 0,
+                "numeric_sample_count": 0,
+                "low_qam_sample_count": 0,
+                "health_values": [],
+                "distribution_counts": defaultdict(float),
+            })
+            sample_count = day.get("sample_count", 0) or 0
+            numeric_count = day.get("numeric_sample_count", sample_count) or 0
+            low_count = day.get("low_qam_sample_count")
+            if low_count is None:
+                low_count = (day.get("low_qam_pct", 0) or 0) / 100 * numeric_count
+
+            entry["sample_count"] += sample_count
+            entry["numeric_sample_count"] += numeric_count
+            entry["low_qam_sample_count"] += low_count
+            if day.get("health_index") is not None and sample_count > 0:
+                entry["health_values"].append((day["health_index"], sample_count))
+            for label, pct in (day.get("distribution") or {}).items():
+                entry["distribution_counts"][label] += pct / 100 * sample_count
+
+    days = []
+    for date_str in sorted(by_date):
+        entry = by_date[date_str]
+        sample_count = entry["sample_count"]
+        distribution = {
+            label: round(count / sample_count * 100, 1)
+            for label, count in sorted(entry["distribution_counts"].items())
+        } if sample_count else {}
+        days.append({
+            "date": date_str,
+            "sample_count": sample_count,
+            "distribution": distribution,
+            "health_index": _weighted_avg(entry["health_values"]),
+            "low_qam_pct": _weighted_pct_from_counts(
+                entry["low_qam_sample_count"], entry["sample_count"]
+            ),
+        })
+
+    aggregate_distribution = v2.get("aggregate", {}).get("distribution")
+    if aggregate_distribution is None:
+        total_samples = sum(pg.get("sample_count", 0) or 0 for pg in v2.get("protocol_groups", []))
+        aggregate_counts = defaultdict(float)
+        for pg in v2.get("protocol_groups", []):
+            pg_samples = pg.get("sample_count", 0) or 0
+            for label, pct in (pg.get("distribution") or {}).items():
+                aggregate_counts[label] += pct / 100 * pg_samples
+        aggregate_distribution = {
+            label: round(count / total_samples * 100, 1)
+            for label, count in sorted(aggregate_counts.items())
+        } if total_samples else {}
+
+    return {
+        "direction": direction,
+        "date_range": {
+            "start": days[0]["date"] if days else None,
+            "end": days[-1]["date"] if days else None,
+        },
+        "sample_count": v2["sample_count"],
+        "expected_samples": v2["expected_samples"],
+        "sample_density": v2["sample_density"],
+        "low_qam_threshold": low_qam_threshold,
+        "days": days,
+        "aggregate": {
+            "distribution": aggregate_distribution,
+            "health_index": v2.get("aggregate", {}).get("health_index"),
+            "low_qam_pct": v2.get("aggregate", {}).get("low_qam_pct", 0),
+        },
+    }
+
+
+def compute_trend(snapshots, direction, tz_name, low_qam_threshold=16):
+    """Compute per-day trend data (lighter subset for trend chart).
+
+    Returns list of dicts with date, health_index, low_qam_pct,
+    dominant_modulation, sample_count.
+    """
+    result = compute_distribution(snapshots, direction, tz_name, low_qam_threshold)
+    trend = []
+    for day in result["days"]:
+        dominant = None
+        if day["distribution"]:
+            dominant = max(day["distribution"], key=day["distribution"].get)
+        trend.append({
+            "date": day["date"],
+            "health_index": round(day["health_index"], 1) if day["health_index"] is not None else None,
+            "low_qam_pct": day["low_qam_pct"],
+            "dominant_modulation": dominant,
+            "sample_count": day["sample_count"],
+        })
+    return trend

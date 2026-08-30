@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-theme="{{ theme }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#06080f">
+    <title>Mire - {{ t.settings }}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='logo.svg') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css', v=version) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css', v=version) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css', v=version) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modals.css', v=version) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css', v=version) }}">
+    {% for mod in modules|sort(attribute='menu.order') if mod.has_css %}
+    <link rel="stylesheet" href="{{ module_static_url(mod.id, 'style.css', v=version) }}">
+    {% endfor %}
+    {% if active_theme_data %}
+    <style id="theme-module-vars">
+    :root, [data-theme="dark"] {
+        {% for key, value in active_theme_data.get('dark', {}).items() %}
+        {{ key }}: {{ value }};
+        {% endfor %}
+    }
+    [data-theme="light"] {
+        {% for key, value in active_theme_data.get('light', {}).items() %}
+        {{ key }}: {{ value }};
+        {% endfor %}
+    }
+    </style>
+    {% endif %}
+    {% include 'partials/browser_url_bootstrap.html' %}
+    <script src="{{ url_for('static', filename='vendor/lucide.min.js', v=version) }}"></script>
+</head>
+<body>
+
+<div class="mesh-bg"></div>
+<div class="error-msg" id="global-error"></div>
+<div class="toast" id="toast"></div>
+
+<h1 class="sr-only">{{ t.settings }}</h1>
+<div class="settings-layout">
+    <!-- ═══ Sidebar ═══ -->
+    <nav class="sidebar" id="settings-sidebar">
+        <a href="{{ url_for('index') }}" class="sidebar-header">
+            <div class="sidebar-logo">
+                <img src="{{ url_for('static', filename='logo.svg') }}" alt="Mire" style="width:20px;height:20px;filter:brightness(0) invert(1);">
+            </div>
+            <div>
+                <div class="sidebar-title">Mire</div>
+                <div class="sidebar-subtitle">{{ t.settings }}</div>
+            </div>
+        </a>
+
+        <!-- Settings Navigation -->
+        <div class="sidebar-nav">
+            <div class="nav-group" aria-labelledby="settings-nav-core-label">
+                <div class="nav-group-label" id="settings-nav-core-label">{{ t.settings }}</div>
+                <button class="nav-item active" data-section="connection" onclick="switchSection('connection')" aria-current="page">
+                    <i data-lucide="radio" class="nav-icon" aria-hidden="true"></i>
+                    {{ t.step_modem }}
+                </button>
+                <button class="nav-item" data-section="general" onclick="switchSection('general')">
+                    <i data-lucide="settings" class="nav-icon"></i>
+                    {{ t.general }}
+                </button>
+                <button class="nav-item" data-section="notifications" onclick="switchSection('notifications')">
+                    <i data-lucide="bell" class="nav-icon"></i>
+                    {{ t.notifications }}
+                </button>
+                <button class="nav-item" data-section="smart_capture" onclick="switchSection('smart_capture')">
+                    <i data-lucide="zap" class="nav-icon"></i>
+                    {{ t.get('smart_capture', 'Smart Capture') }}
+                </button>
+                <button class="nav-item" data-section="appearance" onclick="switchSection('appearance')">
+                    <i data-lucide="palette" class="nav-icon"></i>
+                    {{ t.appearance }}
+                </button>
+                <button class="nav-item" data-section="security" onclick="switchSection('security')">
+                    <i data-lucide="shield" class="nav-icon"></i>
+                    {{ t.security }}
+                </button>
+                <button class="nav-item" data-section="extensions" onclick="switchSection('extensions')">
+                    <i data-lucide="package" class="nav-icon"></i>
+                    {{ t.get('settings_extensions', 'Extensions') }}
+                </button>
+                <button class="nav-item" data-section="about" onclick="switchSection('about')">
+                    <i data-lucide="info" class="nav-icon"></i>
+                    {{ t.get('about_project', 'About Project') }}
+                </button>
+            </div>
+            {% set settings_modules = [] %}
+            {% for mod in modules if mod.template_paths.get('settings') %}
+                {% if settings_modules.append(mod) %}{% endif %}
+            {% endfor %}
+            {% if settings_modules %}
+            <div class="nav-group" aria-labelledby="settings-nav-modules-label">
+                <div class="nav-group-label" id="settings-nav-modules-label">{{ t.modules }}</div>
+                {% for mod in settings_modules|sort(attribute='name') %}
+                <button class="nav-item nav-sub-item" data-section="mod-{{ mod.id|replace('.', '_') }}" onclick="switchSection('mod-{{ mod.id|replace('.', '_') }}')">
+                    <i data-lucide="{{ mod.menu.get('icon', 'puzzle') }}" class="nav-icon"></i>
+                    {{ t.get(mod.menu.label_key, mod.name) }}
+                    <span class="nav-badge {{ 'success' if mod.enabled else 'info' }}">{{ 'ON' if mod.enabled else 'OFF' }}</span>
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Support (bottom) -->
+        <div class="sidebar-support">
+            <div class="nav-separator"></div>
+            <button class="nav-item" data-section="support" onclick="switchSection('support')">
+                <i data-lucide="heart-handshake" class="nav-icon"></i>
+                {{ t.support_title }}
+            </button>
+        </div>
+    </nav>
+
+    <!-- ═══ Sidebar Backdrop (mobile) ═══ -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeMobileSidebar()"></div>
+
+    <!-- ═══ Main Content ═══ -->
+    <div class="main-content">
+        <!-- Mobile header (visible at 768px and below) -->
+        <div class="mobile-header">
+            <button class="mobile-menu-btn" id="mobile-menu-button" type="button" onclick="openMobileSidebar()" aria-label="{{ t.get('settings_open_navigation', 'Open settings navigation') }}" aria-controls="settings-sidebar" aria-expanded="false">
+                <i data-lucide="menu" aria-hidden="true"></i>
+            </button>
+            <span class="page-title" style="font-size: 1.1rem;" id="mobile-title">{{ t.step_modem }}</span>
+        </div>
+
+        <form id="settings-form" autocomplete="off">
+
+
+            {% include 'settings/connection.html' %}
+            {% include 'settings/general.html' %}
+            {% include 'settings/notifications.html' %}
+            {% include 'settings/smart_capture.html' %}
+            {% include 'settings/appearance.html' %}
+            {% include 'settings/security.html' %}
+            {% include 'settings/extensions.html' %}
+            {% include 'settings/about.html' %}
+            {% include 'settings/support.html' %}
+
+            {# ── Module Settings Panels ── #}
+            {% for mod in modules if mod.template_paths.get('settings') %}
+            {% include mod.template_paths['settings'] %}
+            {% endfor %}
+
+            <!-- ═══ Save Footer ═══ -->
+            <div class="save-footer" id="save-footer" aria-hidden="true" inert>
+                <div class="unsaved-hint" role="status" aria-live="polite">
+                    <span class="unsaved-dot"></span>
+                    {{ t.unsaved_changes }}
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i data-lucide="save" style="width:16px;height:16px;"></i>
+                    {{ t.save }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% set settings_bootstrap_modules = [] %}
+{% for mod in modules if mod.template_paths.get('settings') %}
+{% if settings_bootstrap_modules.append({'id': mod.id, 'labelKey': mod.menu.get('label_key', ''), 'name': mod.name}) %}{% endif %}
+{% endfor %}
+<script type="application/json" id="mire-settings-bootstrap">{{ {
+    'translations': t,
+    'modules': settings_bootstrap_modules,
+    'serverOffsetMin': server_tz_offset,
+    'serverTimezone': server_tz|default('', true),
+    'language': lang,
+    'currentTimezone': config.timezone|default('', true),
+    'notificationCooldowns': config.notify_cooldowns|default('{}', true),
+    'driverHints': driver_hints,
+    'moduleSecretFields': module_secret_fields,
+    'savedModuleSecretFields': saved_module_secret_fields
+}|tojson }}</script>
+<script src="{{ url_for('static', filename='js/browser-contracts.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/settings-bootstrap.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/modals.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/utils.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/notices.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/settings.js', v=version) }}"></script>
+{% for mod in modules if mod.has_js %}
+<script src="{{ module_static_url(mod.id, 'main.js', v=version) }}"></script>
+{% endfor %}
+
+</body>
+</html>

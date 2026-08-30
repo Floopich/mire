@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-theme="{{ theme|default('dark') }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mire - {{ t.initial_setup }}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='logo.svg') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#7c3aed">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css', v=version) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css', v=version) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css', v=version) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/setup.css', v=version) }}">
+    {% include 'partials/browser_url_bootstrap.html' %}
+    <script src="{{ url_for('static', filename='vendor/lucide.min.js', v=version) }}"></script>
+</head>
+<body>
+
+<div class="mesh-bg"></div>
+
+<div class="setup-layout">
+
+<!-- Controls Bar -->
+<div class="setup-controls">
+    <select class="btn btn-ghost setup-lang-select" id="lang-select" onchange="location.href='?lang='+this.value" aria-label="{{ t.language }}">
+        {% for code, name in languages.items() %}
+        <option value="{{ code }}" {% if code == lang %}selected{% endif %}>{{ lang_flags.get(code, '') }} {{ name }}</option>
+        {% endfor %}
+    </select>
+    <button class="btn btn-ghost setup-theme-btn" onclick="toggleTheme()">
+        <i data-lucide="sun-moon" class="setup-icon-sm"></i> {{ t.theme_toggle }}
+    </button>
+</div>
+
+<!-- Header -->
+<div class="setup-header">
+    <div class="setup-brand">
+        <img src="{{ url_for('static', filename='logo.svg') }}" alt="" width="28" height="28">
+        <span>Mire</span>
+    </div>
+    <h1 class="setup-title">{{ t.setup_value_title }}</h1>
+    <p class="setup-subtitle">{{ t.setup_value_desc }}</p>
+</div>
+
+<div id="setup-start" class="step-content active">
+    <section class="first-run-card glass">
+        <div class="first-run-secondary">
+            <button type="button" class="btn btn-ghost" id="connect-modem-btn" onclick="startFreshSetup()">
+                <i data-lucide="radio" class="setup-icon-sm"></i>
+                {{ t.setup_connect_modem }}
+            </button>
+            <button type="button" class="restore-text-action" id="restore-action" onclick="startRestore()">
+                {{ t.setup_restore_action }}
+            </button>
+        </div>
+    </section>
+</div>
+
+<!-- Restore UI -->
+<div id="restore-section" style="display:none;">
+    <div class="settings-card glass">
+        <div class="card-header">
+            <div class="card-title-group">
+                <div class="card-icon blue">
+                    <i data-lucide="archive-restore"></i>
+                </div>
+                <div>
+                    <div class="card-title">{{ t.restore_title }}</div>
+                    <div class="card-subtitle">{{ t.restore_desc }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-field">
+                <label class="form-label" for="restore-file">{{ t.restore_select_file }}</label>
+                <input class="form-input" type="file" id="restore-file" accept=".tar.gz,.gz" onchange="validateRestoreFile()">
+            </div>
+        </div>
+
+        <div id="restore-meta" style="display:none;">
+            <div class="setup-info" id="restore-meta-info"></div>
+            <button type="button" class="btn btn-primary" onclick="doRestore()" id="restore-confirm-btn">
+                <i data-lucide="archive-restore" class="setup-icon-sm"></i>
+                {{ t.restore_confirm }}
+            </button>
+        </div>
+
+        <div class="test-result" id="restore-result"></div>
+
+        <div class="setup-actions" style="margin-top:var(--space-md);">
+            <button type="button" class="btn btn-ghost" onclick="backToStart()">
+                <i data-lucide="arrow-left" class="setup-icon-sm"></i>
+                {{ t.back }}
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Stepper -->
+<div class="setup-stepper" id="setup-stepper" style="display:none;">
+    <div class="stepper-step active" data-step="1">
+        <div class="stepper-circle"><i data-lucide="radio" class="setup-icon-md"></i></div>
+        <span class="stepper-label">{{ t.modem_connection }}</span>
+    </div>
+    <div class="stepper-line"></div>
+    <div class="stepper-step" data-step="2">
+        <div class="stepper-circle"><i data-lucide="sliders-horizontal" class="setup-icon-md"></i></div>
+        <span class="stepper-label">{{ t.settings }}</span>
+    </div>
+    <div class="stepper-line"></div>
+    <div class="stepper-step" data-step="3">
+        <div class="stepper-circle"><i data-lucide="check-circle" class="setup-icon-md"></i></div>
+        <span class="stepper-label">{{ t.step_review }}</span>
+    </div>
+</div>
+
+<form id="setup-form" method="POST" action="{{ url_for('config_bp.api_config') }}" style="display:none;">
+
+<!-- Step 1: Modem Connection -->
+<div class="step-content active" data-step="1">
+    <div class="settings-card glass">
+        <div class="card-header">
+            <div class="card-title-group">
+                <div class="card-icon purple">
+                    <i data-lucide="radio"></i>
+                </div>
+                <div>
+                    <div class="card-title">{{ t.modem_connection }}</div>
+                    <div class="card-subtitle">{{ t.modem_connection_desc }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-field">
+                <label class="form-label" for="modem_type">{{ t.modem_type }}</label>
+                <select class="form-select" id="modem_type" name="modem_type" required>
+                    {% for key, name in modem_types %}
+                    <option value="{{ key }}" {% if config.modem_type == key %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div id="modem-credentials-group" class="form-grid" style="margin-top:var(--space-md);">
+            <div class="form-field">
+                <label class="form-label" for="modem_url">{{ t.url }}</label>
+                <input class="form-input" type="text" id="modem_url" name="modem_url"
+                       value="{{ config.modem_url or 'http://192.168.178.1' }}"
+                       placeholder="http://192.168.178.1">
+            </div>
+
+            <div class="form-field">
+                <label class="form-label" for="modem_user">{{ t.username }}</label>
+                <input class="form-input" type="text" id="modem_user" name="modem_user"
+                       value="{{ config.modem_user or '' }}"
+                       placeholder="admin">
+            </div>
+
+            <div class="form-field">
+                <label class="form-label" for="modem_password">{{ t.password }}</label>
+                <input class="form-input" type="password" id="modem_password" name="modem_password"
+                       value="{{ config.modem_password or '' }}"
+                       placeholder="••••••••">
+            </div>
+
+            <div>
+                <button type="button" class="btn btn-ghost" onclick="testConnection()" id="test-conn-btn">
+                    <i data-lucide="wifi" class="setup-icon-sm"></i>
+                    {{ t.test_connection }}
+                </button>
+                <div class="test-result" id="test-result"></div>
+            </div>
+        </div>
+
+        <div class="setup-actions">
+            <button type="button" class="btn btn-primary" onclick="nextStep(2)">
+                {{ t.next }}
+                <i data-lucide="arrow-right" class="setup-icon-sm"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Step 2: Settings -->
+<div class="step-content" data-step="2">
+    <div class="settings-card glass">
+        <div class="card-header">
+            <div class="card-title-group">
+                <div class="card-icon blue">
+                    <i data-lucide="sliders-horizontal"></i>
+                </div>
+                <div>
+                    <div class="card-title">{{ t.general_settings }}</div>
+                    <div class="card-subtitle">{{ t.general_settings_desc }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-field">
+                <label class="form-label" for="poll_interval">{{ t.poll_interval }} ({{ t.minutes }})</label>
+                <input class="form-input" type="number" id="poll_interval" name="poll_interval"
+                       min="{{ poll_min }}" max="{{ poll_max }}"
+                       value="{{ config.poll_interval or 5 }}" required>
+                <span class="form-hint">{{ t.poll_interval_desc }} (min: {{ poll_min }}, max: {{ poll_max }})</span>
+            </div>
+
+            <div class="form-field">
+                <label class="form-label" for="timezone">{{ t.timezone }}</label>
+                <select class="form-select" id="timezone" name="timezone" required>
+                    {% for tz in timezones %}
+                    <option value="{{ tz }}" {% if (config.timezone or iana_tz) == tz %}selected{% endif %}>{{ tz }}</option>
+                    {% endfor %}
+                </select>
+                <span class="form-hint">{{ t.timezone_hint }}</span>
+            </div>
+        </div>
+
+        <div class="setup-actions">
+            <button type="button" class="btn btn-ghost" onclick="prevStep(1)">
+                <i data-lucide="arrow-left" class="setup-icon-sm"></i>
+                {{ t.back }}
+            </button>
+            <button type="button" class="btn btn-primary" onclick="nextStep(3)">
+                {{ t.next }}
+                <i data-lucide="arrow-right" class="setup-icon-sm"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Step 3: Review -->
+<div class="step-content" data-step="3">
+    <div class="settings-card glass">
+        <div class="card-header">
+            <div class="card-title-group">
+                <div class="card-icon purple">
+                    <i data-lucide="check-circle"></i>
+                </div>
+                <div>
+                    <div class="card-title">{{ t.review_settings }}</div>
+                    <div class="card-subtitle">{{ t.review_settings_desc }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="setup-info">
+            <strong>{{ t.modem_connection }}:</strong><br>
+            <span id="review-modem-type"></span> @ <span id="review-modem-url"></span><br><br>
+            <strong>{{ t.poll_interval }}:</strong> <span id="review-poll"></span> {{ t.minutes }}<br>
+            <strong>{{ t.timezone }}:</strong> <span id="review-tz"></span>
+        </div>
+
+        <div class="test-result" id="setup-submit-result" role="status" aria-live="polite" tabindex="-1"></div>
+
+        <div class="setup-actions">
+            <button type="button" class="btn btn-ghost" onclick="prevStep(2)">
+                <i data-lucide="arrow-left" class="setup-icon-sm"></i>
+                {{ t.back }}
+            </button>
+            <button type="submit" class="btn btn-primary" id="submit-btn">
+                <i data-lucide="check-circle" class="setup-icon-sm"></i>
+                {{ t.complete_setup }}
+            </button>
+        </div>
+    </div>
+</div>
+
+</form>
+
+</div><!-- /.setup-layout -->
+
+<script type="application/json" id="mire-setup-bootstrap">{{ {
+    'translations': {
+        'connection_failed': t.connection_failed,
+        'network_error': t.network_error,
+        'setup_try_again': t.setup_try_again,
+        'testing': t.testing,
+        'connection_successful': t.connection_successful,
+        'test_connection': t.test_connection,
+        'saving': t.saving,
+        'setup_failed': t.setup_failed,
+        'complete_setup': t.complete_setup,
+        'error_generic': t.error_generic,
+        'not_required': t.not_required,
+        'restore_validating': t.restore_validating,
+        'restore_restoring': t.restore_restoring,
+        'restore_success': t.restore_success,
+        'restore_version': t.restore_version,
+        'restore_date': t.restore_date,
+        'restore_tables': t.restore_tables,
+        'invalid_backup': t.invalid_backup,
+        'restore_failed': t.restore_failed
+    },
+    'driverHints': driver_hints,
+    'indexUrl': url_for('index'),
+    'loginUrl': url_for('login')
+}|tojson }}</script>
+<script src="{{ url_for('static', filename='js/browser-contracts.js', v=version) }}"></script>
+<script src="{{ url_for('static', filename='js/setup.js', v=version) }}"></script>
+
+</body>
+</html>

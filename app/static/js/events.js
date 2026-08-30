@@ -1,0 +1,405 @@
+/* ═══ Mire Event Log ═══ */
+
+/* ── State ── */
+var _eventsOffset = 0;
+var _eventsPageSize = 50;
+var _eventsRequestCount = 0;
+var _badgeRequestCount = 0;
+var _eventTypeLabels = {
+    health_change: T.event_type_health_change || 'Health Change',
+    power_change: T.event_type_power_change || 'Power Change',
+    snr_change: T.event_type_snr_change || 'SNR Change',
+    channel_change: T.event_type_channel_change || 'Channel Change',
+    modulation_change: T.event_type_modulation_change || 'Modulation Change',
+    device_sw_update: T.event_type_device_sw_update || 'Software Update',
+    device_reboot: T.event_type_device_reboot || 'Device Reboot',
+    device_ip_change: T.event_type_device_ip_change || 'IP Change',
+    error_spike: T.event_type_error_spike || 'Error Spike',
+    smart_capture_triggered: T.event_type_smart_capture_triggered || 'Smart Capture'
+};
+var _sevLabels = {
+    info: T.event_severity_info || 'Info',
+    warning: T.event_severity_warning || 'Warning',
+    critical: T.event_severity_critical || 'Critical'
+};
+
+/* Phase 4.3: Pill filter toggle function */
+var _currentSeverityFilter = '';
+var _deviceOnlyFilter = false;
+var _hideOperational = true;
+var _OPERATIONAL_EVENT_TYPES = { monitoring_started: true, monitoring_stopped: true };
+
+function _eventTypeLabel(eventType) {
+    var explicit = _eventTypeLabels[eventType];
+    if (explicit) return explicit;
+    var i18nKey = 'event_type_' + eventType;
+    return T[i18nKey] || eventType;
+}
+
+function _eventTimestampLabel(timestamp) {
+    return escapeHtml(String(timestamp || '').replace('T', ' '));
+}
+
+function _eventSeverityMeta(ev) {
+    var severity = String(ev.severity || 'info').replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'info';
+    var sevClass = 'sev-badge-' + severity;
+    var sevLabel = _sevLabels[severity] || severity;
+    var sevIcons = { info: 'info', warning: 'triangle-alert', critical: 'octagon-alert' };
+    var sevIcon = sevIcons[severity] || 'info';
+    return { className: sevClass, label: sevLabel, icon: sevIcon };
+}
+
+function _eventSeverityBadge(meta) {
+    return '<span class="' + meta.className + '"><span class="sev-text">' + escapeHtml(meta.label) + '</span><i data-lucide="' + meta.icon + '" class="sev-icon"></i></span>';
+}
+
+function _eventAckMarkup(ev, compact) {
+    if (ev.acknowledged) {
+        var acknowledged = escapeHtml(T.event_acknowledged || 'Acknowledged');
+        return compact ? '<span class="ev-ack-mark">&#10003;</span>' : '<span class="ev-ack-mark">&#10003; ' + acknowledged + '</span>';
+    }
+    var label = escapeHtml(T.event_acknowledge || 'Acknowledge');
+    var visible = compact ? '&#10003;' : '&#10003; ' + label;
+    return '<button class="btn-ack" type="button" aria-label="' + label + '" onclick="acknowledgeEvent(' + ev.id + ', event)">' + visible + '</button>';
+}
+
+function updateEventsExportLink() {
+    var exportLink = document.getElementById('events-export-csv');
+    if (!exportLink) return;
+    var params = new URLSearchParams();
+    if (_currentSeverityFilter) params.set('severity', _currentSeverityFilter);
+    if (_hideOperational) params.set('exclude_operational', 'true');
+    if (_deviceOnlyFilter) params.set('event_prefix', 'device_');
+    var qs = params.toString();
+    exportLink.href = mireUrl('/api/events/export.csv' + (qs ? '?' + qs : ''));
+}
+
+/* ── Rich event message formatter ── */
+function _fmtNum(n) {
+    if (typeof n !== 'number') return escapeHtml(String(n));
+    return n.toLocaleString('en-US', { maximumFractionDigits: 1 });
+}
+
+function _healthDot(h) {
+    var cls = (h === 'good' || h === 'marginal' || h === 'poor' || h === 'tolerated') ? h : 'unknown';
+    var labels = {good: T.health_good || 'Good', tolerated: T.health_tolerated || 'Tolerated', marginal: T.health_marginal || 'Marginal', poor: T.health_critical || 'Critical'};
+    return '<span class="health-dot ' + cls + '"></span>' + escapeHtml(labels[h] || h);
+}
+
+function _eventChannelMeta(c) {
+    var meta = [];
+    if (c.frequency) meta.push(escapeHtml(String(c.frequency)));
+    if (c.channel_type) meta.push(escapeHtml(String(c.channel_type)));
+    if (c.docsis_version) meta.push('DOCSIS ' + escapeHtml(String(c.docsis_version)));
+    if (c.modulation) meta.push(escapeHtml(String(c.modulation)));
+    return meta;
+}
+
+function formatEventMessage(ev) {
+    var d = ev.details;
+    if (!d) return escapeHtml(ev.message);
+
+    switch (ev.event_type) {
+        case 'health_change':
+            return _healthDot(d.prev) +
+                '<i data-lucide="arrow-right" class="ev-arrow-icon"></i>' +
+                _healthDot(d.current);
+
+        case 'power_change': {
+            var dir = d.direction === 'downstream' ? (T.event_ds || 'DS') : (T.event_us || 'US');
+            var delta = d.current - d.prev;
+            var sign = delta >= 0 ? '+' : '';
+            return '<span class="ev-label">' + escapeHtml(dir) + ' ' + (T.event_power || 'Power') + '</span>' +
+                '<span class="ev-val">' + _fmtNum(d.prev) + '</span>' +
+                '<i data-lucide="arrow-right" class="ev-arrow-icon"></i>' +
+                '<span class="ev-val">' + _fmtNum(d.current) + '</span> dBmV ' +
+                '<span class="ev-warn">' + (delta >= 0 ? '\u25B2' : '\u25BC') + ' ' + sign + _fmtNum(delta) + '</span>';
+        }
+
+        case 'snr_change': {
+            var thr = d.threshold === 'critical' ? 'ev-down' : 'ev-warn';
+            var html = '<span class="ev-label">' + (T.event_ds || 'DS') + ' SNR</span>' +
+                '<span class="ev-val">' + _fmtNum(d.prev) + '</span>' +
+                '<i data-lucide="arrow-right" class="ev-arrow-icon"></i>' +
+                '<span class="ev-val ' + thr + '">' + _fmtNum(d.current) + '</span> dB ' +
+                '<span class="ev-muted">(' + escapeHtml({warning: T.health_marginal || 'Marginal', critical: T.health_critical || 'Critical'}[d.threshold] || d.threshold) + ')</span>';
+            var affectedRaw = Array.isArray(d.affected_channels) ? d.affected_channels : [];
+            var affected = affectedRaw.filter(function(c) { return c && typeof c === 'object'; });
+            var shown = affected.slice(0, 6);
+            shown.forEach(function(c) {
+                var delta = typeof c.delta === 'number' ? c.delta : (c.current - c.prev);
+                var sign = delta >= 0 ? '+' : '';
+                var channelLabel = (T.event_ds || 'DS') + ' Ch ' + escapeHtml(String(c.channel));
+                var meta = _eventChannelMeta(c);
+                html += '<span class="ev-sub">' + channelLabel +
+                    (meta.length ? ' · ' + meta.join(' · ') : '') + ': ' +
+                    '<span class="ev-val">' + _fmtNum(c.prev) + '</span>' +
+                    '<i data-lucide="arrow-right" class="ev-arrow-icon"></i>' +
+                    '<span class="ev-val ' + thr + '">' + _fmtNum(c.current) + '</span> dB ' +
+                    '<span class="ev-down">\u25BC ' + sign + _fmtNum(delta) + '</span>' +
+                    '</span>';
+            });
+            if (affected.length > shown.length) {
+                html += '<span class="ev-sub ev-muted">+' + (affected.length - shown.length) + ' more affected channel(s)</span>';
+            }
+            return html;
+        }
+
+        case 'channel_change': {
+            var chDir = d.direction === 'downstream' ? (T.event_ds || 'DS') : (T.event_us || 'US');
+            var chDelta = d.current - d.prev;
+            var chCls = chDelta < 0 ? 'ev-down' : 'ev-up';
+            var chSign = chDelta >= 0 ? '+' : '';
+            return '<span class="ev-label">' + escapeHtml(chDir) + ' ' + (T.event_channels || 'Channels') + '</span>' +
+                '<span class="ev-val">' + _fmtNum(d.prev) + '</span>' +
+                '<i data-lucide="arrow-right" class="ev-arrow-icon"></i>' +
+                '<span class="ev-val">' + _fmtNum(d.current) + '</span> ' +
+                '<span class="' + chCls + '">' + (chDelta < 0 ? '\u25BC' : '\u25B2') + ' ' + chSign + chDelta + '</span>';
+        }
+
+        case 'modulation_change': {
+            var changes = d.changes || [];
+            var isDown = d.direction === 'downgrade';
+            var html = '<span>' + escapeHtml(ev.message) + '</span>';
+            changes.forEach(function(c) {
+                var arrow = isDown ? '\u25BC' : '\u25B2';
+                var cls = isDown ? 'ev-down' : 'ev-up';
+                var ranks = Math.abs(c.rank_drop || 0);
+                var channelMeta = _eventChannelMeta(c);
+                html += '<span class="ev-sub">' +
+                    escapeHtml(c.direction) + ' Ch ' + escapeHtml(String(c.channel)) +
+                    (channelMeta.length ? ' · ' + channelMeta.join(' · ') : '') + ': ' +
+                    '<span class="ev-val">' + escapeHtml(c.prev) + '</span>' +
+                    '<i data-lucide="arrow-right" class="ev-arrow-icon"></i>' +
+                    '<span class="ev-val">' + escapeHtml(c.current) + '</span> ' +
+                    '<span class="' + cls + '">' + arrow + ' ' + ranks + ' rank' + (ranks !== 1 ? 's' : '') + '</span>' +
+                    '</span>';
+            });
+            return html;
+        }
+
+        case 'error_spike': {
+            var spikeDelta = d.delta || (d.current - d.prev);
+            return '<span class="ev-val ev-warn">+' + _fmtNum(spikeDelta) + '</span> ' + (T.event_uncorrectable_errors || 'uncorrectable errors') + ' ' +
+                '<span class="ev-muted">(' + _fmtNum(d.prev) + ' \u2192 ' + _fmtNum(d.current) + ')</span>';
+        }
+
+        case 'monitoring_started':
+            return escapeHtml(T.event_monitoring_started_msg || 'Monitoring started') + ' ' + _healthDot(d.health || 'unknown');
+
+        case 'smart_capture_triggered': {
+            var scHtml = '<span>' + escapeHtml(ev.message) + '</span>';
+            if (d && d.source_event) {
+                scHtml += '<span class="ev-sub">' + escapeHtml(d.source_event) + '</span>';
+            }
+            return scHtml;
+        }
+
+        default:
+            return escapeHtml(ev.message);
+    }
+}
+
+function toggleHideOperational() {
+    _hideOperational = !_hideOperational;
+    var btn = document.getElementById('hide-operational-btn');
+    if (btn) {
+        btn.classList.toggle('active', _hideOperational);
+        btn.setAttribute('aria-pressed', String(_hideOperational));
+    }
+    loadEvents();
+    refreshEventBadge();
+}
+
+function filterEventsBySeverity(severity) {
+    _currentSeverityFilter = severity;
+    _deviceOnlyFilter = false;
+    var pills = document.querySelectorAll('.severity-pill:not(#hide-operational-btn)');
+    pills.forEach(function(pill) {
+        var isActive = pill.getAttribute('data-severity') === severity;
+        pill.classList.toggle('active', isActive);
+        if (pill.hasAttribute('aria-pressed')) {
+            pill.setAttribute('aria-pressed', String(isActive));
+        }
+    });
+    loadEvents();
+    refreshEventBadge();
+}
+
+function filterEventsByDevice() {
+    _deviceOnlyFilter = !_deviceOnlyFilter;
+    _currentSeverityFilter = '';
+
+    var pills = document.querySelectorAll('.severity-pill:not(#hide-operational-btn)');
+    pills.forEach(function(pill) {
+        if (pill.id === 'device-filter-pill') {
+            pill.classList.toggle('active', _deviceOnlyFilter);
+            pill.setAttribute('aria-pressed', String(_deviceOnlyFilter));
+        } else {
+            pill.classList.remove('active');
+            if (pill.hasAttribute('aria-pressed')) {
+                pill.setAttribute('aria-pressed', 'false');
+            }
+        }
+    });
+    loadEvents();
+    refreshEventBadge();
+}
+
+function loadEvents(append) {
+    if (!append) _eventsOffset = 0;
+    var feedRequestId = ++_eventsRequestCount;
+    var badgeRequestId = ++_badgeRequestCount;
+    var severity = _currentSeverityFilter;
+    var params = '?limit=' + _eventsPageSize + '&offset=' + _eventsOffset;
+    if (severity) params += '&severity=' + severity;
+    if (_hideOperational) params += '&exclude_operational=true';
+    if (_deviceOnlyFilter) params += '&event_prefix=device_';
+
+    updateEventsExportLink();
+
+    var feed = document.getElementById('events-feed');
+    var feedCard = document.getElementById('events-feed-card');
+    var empty = document.getElementById('events-empty');
+    var loading = document.getElementById('events-loading');
+    var moreBtn = document.getElementById('events-show-more');
+    var ackAllBtn = document.getElementById('btn-ack-all');
+
+    if (!append) {
+        loading.style.display = '';
+        feed.innerHTML = '';
+        feedCard.style.display = 'none';
+        empty.style.display = 'none';
+        moreBtn.style.display = 'none';
+    }
+
+    fetch(mireUrl('/api/events' + params))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            loading.style.display = 'none';
+            var events = data.events || [];
+            var unack = data.unacknowledged_count || 0;
+
+            // Events and unack count are natively filtered by the backend.
+            var eventsViewEl = document.getElementById('view-events');
+            if (badgeRequestId === _badgeRequestCount && eventsViewEl && eventsViewEl.classList.contains('active')) {
+                updateEventBadge(unack);
+                ackAllBtn.style.display = unack > 0 ? '' : 'none';
+            }
+
+            if (feedRequestId === _eventsRequestCount) {
+                if (events.length === 0 && !append) {
+                    feedCard.style.display = '';
+                    empty.textContent = T.event_no_events || 'No events detected yet.';
+                    empty.style.display = '';
+                    return;
+                }
+                events.forEach(function(ev) {
+                    var sevMeta = _eventSeverityMeta(ev);
+                    var typeLabel = _eventTypeLabel(ev.event_type);
+                    var card = document.createElement('article');
+                    card.className = 'event-feed-item' + (ev.acknowledged ? ' event-acked' : '');
+                    card.setAttribute('role', 'listitem');
+                    card.setAttribute('data-event-id', ev.id);
+                    card.innerHTML =
+                        '<div class="event-feed-main">' +
+                            '<div class="event-feed-topline">' +
+                                _eventSeverityBadge(sevMeta) +
+                                '<span class="event-feed-time">' + _eventTimestampLabel(ev.timestamp) + '</span>' +
+                            '</div>' +
+                            '<div class="event-feed-title">' + escapeHtml(typeLabel) + '</div>' +
+                            '<div class="event-feed-message">' + formatEventMessage(ev) + '</div>' +
+                        '</div>' +
+                        '<div class="event-feed-action">' + _eventAckMarkup(ev, false) + '</div>';
+                    feed.appendChild(card);
+                });
+                feedCard.style.display = '';
+                updateEventsExportLink();
+                moreBtn.style.display = events.length >= _eventsPageSize ? '' : 'none';
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        })
+        .catch(function() {
+            loading.style.display = 'none';
+            empty.textContent = T.network_error || 'Error';
+            empty.style.display = '';
+        });
+}
+
+function loadMoreEvents() {
+    _eventsOffset += _eventsPageSize;
+    loadEvents(true);
+}
+
+function acknowledgeEvent(eventId, e) {
+    if (e) e.stopPropagation();
+    fetch(mireUrl('/api/events/' + eventId + '/acknowledge'), { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) loadEvents();
+        });
+}
+
+function acknowledgeAllEvents() {
+    fetch(mireUrl('/api/events/acknowledge-all'), { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) loadEvents();
+        });
+}
+
+function updateEventBadge(count) {
+    var badges = [];
+    var sidebarBadge = document.getElementById('event-badge');
+    if (sidebarBadge) badges.push(sidebarBadge);
+    document.querySelectorAll('.bottom-nav-badge[data-view="events"]').forEach(function(badge) {
+        badges.push(badge);
+    });
+    if (!badges.length) return;
+    badges.forEach(function(badge) {
+        if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.style.display = '';
+        } else {
+            badge.style.display = 'none';
+        }
+    });
+}
+
+window.refreshEventBadge = function() {
+    var params = '';
+    var eventsViewEl = document.getElementById('view-events');
+    var isEventsView = eventsViewEl && eventsViewEl.classList.contains('active');
+    var requestId = ++_badgeRequestCount;
+
+    if (typeof _hideOperational !== 'undefined' && _hideOperational) {
+        params += (params ? '&' : '?') + 'exclude_operational=true';
+    }
+
+    // Only apply severity/device filters if we are actually looking at the events view
+    if (isEventsView) {
+        if (typeof _deviceOnlyFilter !== 'undefined' && _deviceOnlyFilter) {
+            params += (params ? '&' : '?') + 'event_prefix=device_';
+        }
+        if (typeof _currentSeverityFilter !== 'undefined' && _currentSeverityFilter) {
+            params += (params ? '&' : '?') + 'severity=' + _currentSeverityFilter;
+        }
+    }
+    
+    params += (params ? '&' : '?') + 't=' + Date.now();
+
+    fetch(mireUrl('/api/events/count' + params))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (requestId === _badgeRequestCount) {
+                updateEventBadge(data.count || 0);
+            }
+        })
+        .catch(function() {});
+};
+
+// Fetch badge count on page load
+refreshEventBadge();
+
+// Periodically refresh badge count
+setInterval(refreshEventBadge, 60000);

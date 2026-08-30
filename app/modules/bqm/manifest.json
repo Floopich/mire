@@ -1,0 +1,25 @@
+{
+  "id": "mire.bqm",
+  "name": "ThinkBroadband BQM",
+  "description": "Broadband Quality Monitor graph collection from ThinkBroadband",
+  "version": "1.0.0",
+  "author": "itsDNNS",
+  "minAppVersion": "2026.2",
+  "type": "integration",
+  "contributes": {
+    "collector": "collector.py:BQMCollector",
+    "routes": "routes.py",
+    "settings": "templates/bqm_settings.html",
+    "static": "static/",
+    "i18n": "i18n/"
+  },
+  "config": {
+    "bqm_url": "",
+    "bqm_collect_time": "02:00"
+  },
+  "menu": {
+    "label_key": "mire.bqm.bqm_title",
+    "icon": "chart-spline",
+    "order": 22
+  }
+}

@@ -1,0 +1,424 @@
+"""Shared type definitions for Mire.
+
+Central home for TypedDicts that describe data shapes flowing between
+subsystems (drivers, analyzer, storage, web, collectors, event detector).
+
+These are type-checking-only annotations -- they add zero runtime overhead
+and do not change any public API, config key, DB schema, or wire format.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Literal, NotRequired, TypedDict
+
+
+# ── Raw DOCSIS Channel (driver output, pre-analysis) ────────────
+
+
+class RawChannel(TypedDict, total=False):
+    """A single raw channel dict as returned by modem drivers.
+
+    Keys vary by driver; all are optional.  The analyzer normalises
+    these into DownstreamChannel / UpstreamChannel after analysis.
+    """
+
+    channelID: int | float | str
+    frequency: str
+    powerLevel: float | str | None
+    modulation: str
+    type: str
+    mse: float | str | None          # DS 3.0 signal-to-noise (negative dB)
+    mer: float | str | None           # DS 3.1 MER
+    corrErrors: int | None
+    nonCorrErrors: int | None
+    symbolRate: int | None
+    multiplex: str
+    profile_modulation: str
+    profileModulation: str
+
+
+class _DocsisVersionChannels(TypedDict, total=False):
+    """Channel lists keyed by DOCSIS version (FritzBox format)."""
+
+    docsis30: list[RawChannel]
+    docsis31: list[RawChannel]
+
+
+class DocsisDataFritz(TypedDict):
+    """FritzBox-style DOCSIS payload (channelDs/channelUs sub-dicts)."""
+
+    channelDs: _DocsisVersionChannels
+    channelUs: _DocsisVersionChannels
+
+
+class DocsisDataFlat(TypedDict):
+    """Flat DOCSIS payload used by TC4400, Ultra Hub 7, Vodafone Station, etc."""
+
+    docsis: str                      # "3.0" or "3.1"
+    downstream: list[RawChannel]
+    upstream: list[RawChannel]
+
+
+DocsisData = DocsisDataFritz | DocsisDataFlat
+"""Union of the two raw DOCSIS formats accepted by analyzer.analyze()."""
+
+
+# ── DOCSIS Channel Types (output of analyzer.analyze()) ──────────
+
+
+class DownstreamChannel(TypedDict):
+    """A single downstream channel after analysis."""
+
+    channel_id: int
+    frequency: str
+    power: float | None
+    modulation: str
+    snr: float | None
+    correctable_errors: int | None
+    uncorrectable_errors: int | None
+    docsis_version: str
+    health: str
+    health_detail: str
+    theoretical_bitrate: float | None
+    # Optional channel family for Home signal-family summaries
+    channel_family: NotRequired[str]
+    # Optional per-metric health keys (present when health_detail is non-empty)
+    power_health: NotRequired[str]
+    snr_health: NotRequired[str]
+    modulation_health: NotRequired[str]
+    # Optional profile modulation (driver-specific)
+    profile_modulation: NotRequired[str]
+
+
+class UpstreamChannel(TypedDict):
+    """A single upstream channel after analysis."""
+
+    channel_id: int
+    frequency: str
+    power: float | None
+    modulation: str
+    multiplex: str
+    docsis_version: str
+    health: str
+    health_detail: str
+    theoretical_bitrate: float | None
+    # Optional channel family for Home signal-family summaries
+    channel_family: NotRequired[str]
+    # Optional per-metric health keys
+    power_health: NotRequired[str]
+    modulation_health: NotRequired[str]
+    # Optional profile modulation (driver-specific)
+    profile_modulation: NotRequired[str]
+
+
+# ── Spike Suppression ────────────────────────────────────────────
+
+
+class SpikeSuppression(TypedDict):
+    """Spike suppression metadata set by apply_spike_suppression()."""
+
+    active: bool
+    last_spike: str
+    hours_since_spike: float
+    expiry_hours: int
+
+
+class ErrorBaseline(TypedDict, total=False):
+    """Observed cumulative counter baseline metadata."""
+
+    active: bool
+    basis: str
+    counter_reset: bool
+    comparable_counter_reset: bool
+    raw_uncorrectable_counter_reset: bool
+    schema_baseline: bool
+    comparable_channel_keys: list[str]
+    ds_comparable_correctable_baseline: int | None
+    ds_comparable_uncorrectable_baseline: int | None
+    ds_raw_uncorrectable_baseline: int | None
+    ds_comparable_correctable_recent_delta: int | None
+    ds_comparable_uncorrectable_recent_delta: int | None
+    ds_raw_uncorrectable_recent_delta: int | None
+    ds_comparable_correctable_delta: int | None
+    ds_comparable_uncorrectable_delta: int | None
+    ds_raw_uncorrectable_delta: int | None
+    # Compatibility aliases for the comparable cohort.
+    ds_correctable_baseline: int | None
+    ds_uncorrectable_baseline: int | None
+    ds_correctable_recent_delta: int | None
+    ds_uncorrectable_recent_delta: int | None
+    ds_correctable_delta: int | None
+    ds_uncorrectable_delta: int | None
+
+
+# ── Analysis Summary ─────────────────────────────────────────────
+
+
+class SignalFamilyMetric(TypedDict):
+    """Aggregated min/avg/max metric for a DOCSIS signal family."""
+
+    available: bool
+    min: float | None
+    avg: float | None
+    max: float | None
+    health: str
+
+
+class SignalFamilyModulationValue(TypedDict):
+    """One distinct modulation/profile value with its own health."""
+
+    value: str
+    health: str
+
+
+class SignalFamilyModulation(TypedDict):
+    """Aggregated modulation/profile values for a DOCSIS signal family."""
+
+    available: bool
+    value: str | None
+    secondary: str | None
+    distinct: list[str]
+    values: list[SignalFamilyModulationValue]
+    health: str
+
+
+SignalFamilyHealthCause = Literal["power", "snr", "mer", "modulation"]
+
+
+class SignalFamilyHealthDriver(TypedDict):
+    """Channel/dimension that explains a signal family's worst status."""
+
+    channel_id: int | str | None
+    dimension: SignalFamilyHealthCause
+    family: str
+    direction: str
+    health: str
+    unit: str | None
+    value: float | str | None
+
+
+class SignalFamilySummary(TypedDict, total=False):
+    """Summary for one DOCSIS signal family on the Home dashboard."""
+
+    family: str
+    count: int
+    health: str
+    health_cause: SignalFamilyHealthCause | None
+    health_counts: dict[str, int]
+    health_driver: SignalFamilyHealthDriver | None
+    power: SignalFamilyMetric
+    snr: SignalFamilyMetric
+    mer: SignalFamilyMetric
+    modulation: SignalFamilyModulation
+
+
+class SignalDirectionSummary(TypedDict):
+    """Signal-family summaries for one traffic direction."""
+
+    health: str
+    families: dict[str, SignalFamilySummary]
+
+
+class SignalFamiliesSummary(TypedDict):
+    """Family-level downstream/upstream signal summaries."""
+
+    downstream: SignalDirectionSummary
+    upstream: SignalDirectionSummary
+
+
+class ErrorCounterCoverageCounts(TypedDict):
+    """Per-scope downstream error-counter support counts."""
+
+    total_channels: int
+    correctable_channels: int
+    uncorrectable_channels: int
+    comparable_channels: int
+    partial_channels: int
+    unsupported_channels: int
+
+
+class ErrorCounterCoverage(ErrorCounterCoverageCounts):
+    """Overall downstream coverage with additive DOCSIS family context."""
+
+    families: dict[str, ErrorCounterCoverageCounts]
+
+
+class AnalysisSummary(TypedDict):
+    """Summary metrics from analyzer.analyze()."""
+
+    ds_total: int
+    us_total: int
+    ds_power_min: float
+    ds_power_max: float
+    ds_power_avg: float
+    us_power_min: float
+    us_power_max: float
+    us_power_avg: float
+    ds_snr_min: float
+    ds_snr_max: float
+    ds_snr_avg: float
+    ds_correctable_errors: int | None
+    ds_uncorrectable_errors: int | None
+    ds_comparable_correctable_errors: int | None
+    ds_comparable_uncorrectable_errors: int | None
+    error_counter_coverage: ErrorCounterCoverage
+    errors_supported: bool
+    ds_capacity_mbps: float | None
+    us_capacity_mbps: float | None
+    capacity_coverage: dict[str, dict[str, int]]
+    signal_families: NotRequired[SignalFamiliesSummary]
+    ds_scqam_power_avg: NotRequired[float | None]
+    ds_scqam_snr_avg: NotRequired[float | None]
+    ds_ofdm_power_avg: NotRequired[float | None]
+    ds_ofdm_mer_avg: NotRequired[float | None]
+    us_scqam_power_avg: NotRequired[float | None]
+    us_ofdma_power_avg: NotRequired[float | None]
+    ds_uncorr_pct: float | None
+    health: str
+    health_issues: list[str]
+    # Set by apply_spike_suppression() when active
+    spike_suppression: NotRequired[SpikeSuppression]
+    # Set by apply_cumulative_error_baseline() when a previous snapshot exists
+    error_baseline: NotRequired[ErrorBaseline]
+
+
+class AnalysisResult(TypedDict):
+    """Complete output from analyzer.analyze().
+
+    This is the canonical structure consumed by:
+    - web.update_state(analysis=...)
+    - storage.save_snapshot()
+    - EventDetector.check()
+    - MQTT publisher
+    """
+
+    summary: AnalysisSummary
+    ds_channels: list[DownstreamChannel]
+    us_channels: list[UpstreamChannel]
+    snapshot_id: NotRequired[int]
+    timestamp: NotRequired[str]
+    analysis_meta: NotRequired[dict[str, Any] | None]
+    raw_data: NotRequired[DocsisData | dict[str, Any] | None]
+
+
+# ── Event Types ──────────────────────────────────────────────────
+
+
+class EventDict(TypedDict):
+    """An event generated by EventDetector or module collectors.
+
+    Consumed by: storage.save_events(), notifier.dispatch(),
+    smart_capture.evaluate().
+    """
+
+    timestamp: str
+    severity: str  # "info" | "warning" | "critical"
+    event_type: str
+    message: str
+    details: NotRequired[dict[str, Any] | None]
+    # Set by save_events_with_ids() after DB insert
+    _id: NotRequired[int]
+
+
+# ── Driver Return Types ──────────────────────────────────────────
+
+
+class DeviceInfo(TypedDict, total=False):
+    """Device information returned by ModemDriver.get_device_info().
+
+    All keys are optional since driver capabilities vary widely.
+    """
+
+    manufacturer: str
+    model: str
+    hw_version: str     # hardware version/revision
+    sw_version: str     # firmware/software version
+    docsis_status: str  # e.g. online/offline/syncing
+    uptime_seconds: int
+    reboot_reason: str  # reason for the last reboot
+    wan_ipv4: str
+    wan_ipv6: str
+
+
+class ConnectionInfo(TypedDict, total=False):
+    """Connection information returned by ModemDriver.get_connection_info().
+
+    Empty dict is valid (standalone modems without WAN info).
+    """
+
+    max_downstream_kbps: int
+    max_upstream_kbps: int
+    connection_type: str
+    wan_ip: str
+    status: str
+
+
+# ── Collector Status ─────────────────────────────────────────────
+
+
+class CollectorStatus(TypedDict):
+    """Health status dict returned by Collector.get_status()."""
+
+    name: str
+    enabled: bool
+    consecutive_failures: int
+    penalty_seconds: int
+    poll_interval: int
+    effective_interval: float
+    last_poll: float
+    next_poll_in: int
+
+
+# ── Gaming Quality Index ─────────────────────────────────────────
+
+
+class GamingIndexComponent(TypedDict):
+    score: int
+    weight: int
+
+
+class GamingIndex(TypedDict):
+    """Result from compute_gaming_index()."""
+
+    score: int
+    grade: str  # "A" | "B" | "C" | "D" | "F"
+    components: dict[str, GamingIndexComponent]
+    has_speedtest: bool
+
+
+# ── Notification Payload ─────────────────────────────────────────
+
+
+class NotificationPayload(TypedDict):
+    """Payload sent to notification channels."""
+
+    source: str
+    timestamp: str
+    severity: str
+    event_type: str
+    message: str
+    details: dict[str, Any]
+
+
+class NotificationTestResult(TypedDict):
+    """Result from NotificationDispatcher.test()."""
+
+    success: bool
+    error: NotRequired[str]
+
+
+# ── Driver Hints ────────────────────────────────────────────────
+
+
+class DriverHints(TypedDict, total=False):
+    """UI hints for a modem driver (login fields, help text, etc.)."""
+
+    needs_user: bool
+    needs_password: bool
+    default_url: str
+    default_user: str
+    username_required: bool
+    credentials_required: bool
+    url_hint: str
+    user_hint: str
+    password_hint: str

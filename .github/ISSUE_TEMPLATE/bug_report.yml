@@ -1,0 +1,145 @@
+name: Bug Report
+description: Report a confirmed bug, regression, or broken workflow in Mire
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug.
+
+        If this is a setup question, reverse proxy issue, or general troubleshooting request, please start in Q&A Discussions first:
+        https://github.com/itsDNNS/docsight/discussions/categories/q-a
+
+        For new modem support, use the dedicated modem support request form instead.
+
+  - type: dropdown
+    id: bug_type
+    attributes:
+      label: Bug Type
+      description: What kind of problem is this?
+      options:
+        - Regression
+        - New bug or unexpected behavior
+        - UI or visual issue
+        - Performance problem
+        - Data quality or analysis issue
+        - Integration issue
+    validations:
+      required: true
+
+  - type: dropdown
+    id: affected_area
+    attributes:
+      label: Affected Area
+      description: Which part of Mire is affected most?
+      options:
+        - Monitoring dashboard
+        - Signal trends and channel analysis
+        - Event log or incident journal
+        - Connection monitor or network analysis
+        - Complaint or export workflow
+        - Speedtest, BQM, or BNetzA
+        - Home Assistant, MQTT, or Prometheus
+        - Setup, configuration, or auth
+        - Reverse proxy or deployment
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: version
+    attributes:
+      label: Mire Version
+      description: Which version are you using?
+      options:
+        - Latest release
+        - Older release
+        - Main or self-built checkout
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: version_specific
+    attributes:
+      label: Exact Version or Commit
+      description: Fill this in if you are not on the latest release
+      placeholder: v2026-04-20.1 or commit SHA
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Give a short, concrete summary of the bug
+      placeholder: After opening Signal Trends, the chart area stays blank and the browser console shows an error.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Tell us exactly how to reproduce it
+      placeholder: |
+        1. Open Mire
+        2. Go to Signal Trends
+        3. Change the period to 30 days
+        4. See the broken chart
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+      placeholder: The chart should render the selected time range.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened?
+      placeholder: The chart area stays empty and no data points are rendered.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment Method
+      description: How are you running Mire?
+      options:
+        - Docker Compose
+        - docker run
+        - Unraid
+        - Synology NAS
+        - Proxmox, LXC, or VM
+        - Python or local checkout
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: modem_model
+    attributes:
+      label: Modem or Router Model
+      description: Include the exact modem or router model when relevant
+      placeholder: FRITZ!Box 6690 Cable, Vodafone Station TG3442DE
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs or Console Errors
+      description: Paste relevant logs here. Redact secrets, IPs, tokens, and customer data if needed.
+      render: shell
+      placeholder: |
+        [ERROR] docsis.main: ...
+        Uncaught TypeError: ...
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots, Exports, or Extra Context
+      description: Add screenshots, exported snippets, or any additional context that helps explain the bug
+      placeholder: This started after updating from v2026-04-12.2 to v2026-04-20.1.

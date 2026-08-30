@@ -1,0 +1,139 @@
+<div class="view-content">
+    <!-- Controls -->
+    <div class="view-page-header mod-controls">
+        <div class="view-page-header-left">
+            <h2 class="view-page-title">{{ t.get('mire.modulation.title', 'Modulation Performance') }}</h2>
+        </div>
+        <div class="view-page-actions mod-controls-tabs">
+            <div class="trend-tabs" id="modulation-direction-tabs">
+                <button class="trend-tab active" data-dir="us">{{ t.get('mire.modulation.upstream', 'Upstream') }}</button>
+                <button class="trend-tab" data-dir="ds">{{ t.get('mire.modulation.downstream', 'Downstream') }}</button>
+            </div>
+            <div class="trend-tabs" id="modulation-range-tabs">
+                <button class="trend-tab" data-days="1">{{ t.get('mire.modulation.today', 'Today') }}</button>
+                <button class="trend-tab active" data-days="7">7d</button>
+                <button class="trend-tab" data-days="30">30d</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mod-capacity-panel" id="modulation-capacity-panel" style="display:none;">
+        <div class="mod-capacity-panel-head">
+            <div>
+                <div class="mod-capacity-kicker">{{ t.get('mire.modulation.capacity_kicker', 'Layer-1 SC-QAM estimate') }}</div>
+                <h3>{{ t.get('mire.modulation.capacity_title', 'Calculated SC-QAM gross capacity') }}</h3>
+                <div class="mod-capacity-range" id="mod-capacity-range-label">{{ t.get('mire.modulation.capacity_selected_period', 'Selected period') }}</div>
+            </div>
+            <div class="mod-capacity-help-actions">
+            {% if t.get('mire.modulation.capacity_glossary') %}
+            <span class="glossary-hint"><i data-lucide="info"></i><div class="glossary-popover">{{ t.get('mire.modulation.capacity_glossary') }}</div></span>
+            {% endif %}
+            <span class="glossary-hint mod-capacity-basics-hint">
+                <i data-lucide="book-open"></i>
+                <span class="mod-capacity-basics-label">{{ t.get('docsis_basics_label', 'DOCSIS basics') }}</span>
+                <div class="glossary-popover">{{ t.get('glossary_docsis_basics', 'Cable internet uses DOCSIS, not DSL. Mire reads modem, channel, and signal data from supported cable gateways. Signal health, modulation, and SC-QAM capacity estimates are Layer-1/channel diagnostics, not Speedtest/IP throughput or tariff speed. Cable is a shared medium; segment utilization and provider/network conditions can affect real speeds.') }}</div>
+            </span>
+            </div>
+        </div>
+        <div class="mod-capacity-warning-list" aria-label="{{ t.get('mire.modulation.capacity_caveats_label', 'Capacity caveats') }}">
+            <span>{{ t.get('mire.modulation.capacity_warning_not_throughput', 'Not speedtest throughput') }}</span>
+            <span>{{ t.get('mire.modulation.capacity_warning_not_tariff', 'Not tariff speed') }}</span>
+            <span>{{ t.get('mire.modulation.capacity_warning_sc_qam_only', 'SC-QAM only; OFDM/OFDMA excluded when unsupported') }}</span>
+        </div>
+        <div class="mod-capacity-grid">
+            {% for direction, card_id, current_id, min_id, avg_id, max_id, tariff_id, coverage_id, status_id in [
+                ('downstream', 'mod-capacity-downstream', 'mod-cap-ds-current', 'mod-cap-ds-min', 'mod-cap-ds-avg', 'mod-cap-ds-max', 'mod-cap-ds-tariff', 'mod-cap-ds-coverage', 'mod-cap-ds-status'),
+                ('upstream', 'mod-capacity-upstream', 'mod-cap-us-current', 'mod-cap-us-min', 'mod-cap-us-avg', 'mod-cap-us-max', 'mod-cap-us-tariff', 'mod-cap-us-coverage', 'mod-cap-us-status')
+            ] %}
+            {% set cap_label = t.get('mire.modulation.downstream', 'Downstream') if direction == 'downstream' else t.get('mire.modulation.upstream', 'Upstream') %}
+            <div class="mod-capacity-card" id="{{ card_id }}" data-capacity-dir="{{ direction }}">
+                <div class="mod-capacity-card-top">
+                    <span>{{ cap_label }} · {{ t.get('mire.modulation.capacity_current', 'Current') }}</span>
+                    <strong id="{{ current_id }}">—</strong>
+                </div>
+                <div class="mod-capacity-history-row">
+                    <span>{{ t.get('mire.modulation.capacity_min', 'Min') }}</span><strong id="{{ min_id }}">—</strong>
+                    <span>{{ t.get('mire.modulation.capacity_avg', 'Avg') }}</span><strong id="{{ avg_id }}">—</strong>
+                    <span>{{ t.get('mire.modulation.capacity_max', 'Max') }}</span><strong id="{{ max_id }}">—</strong>
+                </div>
+                <div class="mod-capacity-subline">
+                    <span>{{ t.get('mire.modulation.capacity_tariff_reached', 'Above tariff samples') }}</span>
+                    <strong id="{{ tariff_id }}">—</strong>
+                </div>
+                <div class="mod-capacity-subline">
+                    <span>{{ t.get('mire.modulation.capacity_coverage', 'Calculated channels') }}</span>
+                    <strong id="{{ coverage_id }}">—</strong>
+                </div>
+                <div class="mod-capacity-status" id="{{ status_id }}">—</div>
+                <div class="mod-capacity-caveat" id="mod-cap-{{ 'ds' if direction == 'downstream' else 'us' }}-caveat" hidden></div>
+            </div>
+            {% endfor %}
+        </div>
+        <p class="mod-capacity-disclaimer">
+            {{ t.get('mire.modulation.capacity_disclaimer', 'Calculated Layer-1 SC-QAM gross capacity based on supported channel data. Real IP throughput is lower and depends on tariff provisioning, DOCSIS overhead, segment utilization, test endpoint, modem and CMTS behavior, and other shared-medium conditions.') }}
+        </p>
+    </div>
+
+    <!-- Overview (multi-day) -->
+    <div id="modulation-overview">
+        <!-- KPI strip (compact, left-aligned) -->
+        <div class="mod-kpi-strip" id="modulation-kpis">
+            <div class="mod-kpi-item">
+                {% if t.get('mire.modulation.glossary_health_index') %}
+                <span class="glossary-hint"><i data-lucide="info"></i><div class="glossary-popover">{{ t.get('mire.modulation.glossary_health_index') }}</div></span>
+                {% endif %}
+                <span class="mod-kpi-item-label">{{ t.get('mire.modulation.health_index', 'Health Index') }}</span>
+                <span class="mod-kpi-item-value" id="mod-kpi-health">—</span>
+                <span class="mod-kpi-item-sub" id="mod-kpi-health-delta"></span>
+            </div>
+            <div class="mod-kpi-item">
+                {% if t.get('mire.modulation.glossary_low_qam') %}
+                <span class="glossary-hint"><i data-lucide="info"></i><div class="glossary-popover">{{ t.get('mire.modulation.glossary_low_qam') }}</div></span>
+                {% endif %}
+                <span class="mod-kpi-item-label">{{ t.get('mire.modulation.low_qam_exposure', 'Low-QAM Exposure') }}</span>
+                <span class="mod-kpi-item-value" id="mod-kpi-lowqam">—</span>
+                <span class="mod-kpi-item-sub" id="mod-kpi-lowqam-hint"></span>
+            </div>
+            <div class="mod-kpi-item">
+                {% if t.get('mire.modulation.glossary_sample_density') %}
+                <span class="glossary-hint"><i data-lucide="info"></i><div class="glossary-popover">{{ t.get('mire.modulation.glossary_sample_density') }}</div></span>
+                {% endif %}
+                <span class="mod-kpi-item-label">{{ t.get('mire.modulation.sample_density', 'Sample Density') }}</span>
+                <span class="mod-kpi-item-value" id="mod-kpi-density">—</span>
+                <span class="mod-kpi-item-sub" id="mod-kpi-density-hint"></span>
+            </div>
+        </div>
+
+        <!-- Protocol groups (dynamically populated by JS) -->
+        <div id="modulation-protocol-groups"></div>
+
+        <!-- Click hint -->
+        <div class="modulation-click-hint" id="mod-click-hint" style="display:none;">
+            <i data-lucide="mouse-pointer-click"></i>
+            {{ t.get('mire.modulation.click_day_hint', 'Click a day bar to view per-channel details') }}
+        </div>
+    </div>
+
+    <!-- Intraday (single day) -->
+    <div id="modulation-intraday" style="display:none;">
+        <div class="mod-intraday-header">
+            <button class="trend-tab" id="mod-back-btn" onclick="modBackToOverview()">
+                <i data-lucide="arrow-left"></i>
+                {{ t.get('mire.modulation.back_to_overview', 'Back to Overview') }}
+            </button>
+            <h3 class="mod-intraday-title" id="mod-intraday-title"></h3>
+        </div>
+        <div id="modulation-intraday-content"></div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="modulation-disclaimer" id="mod-disclaimer" style="display:none;">
+        <i data-lucide="info"></i>
+        <span id="mod-disclaimer-text"></span>
+    </div>
+
+    <!-- No-data fallback -->
+    <div class="no-data-msg" id="modulation-no-data" style="display:none;">
+        {{ t.get('mire.modulation.no_data', 'No modulation data available for the selected period.') }}
+    </div>
+</div>
