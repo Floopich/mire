@@ -98,7 +98,7 @@ DEFAULTS = {
     "disabled_modules": "mire.smokeping",  # comma-separated list of module IDs to disable
     "active_theme": "",  # Module ID of active theme (empty = first available)
     "show_reserved_modules": False,
-    "module_registry_url": "https://raw.githubusercontent.com/itsDNNS/docsight-modules/main/registry.json",
+    "module_registry_url": "",
     "health_hysteresis": 0,
     "sc_enabled": False,
     "sc_global_cooldown": 300,
