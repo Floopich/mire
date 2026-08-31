@@ -2,12 +2,12 @@ services:
   mire:
     image: ghcr.io/${GH_OWNER:?lancer ./scripts/site.sh start <site>, il renseigne .env}/mire:latest
     # build: .          # decommenter pour construire localement au lieu de tirer l'image
-    container_name: mire-${SITE:?definir SITE dans .env, ou lancer ./scripts/site.sh start <site>}
+    container_name: mire
     restart: unless-stopped
     ports:
       - "8765:8765"
     volumes:
-      - ./sites/${SITE}/data:/data
+      - ./sites/${SITE:?definir SITE dans .env, ou lancer ./scripts/site.sh start <site>}/data:/data
     cap_add:
       - NET_RAW
     environment:
