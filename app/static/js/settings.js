@@ -406,15 +406,18 @@ function onIspChange() {
     row.style.display = sel.value === '__other__' ? 'flex' : 'none';
     var isp = sel.value.toLowerCase();
     var iconMap = {
-        'vodafone': '/static/img/providers/vodafone.svg',
-        'telekom': '/static/img/providers/telekom.svg',
-        'o2': '/static/img/providers/o2.svg'
+        'voo': '/static/img/providers/voo.svg',
+        'proximus': '/static/img/providers/proximus.svg',
+        'telenet': '/static/img/providers/telenet.svg',
+        'orange': '/static/img/providers/orange.svg',
+        'scarlet': '/static/img/providers/scarlet.svg',
+        'edpnet': '/static/img/providers/edpnet.svg'
     };
     if (sel.value && sel.value !== '__other__') {
-        icon.src = mireUrl(iconMap[isp] || '/static/img/providers/generic.svg');
+        icon.src = mireUrl(iconMap[(isp || '').toLowerCase()] || '/static/img/providers/generic.svg');
         icon.alt = sel.value;
         icon.style.display = 'block';
-        icon.style.opacity = iconMap[isp] ? '1' : '0.7';
+        icon.style.opacity = iconMap[(isp || '').toLowerCase()] ? '1' : '0.7';
     } else {
         icon.style.display = 'none';
     }

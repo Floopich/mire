@@ -217,17 +217,12 @@
   "isp_other_placeholder": "Voer de naam van de provider in",
   "isp_select": "Provider selecteren",
   "isp_options": [
-    "Vodafone",
-    "PYUR",
-    "eazy",
-    "O2",
-    "1&1",
-    "Telekom",
-    "NetCologne",
-    "M-net",
-    "Wilhelm.tel",
-    "Comcast/Xfinity",
-    "Charter/Spectrum"
+    "VOO",
+    "Proximus",
+    "Telenet",
+    "Orange",
+    "Scarlet",
+    "edpnet"
   ],
   "tariff": "Tarief",
   "max_downstream": "Max stroomafwaarts",

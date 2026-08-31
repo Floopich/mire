@@ -217,9 +217,12 @@
   "isp_other_placeholder": "Nom du fournisseur",
   "isp_select": "Choisir un fournisseur",
   "isp_options": [
-    "SFR",
-    "Comcast/Xfinity",
-    "Charter/Spectrum"
+    "VOO",
+    "Proximus",
+    "Telenet",
+    "Orange",
+    "Scarlet",
+    "edpnet"
   ],
   "tariff": "Forfait",
   "max_downstream": "Débit descendant max",

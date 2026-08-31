@@ -217,17 +217,12 @@
   "isp_other_placeholder": "Enter provider name",
   "isp_select": "Select provider",
   "isp_options": [
-    "Vodafone",
-    "PYUR",
-    "eazy",
-    "O2",
-    "1&1",
-    "Telekom",
-    "NetCologne",
-    "M-net",
-    "Wilhelm.tel",
-    "Comcast/Xfinity",
-    "Charter/Spectrum"
+    "VOO",
+    "Proximus",
+    "Telenet",
+    "Orange",
+    "Scarlet",
+    "edpnet"
   ],
   "tariff": "Tariff",
   "max_downstream": "Max Downstream",
