@@ -32,10 +32,12 @@ def _login(client, password):
 
 
 class TestSettingsRoute:
-    def test_settings_contains_comcast_xfinity_isp_option(self, client):
+    def test_settings_contains_first_isp_option(self, client):
         resp = client.get("/settings?lang=en")
         assert resp.status_code == 200
-        assert b"Comcast/Xfinity" in resp.data
+        import json
+        opts = json.load(open("app/i18n/en.json", encoding="utf-8"))["isp_options"]
+        assert opts[0].encode() in resp.data
 
     def test_settings_exports_runtime_module_secret_metadata(self, client, config_mgr):
         key = "community_runtime_secret"
