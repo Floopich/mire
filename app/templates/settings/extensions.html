@@ -78,32 +78,4 @@
         {% endif %}
     </div>
 
-    {# ── Community Modules ── #}
-    <div class="settings-card glass">
-        <div class="card-header">
-            <div class="card-title-group">
-                <div class="card-icon green">
-                    <i data-lucide="download"></i>
-                </div>
-                <div>
-                    <div class="card-title">{{ t.get('extensions_community', 'Community Modules') }}</div>
-                    <div class="card-subtitle">{{ t.get('extensions_community_desc', 'Browse and install modules from the community registry') }}</div>
-                </div>
-            </div>
-            <button type="button" class="btn btn-ghost" onclick="refreshModuleRegistry()" id="module-registry-refresh" title="{{ t.get('extensions_refresh', t.refresh) }}" aria-label="{{ t.get('extensions_refresh', t.refresh) }}">
-                <i data-lucide="refresh-cw" style="width:16px;height:16px;" aria-hidden="true"></i>
-            </button>
-        </div>
-        <div id="module-registry-container" style="padding: 0 var(--card-padding) var(--card-padding);">
-            <div id="module-registry-loading" class="registry-loading">
-                <i data-lucide="loader-2" style="width:18px;height:18px;"></i>
-                {{ t.get('extensions_loading', 'Loading community modules...') }}
-            </div>
-            <div id="module-registry-empty" class="registry-empty" style="display:none;">
-                <i data-lucide="package-open"></i>
-                {{ t.get('extensions_no_modules', 'No community modules available yet.') }}
-            </div>
-            <div id="module-registry-gallery" style="display:none;"></div>
-        </div>
-    </div>
 </div>
