@@ -95,7 +95,7 @@ DEFAULTS = {
     "notify_cooldown": 3600,
     "notify_cooldowns": "{}",
     "timezone": "",
-    "disabled_modules": "mire.smokeping",  # comma-separated list of module IDs to disable
+    "disabled_modules": "",  # comma-separated list of module IDs to disable
     "active_theme": "",  # Module ID of active theme (empty = first available)
     "show_reserved_modules": False,
     "module_registry_url": "",
@@ -295,9 +295,7 @@ class ConfigManager:
                 log.warning("Failed to save migrated config: %s", e)
 
     def _get_default_disabled_modules(self):
-        """Keep existing Smokeping setups active while new installs default it off."""
-        if self._file_config.get("smokeping_url") and self._file_config.get("smokeping_targets"):
-            return ""
+        """Modules desactives par defaut."""
         return DEFAULTS["disabled_modules"]
 
     def get(self, key, default=None):
@@ -422,9 +420,6 @@ class ConfigManager:
         """True if mqtt_host is set (MQTT is optional)."""
         return bool(self.get("mqtt_host"))
 
-    def is_smokeping_configured(self):
-        """True if smokeping_url and smokeping_targets are set."""
-        return bool(self.get("smokeping_url") and self.get("smokeping_targets"))
 
     def is_bqm_configured(self):
         """True if bqm_url is set (BQM is optional)."""

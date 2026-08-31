@@ -20,7 +20,6 @@ BUILTIN_MODULE_DIRS: tuple[str, ...] = (
     "modulation",
     "mqtt",
     "reports",
-    "smokeping",
     "speedtest",
     "weather",
 )

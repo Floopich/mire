@@ -564,18 +564,6 @@ _TERMS: tuple[GlossaryTerm, ...] = (
         'Use BQM for timing correlation: match loss blocks with DOCSIS events, signal trends, and user reports. Treat monitor-target or routing caveats separately.',
     ),
     _term(
-        'smokeping',
-        'mire_features',
-        'Smokeping',
-        ('SmokePing', 'Latency graph'),
-        (),
-        ('connection_monitor', 'bqm', 'correlation_analysis'),
-        'Smokeping adds latency history as another evidence source.',
-        'Smokeping support lets Mire use latency history for intermittent connectivity problems.',
-        'Latency-history tools show timing and packet-loss patterns, not the physical cause. Their value increases when they overlap with modem or event evidence.',
-        'Use Smokeping traces to confirm when symptoms began, how long they lasted, and whether they align with RF or DOCSIS events before adding them to an escalation package.',
-    ),
-    _term(
         'gaming_index',
         'mire_features',
         'Gaming Index',
@@ -805,11 +793,6 @@ _GLOSSARY_WIKI_INDEX: dict[str, dict[str, tuple[str, ...]]] = {
         'source_pages': ('Features-BQM.md',),
         'tags': ('mire-feature', 'app-function'),
         'ui_contexts': ('bqm',),
-    },
-    'smokeping': {
-        'source_pages': ('Features-Smokeping.md',),
-        'tags': ('mire-feature', 'app-function'),
-        'ui_contexts': ('smokeping',),
     },
     'gaming_index': {
         'source_pages': ('Features-Glossary.md', 'Features-Gaming-Quality.md'),
