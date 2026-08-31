@@ -96,13 +96,11 @@ def test_two_apps_isolate_runtime_auth_storage_and_requests(tmp_path, order):
         headers = application.test_client().get("/health").headers
         assert "Content-Security-Policy" in headers
 
-    from app.modules.bqm.routes import _get_bqm_storage
     from app.modules.speedtest.routes import _get_speedtest_storage
 
     for application, runtime in ((app_a, runtime_a), (app_b, runtime_b)):
         with application.app_context():
             derived = (
-                _get_bqm_storage(),
                 _get_speedtest_storage(),
             )
         assert all(item.db_path == runtime.storage.db_path for item in derived)

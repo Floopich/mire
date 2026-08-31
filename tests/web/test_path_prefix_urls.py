@@ -50,7 +50,7 @@ def sample_analysis():
 def client(tmp_path):
     """Create a configured client without relying on tests/web/conftest.py."""
     current_runtime().config_manager = _configured_manager(tmp_path)
-    current_runtime().module_loader = _enabled_bqm_loader()
+    current_runtime().module_loader = _enabled_module_loader()
     current_runtime().storage = None
     app.config["TESTING"] = True
     with app.test_client() as test_client:
@@ -110,10 +110,10 @@ def _configured_manager(tmp_path, *, password: str = "") -> ConfigManager:
     return manager
 
 
-def _enabled_bqm_loader():
+def _enabled_module_loader():
     module = ModuleInfo(
-        id="mire.bqm",
-        name="BQM",
+        id="mire.modulation",
+        name="Modulation",
         description="Test module context",
         version="1.0.0",
         author="Mire",
@@ -164,7 +164,7 @@ def test_dashboard_and_settings_render_prefix_aware_navigation_and_assets(
         in dashboard_html
     )
     assert (
-        'src="/mire/modules/mire.bqm/static/js/bqm-chart.js?v='
+        'src="/mire/static/js/dashboard.js?v='
         in dashboard_html
     )
     assert 'href="/mire/" class="sidebar-header"' in settings_html
@@ -297,7 +297,7 @@ def test_root_mount_keeps_existing_effective_server_generated_paths(
     html = response.get_data(as_text=True)
     assert 'href="/settings"' in html
     assert 'src="/static/js/modals.js?v=' in html
-    assert 'src="/modules/mire.bqm/static/js/bqm-chart.js?v=' in html
+    assert 'src="/static/js/dashboard.js?v=' in html
 
 
 @pytest.mark.parametrize(

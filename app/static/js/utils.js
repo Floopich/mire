@@ -115,12 +115,6 @@ function updateExportSize() {
     var approxTokens = Math.max(1, Math.ceil(chars / 4));
     indicator.textContent = chars.toLocaleString() + ' ' + (T.export_size_characters || 'characters') + ' · ~' + approxTokens.toLocaleString() + ' ' + (T.export_size_tokens || 'tokens');
 }
-function openBqmSetupModal() {
-    window.MireModal.open('bqm-setup-modal');
-}
-function closeBqmSetupModal() {
-    window.MireModal.close('bqm-setup-modal');
-}
 var reportGenerationId = 0;
 var reportScope = null;
 function openReportModal(scope) {
@@ -445,7 +439,6 @@ function copySetupSnippet(sourceId, statusId) {
 function validateSetupGuidance(statusId, integration) {
     var messages = {
         speedtest: T.speedtest_setup_validation_path || 'Speedtest can be tested in Speedtest settings after the base URL and API token are saved. Mire uses the saved credentials for the live connection test.',
-        bqm: T.bqm_setup_validation_path || 'BQM can be validated in BQM settings after the share URL is saved. Mire checks the saved share URL before importing graphs.',
         smokeping: T.smokeping_setup_validation_path || 'SmokePing validation depends on the saved base URL and target in SmokePing settings. Save those values first, then refresh this view to confirm live data.'
     };
     setSetupStatus(statusId, messages[integration] || (T.setup_guidance_ready || 'Open Settings, save the integration details, then use the settings test or refresh this view to confirm live data.'), 'progress');

@@ -37,7 +37,7 @@ MIRE_LANGUAGE_PACK = {"de", "en", "fr", "nl"}
 I18N_PLACEHOLDER_RE = re.compile(
     r"(</?[A-Za-z][^>]*>|&[a-zA-Z0-9#]+;|\{\{[^}]+\}\}|\{[^}]+\}|%\([^)]+\)[sd]|%[sd])"
 )
-I18N_PROTECTED_LITERALS = {"Apprise", "Mire", "DOCSIS", "DSL", "SC-QAM", "dBmV", "Smokeping"}
+I18N_PROTECTED_LITERALS = {"Apprise", "Mire", "DOCSIS", "DSL", "SC-QAM", "dBmV"}
 I18N_EMPTY_TAG_RE = re.compile(r"<([A-Za-z][^>]*)>\s*</\1>")
 I18N_LEADING_SENTINEL_RE = re.compile(r"^\s*@")
 
@@ -324,34 +324,6 @@ def test_dynamic_module_asset_helpers_are_gated_by_the_matching_module_flag() ->
     assert bindings == {("has_css", "style.css"), ("has_js", "main.js")}
 
 
-def test_disabled_bqm_does_not_resolve_or_render_fixed_module_asset() -> None:
-    index = (TEMPLATES / "index.html").read_text(encoding="utf-8")
-    guarded_script = re.search(
-        r"({%\s*if\s+modules\|selectattr\(\s*['\"]id['\"]\s*,\s*"
-        r"['\"]equalto['\"]\s*,\s*['\"]mire\.bqm['\"]\s*\)\|list\s*%}"
-        r"\s*<script\s+src=\"{{\s*module_static_url\(\s*['\"]mire\.bqm['\"]\s*,"
-        r"\s*['\"]js/bqm-chart\.js['\"]\s*,\s*v=version\s*\)\s*}}\"></script>"
-        r"\s*{%\s*endif\s*%})",
-        index,
-        re.DOTALL,
-    )
-    assert guarded_script is not None
-
-    helper_calls = []
-
-    def module_static_url(*args, **kwargs):
-        helper_calls.append((args, kwargs))
-        return "/must-not-render"
-
-    rendered = Template(guarded_script.group(1)).render(
-        modules=[], version="test", module_static_url=module_static_url
-    )
-
-    assert helper_calls == []
-    assert "/modules/mire.bqm/" not in rendered
-    assert "/must-not-render" not in rendered
-
-
 def test_templates_do_not_emit_root_relative_application_attributes() -> None:
     offenders = []
     template_paths = sorted(TEMPLATES.rglob("*.html")) + sorted(MODULES.glob("*/templates/*.html"))
@@ -519,13 +491,10 @@ def test_shared_modals_use_native_dialog_contract() -> None:
     modal_script = (STATIC / "js" / "modals.js").read_text(encoding="utf-8")
 
     for modal_id in (
-        "bqm-import-modal",
         "entry-modal",
         "incident-container-modal",
         "import-modal",
         "speedtest-setup-modal",
-        "bqm-setup-modal",
-        "smokeping-setup-modal",
         "report-modal",
         "chart-zoom-overlay",
         "export-modal",
@@ -548,10 +517,8 @@ def test_shared_modals_use_native_dialog_contract() -> None:
 
 def test_modal_consumers_have_no_absent_api_fallbacks() -> None:
     consumers = [
-        STATIC / "js" / "bqm.js",
         STATIC / "js" / "journal.js",
         STATIC / "js" / "utils.js",
-        MODULES / "smokeping" / "static" / "main.js",
     ]
     combined = "\n".join(path.read_text(encoding="utf-8") for path in consumers)
 

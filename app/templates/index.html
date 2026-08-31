@@ -107,7 +107,7 @@
         {% endif %}
         <!-- Secondary analysis views (collapsible) -->
         {% set analysis_items = [] %}
-        {% if speedtest_configured or bqm_configured or connection_monitor_installed %}{% if analysis_items.append('correlation') %}{% endif %}{% endif %}
+        {% if speedtest_configured or connection_monitor_installed %}{% if analysis_items.append('correlation') %}{% endif %}{% endif %}
         {% if modules|selectattr('id', 'equalto', 'mire.connection_monitor')|list %}{% if analysis_items.append('connection_monitor') %}{% endif %}{% endif %}
         {% if modules|selectattr('id', 'equalto', 'mire.comparison')|list %}{% if analysis_items.append('comparison') %}{% endif %}{% endif %}
         {% if gaming_quality_enabled %}{% if analysis_items.append('gaming') %}{% endif %}{% endif %}
@@ -119,7 +119,7 @@
                 <i data-lucide="chevron-down" class="nav-toggle-icon"></i>
             </div>
             <div class="nav-section-items">
-                {% if speedtest_configured or bqm_configured or connection_monitor_installed %}
+                {% if speedtest_configured or connection_monitor_installed %}
                 <button class="nav-item" data-view="correlation" data-nav-icon="bar-chart-3" data-nav-title="{{ t.correlation_analysis }}">
                     <i data-lucide="bar-chart-3"></i> {{ t.correlation_analysis }}
                 </button>
@@ -158,17 +158,6 @@
                 {% else %}
                 <button class="nav-item" onclick="openSpeedtestSetupModal()">
                     <i data-lucide="settings"></i> {{ t.speedtest_setup }}
-                </button>
-                {% endif %}
-                {% endif %}
-                {% if modules|selectattr('id', 'equalto', 'mire.bqm')|list %}
-                {% if bqm_configured %}
-                <button class="nav-item" data-view="bqm" data-nav-icon="chart-spline" data-nav-title="{{ t.bqm_title }}">
-                    <i data-lucide="chart-spline"></i> {{ t.bqm_title }}
-                </button>
-                {% else %}
-                <button class="nav-item" onclick="openBqmSetupModal()">
-                    <i data-lucide="settings"></i> {{ t.bqm_setup }}
                 </button>
                 {% endif %}
                 {% endif %}
@@ -1368,150 +1357,11 @@
         </div>
     </div>
 </div>
-
-<!-- ═══ View: BQM Graphs ═══ -->
-{% if bqm_configured %}
-<div id="view-bqm" class="view">
-    <div class="view-page-header">
-        <div class="view-page-header-left">
-            <h2 class="view-page-title">{{ t.bqm_title }}</h2>
-        </div>
-        <!-- BQM Toolbar: quick-jump + month nav -->
-        <div id="bqm-toolbar" class="view-page-actions bqm-toolbar">
-        <button class="trend-tab bqm-quick" id="bqm-today-btn">{{ t.bqm_today }}</button>
-        <button class="trend-tab bqm-quick" id="bqm-yesterday-btn">{{ t.bqm_yesterday }}</button>
-        <button class="trend-tab bqm-quick" id="bqm-7d-btn">{{ t.bqm_range_7d or '7d' }}</button>
-        <button class="trend-tab bqm-quick" id="bqm-30d-btn">{{ t.bqm_range_30d or '30d' }}</button>
-        <div class="bqm-month-nav">
-            <button id="bqm-month-prev" class="bqm-nav-btn" aria-label="{{ t.get('previous_month', 'Previous month') }}">&#8249;</button>
-            <span id="bqm-month-label" class="bqm-month-label"></span>
-            <button id="bqm-month-next" class="bqm-nav-btn" aria-label="{{ t.get('next_month', 'Next month') }}">&#8250;</button>
-        </div>
-        <button class="bqm-nav-btn bqm-import-btn" onclick="openBqmImportModal()" title="{{ t.bqm_import_title }}" aria-label="{{ t.bqm_import_title }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="display:block;">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-        </button>
-        <button class="bqm-nav-btn bqm-import-btn" onclick="var s=document.getElementById('bqm-csv-import-section');s.style.display=s.style.display==='none'?'':'none'" title="{{ t.get('bqm_csv_import', 'Import CSV') }}" aria-label="{{ t.get('bqm_csv_import', 'Import CSV') }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="display:block;">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-            </svg>
-        </button>
-        <button class="bqm-nav-btn bqm-import-btn bqm-delete-btn" onclick="deleteBqmImages()" title="{{ t.bqm_delete }}" aria-label="{{ t.bqm_delete }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="display:block;">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-            </svg>
-        </button>
-        </div>
-    </div>
-    <!-- Calendar grid -->
-    <div id="bqm-calendar" class="bqm-calendar">
-        <div class="bqm-weekday-header">
-            <span>{{ t.weekday_mo }}</span><span>{{ t.weekday_tu }}</span><span>{{ t.weekday_we }}</span><span>{{ t.weekday_th }}</span><span>{{ t.weekday_fr }}</span><span>{{ t.weekday_sa }}</span><span>{{ t.weekday_su }}</span>
-        </div>
-        <div id="bqm-calendar-grid" class="bqm-calendar-grid"></div>
-    </div>
-    <span id="bqm-range-label" class="bqm-range-label"></span>
-    <div id="bqm-content">
-        <div id="bqm-card" class="bqm-card" style="display:none;">
-            <div class="chart-card-header">
-                <div class="chart-header-content">
-                    <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 3v18h18"/>
-                        <path d="M7 12l4-4 4 4 4-4"/>
-                    </svg>
-                    <div class="chart-label">{{ t.bqm_title }}</div>
-                    <span id="bqm-live-badge" class="bqm-live-badge" style="display:none;">{{ t.bqm_live }}</span>
-                    <span id="bqm-last-updated" class="bqm-last-updated" style="display:none;"></span>
-                </div>
-                <div id="bqm-view-toggle" class="trend-tabs" style="display:none;">
-                    <button class="trend-tab active" id="bqm-toggle-uplot">uPlot</button>
-                    <button class="trend-tab" id="bqm-toggle-png">PNG</button>
-                </div>
-            </div>
-            <div id="bqm-chart-container" class="bqm-chart-container" style="display:none;"></div>
-            <div id="bqm-image-wrap" style="text-align:center;">
-                <img id="bqm-image" style="max-width:100%; border-radius:8px;" alt="BQM Graph">
-            </div>
-        </div>
-        <div id="bqm-no-data" class="no-data-msg" style="display:none;"></div>
-    </div>
-</div>
-{% endif %}
-
-<!-- ═══ BQM Import Modal ═══ -->
-<dialog class="modal-overlay" id="bqm-import-modal" role="dialog" aria-modal="true" aria-labelledby="bqm-import-modal-title" onclick="if(event.target===this)closeBqmImportModal()" oncancel="event.preventDefault(); closeBqmImportModal()">
-    <div class="modal" style="max-width:800px;">
-        <div class="modal-header">
-            <h2 id="bqm-import-modal-title">{{ t.bqm_import_title }}</h2>
-            <button class="modal-close" onclick="closeBqmImportModal()" aria-label="{{ t.close }}">&times;</button>
-        </div>
-        <div class="modal-body" style="overflow-y:auto;">
-            <!-- Drop zone -->
-            <div id="bqm-import-dropzone" class="import-upload-zone bqm-import-dropzone">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:48px;height:48px;color:var(--muted);">
-                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                    <polyline points="17 8 12 3 7 8"/>
-                    <line x1="12" y1="3" x2="12" y2="15"/>
-                </svg>
-                <p>{{ t.bqm_import_drop }}</p>
-                <p style="font-size:0.8em;color:var(--muted);">{{ t.bqm_import_formats }}</p>
-                <button type="button" class="btn btn-muted import-browse-btn" onclick="event.stopPropagation(); document.getElementById('bqm-import-file-input').click();">{{ t.get('bqm_import_browse', 'Browse BQM images') }}</button>
-                <input type="file" id="bqm-import-file-input" style="display:none;" accept="image/png,image/jpeg,.png,.jpg,.jpeg" multiple>
-            </div>
-            <div id="bqm-import-validation-state" class="import-validation-state" role="status" aria-live="polite"></div>
-            <!-- Options: overwrite + date offset -->
-            <div id="bqm-import-options" style="display:none; margin:10px 0;">
-                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-                    <label style="display:flex;align-items:center;gap:8px;font-size:0.9em;cursor:pointer;">
-                        <input type="checkbox" id="bqm-import-overwrite">
-                        {{ t.bqm_import_overwrite }}
-                    </label>
-                    <label style="display:flex;align-items:center;gap:8px;font-size:0.9em;">
-                        {{ t.bqm_import_offset }}:
-                        <input type="number" id="bqm-import-offset" class="bqm-offset-input" min="-30" max="30" value="0" step="1">
-                    </label>
-                </div>
-            </div>
-            <!-- Status line -->
-            <div id="bqm-import-status" class="import-info" style="display:none;"></div>
-            <!-- Preview table -->
-            <div id="bqm-import-preview" style="display:none;">
-                <div class="import-table-wrap">
-                    <table class="bqm-import-table">
-                        <thead><tr>
-                            <th style="width:70px;"></th>
-                            <th>{{ t.incident_title }}</th>
-                            <th style="width:160px;">{{ t.incident_date }}</th>
-                            <th style="width:36px;"></th>
-                        </tr></thead>
-                        <tbody id="bqm-import-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <div class="incident-modal-footer" id="bqm-import-footer" style="display:none;">
-            <div class="modal-footer-left"></div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn btn-muted" onclick="closeBqmImportModal()">{{ t.cancel }}</button>
-                <button class="btn btn-accent" id="bqm-import-confirm-btn" onclick="executeBqmImport()" disabled>{{ t.bqm_import }}</button>
-            </div>
-        </div>
-    </div>
-</dialog>
-
-<!-- BQM CSV Import (inline, below calendar) -->
-<div id="bqm-csv-import-section" class="bqm-csv-import" style="display:none; margin:16px auto; max-width:480px; text-align:center;">
-    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:center;">
-        <input type="file" id="bqm-csv-file" accept=".csv" style="font-size:0.85em;">
-        <button class="btn btn-primary btn-sm" id="bqm-csv-import-btn" onclick="importBqmCsv()">{{ t.get('bqm_csv_import', 'Import CSV') }}</button>
-    </div>
-    <div id="bqm-csv-import-status" class="bqm-csv-status" style="margin-top:8px; font-size:0.85em;"></div>
 </div>
 
 
 <!-- ═══ View: Correlation Analysis ═══ -->
-{% if speedtest_configured or bqm_configured or connection_monitor_installed %}
+{% if speedtest_configured or connection_monitor_installed %}
 <div id="view-correlation" class="view">
     <div class="view-page-header">
         <div class="view-page-header-left">
@@ -2004,7 +1854,7 @@
             </div>
             <div class="incident-form-group" id="entry-attachments-section">
                 <label>{{ t.attachments }}</label>
-                <p class="incident-field-hint">{{ t.get('entry_evidence_hint', 'Evidence can include modem screenshots, BQM images, Speedtest results, SmokePing charts, or support letters.') }}</p>
+                <p class="incident-field-hint">{{ t.get('entry_evidence_hint', 'Evidence can include modem screenshots, Speedtest results, or support letters.') }}</p>
                 <div class="attachment-list" id="entry-attachment-list"></div>
                 <button class="btn-upload" id="entry-upload-btn" onclick="document.getElementById('entry-file-input').click()">
                     &#128206; {{ t.upload_file }}
@@ -2080,7 +1930,7 @@
             </div>
             <div class="incident-form-group" id="incident-container-empty-evidence-section">
                 <label>{{ t.get('incident_linked_evidence', 'Linked evidence') }}</label>
-                <p class="incident-field-hint">{{ t.get('incident_empty_evidence_hint', 'Assign journal entries, screenshots, modem snapshots, BQM images, Speedtest results, or SmokePing charts as the incident develops.') }}</p>
+                <p class="incident-field-hint">{{ t.get('incident_empty_evidence_hint', 'Assign journal entries, screenshots, modem snapshots, or Speedtest results as the incident develops.') }}</p>
             </div>
         </div>
         <div class="incident-modal-footer">
@@ -2393,26 +2243,6 @@
     </div>
 </dialog>
 
-<!-- BQM Setup Modal -->
-<dialog class="modal-overlay" id="bqm-setup-modal" role="dialog" aria-modal="true" aria-labelledby="bqm-setup-modal-title">
-    <div class="modal modal-wide setup-guide-modal">
-        <div class="modal-header">
-            <h2 id="bqm-setup-modal-title">📈 {{ t.get('bqm_setup_guided_title', 'ThinkBroadband BQM setup') }}</h2>
-            <button class="modal-close" onclick="closeBqmSetupModal()" aria-label="{{ t.close }}">&times;</button>
-        </div>
-        <p class="modal-hint">{{ t.get('bqm_setup_guided_intro', 'Link an existing ThinkBroadband Broadband Quality Monitor so Mire can show latency and packet loss beside modem evidence.') }}</p>
-        <div class="modal-body setup-guide-body">
-            <section class="setup-guide-card"><h3>{{ t.get('setup_why_title', 'Why connect it') }}</h3><ul><li>{{ t.get('bqm_setup_benefit_1', 'Track latency, packet loss, and outages') }}</li><li>{{ t.get('bqm_setup_benefit_2', 'Compare external reachability with modem signal state') }}</li><li>{{ t.get('bqm_setup_benefit_3', 'Attach graphs to ISP evidence packages') }}</li></ul></section>
-            <section class="setup-guide-card"><h3>{{ t.get('setup_requirements_title', 'Requirements') }}</h3><ul><li>{{ t.get('bqm_setup_requirement_monitor', 'A ThinkBroadband CSV Yesterday share URL') }}</li><li>{{ t.get('bqm_setup_requirement_static_ip', 'A stable public IP or DDNS target monitored by BQM') }}</li></ul></section>
-            <section class="setup-guide-card setup-guide-command"><h3>{{ t.get('setup_configure_title', 'Configure') }}</h3><p>{{ t.get('bqm_setup_configure_text', 'Create or open your BQM monitor, copy the CSV Yesterday share URL, then save it in Settings. CSV Live is for spot checks only.') }}</p><code id="bqm-setup-url">https://www.thinkbroadband.com/broadband/monitoring/quality/share/abc123def456789012345678901234567890abcd-2-y.csv</code><button class="btn btn-secondary" onclick="copySetupSnippet('bqm-setup-url', 'bqm-setup-status')">{{ t.get('bqm_setup_copy_url', 'Copy example URL format') }}</button></section>
-            <section class="setup-guide-card"><h3>{{ t.get('setup_validate_title', 'Validate') }}</h3><p>{{ t.get('bqm_setup_validate_text', 'After saving a CSV Yesterday URL, Mire performs one initial fetch. Use CSV bulk import for up to 12 months of history or longer gaps.') }}</p><button class="btn btn-muted" onclick="validateSetupGuidance('bqm-setup-status', 'bqm')">{{ t.get('setup_validate_source', 'Review validation path') }}</button></section>
-        </div>
-        <div id="bqm-setup-status" class="setup-validation-status" role="status" aria-live="polite"></div>
-        <div class="modal-footer"><button class="btn btn-muted" onclick="closeBqmSetupModal()">{{ t.close }}</button><a class="btn btn-accent" href="{{ url_for('settings', _anchor='mod-mire_bqm') }}">⚙ {{ t.get('bqm_setup_open_settings', 'Open BQM settings') }}</a></div>
-    </div>
-</dialog>
-
-<!-- Smokeping Setup Modal -->
 
 <!-- Report Modal -->
 <dialog class="modal-overlay" id="report-modal" role="dialog" aria-modal="true" aria-labelledby="report-modal-title" onclick="if(event.target===this)closeReportModal()" oncancel="event.preventDefault(); closeReportModal()">
@@ -2453,7 +2283,7 @@
                         <ul class="report-builder-list">
                             <li>{{ t.get('report_builder_section_signal', 'Signal summary') }}</li>
                             <li>{{ t.get('report_builder_section_incidents', 'Incident timeline and journal notes') }}</li>
-                            <li>{{ t.get('report_builder_section_measurements', 'BQM, SmokePing, and Speedtest evidence when available') }}</li>
+                            <li>{{ t.get('report_builder_section_measurements', 'Speedtest evidence when available') }}</li>
                             <li>{{ t.get('report_builder_section_letter', 'Editable complaint letter text plus a PDF package') }}</li>
                         </ul>
                     </div>
@@ -2611,10 +2441,6 @@
 <script src="{{ url_for('static', filename='js/dashboard.js', v=version) }}"></script>
 <script src="{{ url_for('static', filename='js/modals.js', v=version) }}"></script>
 <script src="{{ url_for('static', filename='js/journal.js', v=version) }}"></script>
-{% if modules|selectattr('id', 'equalto', 'mire.bqm')|list %}
-<script src="{{ module_static_url('mire.bqm', 'js/bqm-chart.js', v=version) }}"></script>
-{% endif %}
-<script src="{{ url_for('static', filename='js/bqm.js', v=version) }}"></script>
 <script src="{{ url_for('static', filename='js/trends.js', v=version) }}"></script>
 <script src="{{ url_for('static', filename='js/channels.js', v=version) }}"></script>
 <script src="{{ url_for('static', filename='js/events.js', v=version) }}"></script>

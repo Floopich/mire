@@ -17,7 +17,6 @@ EXPECTED_CONTRACT_CALLS = {
     "app/static/js/dashboard.js": 1,
     "app/static/js/service-worker-registration.js": 3,
     "app/static/js/setup.js": 6,
-    "app/static/js/bqm.js": 9,
     "app/static/js/channels.js": 7,
     "app/static/js/correlation.js": 5,
     "app/static/js/events.js": 5,
@@ -36,7 +35,6 @@ EXPECTED_CONTRACT_CALLS = {
     "app/modules/connection_monitor/static/js/connection-monitor-detail.js": 13,
     "app/modules/connection_monitor/static/js/connection-monitor-settings.js": 4,
     "app/modules/modulation/static/main.js": 2,
-    "app/modules/smokeping/static/main.js": 2,
 }
 
 NODE_HARNESS = r"""
@@ -276,8 +274,8 @@ def test_bootstrap_base_path_is_rebuilt_from_encoded_validated_segments():
 REPRESENTATIVE_SITES = [
     (
         "direct fetch",
-        ROOT / "app/static/js/bqm.js",
-        "fetch(mireUrl('/api/bqm/data/dates'))",
+        ROOT / "app/static/js/speedtest.js",
+        "fetch(mireUrl('/api/speedtest?count=2000'))",
     ),
     (
         "assigned URL then fetch",
@@ -286,8 +284,8 @@ REPRESENTATIVE_SITES = [
     ),
     (
         "image source",
-        ROOT / "app/modules/smokeping/static/main.js",
-        "img.src = mireUrl('/api/smokeping/graph/'",
+        ROOT / "app/modules/modulation/static/main.js",
+        "var url = mireUrl('/api/modulation/intraday?direction=' + _modDirection);",
     ),
     (
         "download href",
@@ -333,7 +331,7 @@ def test_inventoried_files_keep_the_reviewed_contract_sites():
     }
 
     assert actual == EXPECTED_CONTRACT_CALLS
-    assert sum(actual.values()) == 121  # reviewed browser URL contract sites
+    assert sum(actual.values()) == 110  # reviewed browser URL contract sites
 
 
 def test_inventoried_actual_literal_forms_have_no_unwrapped_url_sink():

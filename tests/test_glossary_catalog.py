@@ -74,7 +74,7 @@ def test_core_glossary_contains_only_docsis_terms_and_mire_features():
         "dashboard", "in_app_glossary", "channel_timeline", "signal_trends",
         "modulation_performance", "correlation_analysis",
         "before_after_comparison", "connection_monitor", "event_log", "incident_journal",
-        "smart_capture", "speedtest", "bqm", "smokeping", "gaming_index",
+        "smart_capture", "speedtest", "gaming_index",
         "llm_export", "doctor_diagnostics", "pwa_offline",
     }
 
@@ -129,7 +129,7 @@ def test_glossary_terms_use_one_global_alphabetical_order():
     terms = get_glossary_terms("en")
     titles = [term["title"] for term in terms]
     assert titles == sorted(titles, key=str.casefold)
-    assert titles[:3] == ["Before/After Comparison", "BQM", "Channel bonding"]
+    assert titles[:2] == ["Before/After Comparison", "Channel bonding"]
 
 
 def test_speedtest_feature_keeps_throughput_boundary_in_app_terms():

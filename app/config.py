@@ -141,7 +141,6 @@ ENV_MAP = {
     "data_dir": "DATA_DIR",
     "admin_password": "ADMIN_PASSWORD",
     "metrics_require_token": "METRICS_REQUIRE_TOKEN",
-    "bqm_url": "BQM_URL",
     "speedtest_tracker_url": "SPEEDTEST_TRACKER_URL",
     "speedtest_tracker_token": "SPEEDTEST_TRACKER_TOKEN",
     "speedtest_tls_insecure": "SPEEDTEST_TLS_INSECURE",
@@ -214,7 +213,7 @@ BOOL_KEYS = {"show_reserved_modules", "update_check_enabled", "gaming_quality_en
              "speedtest_tls_insecure", "sc_enabled", "sc_trigger_modulation", "sc_trigger_snr",
              "sc_trigger_error_spike", "sc_trigger_health", "sc_trigger_packet_loss"}
 
-URL_KEYS = {"modem_url", "bqm_url", "speedtest_tracker_url", "notify_webhook_url", "notify_apprise_url"}
+URL_KEYS = {"modem_url", "speedtest_tracker_url", "notify_webhook_url", "notify_apprise_url"}
 _ALLOWED_URL_SCHEMES = {"http", "https"}
 
 class ConfigManager:
@@ -421,9 +420,6 @@ class ConfigManager:
         return bool(self.get("mqtt_host"))
 
 
-    def is_bqm_configured(self):
-        """True if bqm_url is set (BQM is optional)."""
-        return bool(self.get("bqm_url"))
 
     def _get_bool(self, key):
         """Get a config value and coerce it to bool.

@@ -1359,12 +1359,6 @@ def index():
         report_customer_name = _config_manager.get("report_customer_name", "")
         report_customer_number = _config_manager.get("report_customer_number", "")
         report_customer_address = _config_manager.get("report_customer_address", "")
-    bqm_configured = bool(
-        _config_manager and (
-            _config_manager.is_bqm_configured()
-            or _config_manager.get("bqm_url")
-        )
-    )
     speedtest_configured = _config_manager.is_speedtest_configured() if _config_manager else False
     gaming_quality_enabled = _config_manager.is_gaming_quality_enabled() if _config_manager else False
     state = get_state()
@@ -1402,7 +1396,6 @@ def index():
         report_customer_name=report_customer_name,
         report_customer_number=report_customer_number,
         report_customer_address=report_customer_address,
-        bqm_configured=bqm_configured,
         speedtest_configured=speedtest_configured,
         speedtest_latest=speedtest_latest,
         booked_download=booked_download,

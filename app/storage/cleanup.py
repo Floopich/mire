@@ -32,7 +32,6 @@ class CleanupMethods:
         ("speedtest_results", "timestamp"),
         ("api_tokens", "created_at"),
         ("api_tokens", "last_used_at"),
-        ("bqm_graphs", "timestamp"),
         ("weather_data", "timestamp"),
         ("smart_capture_executions", "created_at"),
         ("smart_capture_executions", "fired_at"),
@@ -149,7 +148,7 @@ class CleanupMethods:
         ).rowcount
 
     def _cleanup(self):
-        """Delete snapshots, BQM graphs, and events older than max_days. 0 = keep all."""
+        """Delete snapshots and events older than max_days. 0 = keep all."""
         if self.max_days <= 0:
             return
         cutoff = utc_cutoff(days=self.max_days)
@@ -162,15 +161,6 @@ class CleanupMethods:
         tz = getattr(self, 'tz_name', '')
         today = local_today(tz)
         cutoff_date = (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=self.max_days)).strftime("%Y-%m-%d")
-        try:
-            with self._write() as conn:
-                bqm_deleted = conn.execute(
-                    "DELETE FROM bqm_graphs WHERE date < ?", (cutoff_date,)
-                ).rowcount
-            if bqm_deleted:
-                log.info("Cleaned up %d old BQM graphs (before %s)", bqm_deleted, cutoff_date)
-        except sqlite3.OperationalError:
-            pass  # Table may not exist if BQM module not loaded
         try:
             with self._write() as conn:
                 weather_deleted = conn.execute(

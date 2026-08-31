@@ -205,7 +205,7 @@ def _capabilities(config_manager) -> dict[str, Any]:
     return {
         "docsis_supported": docsis_supported,
         "speedtest_configured": bool(config_manager.is_speedtest_configured()) if config_manager else False,
-        "bqm_configured": bool(config_manager.is_bqm_configured()) if config_manager else False,
+        "bqm_configured": False,
         "connection_monitor_configured": bool(config_manager.get("connection_monitor_enabled", False)) if config_manager else False,
     }
 

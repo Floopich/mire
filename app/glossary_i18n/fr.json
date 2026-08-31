@@ -92,7 +92,7 @@
         "advanced": "Le comportement d'un support partagé dépend de la taille du groupe de service, de l'ordonnancement, de la capacité des canaux, de la demande active et de la politique du fournisseur. Un seul modem ne peut pas mesurer directement l'ensemble du segment.",
         "basic": "Un support partagé peut être saturé même si le signal de votre propre modem semble propre. Mire distingue les preuves locales du modem des affirmations d'utilisation côté fournisseur.",
         "eli5": "L'internet par câble partage certaines parties du réseau d'accès de quartier avec d'autres utilisateurs.",
-        "technician": "Distinguez les preuves RF propres des preuves de congestion. Corrélez les tendances horaires, les données de speedtest/BQM/monitoring et les retours du fournisseur avant de considérer le support partagé comme cause principale."
+        "technician": "Distinguez les preuves RF propres des preuves de congestion. Corrélez les tendances horaires, les données de speedtest et de monitoring et les retours du fournisseur avant de considérer le support partagé comme cause principale."
       },
       "misconceptions": [
         "Un bon niveau de signal ne prouve pas que le segment des fournisseurs n'est pas encombré."

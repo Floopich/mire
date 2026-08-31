@@ -12,7 +12,6 @@ from dataclasses import dataclass
 
 BUILTIN_MODULE_DIRS: tuple[str, ...] = (
     "backup",
-    "bqm",
     "comparison",
     "connection_monitor",
     "evidence",
@@ -36,9 +35,6 @@ class BuiltinPythonContributions:
 BUILTIN_PYTHON_CONTRIBUTIONS: dict[str, BuiltinPythonContributions] = {
     "mire.backup": BuiltinPythonContributions(
         collector="app.modules.backup.collector:BackupCollector",
-    ),
-    "mire.bqm": BuiltinPythonContributions(
-        collector="app.modules.bqm.collector:BQMCollector",
     ),
     "mire.connection_monitor": BuiltinPythonContributions(
         collector="app.modules.connection_monitor.collector:ConnectionMonitorCollector",

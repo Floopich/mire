@@ -91,7 +91,7 @@ def test_index_glossary_lists_terms_alphabetically(client, sample_analysis):
     desktop = html.split('id="glossary-desktop-terms"', 1)[1].split("</nav>", 1)[0]
     desktop_terms = re.findall(r'class="glossary-term-link[^"]*"[^>]*>\s*([^<]+?)\s*</a>', desktop)
     assert desktop_terms == sorted(desktop_terms, key=str.casefold)
-    assert desktop_terms[:3] == ["Before/After Comparison", "BQM", "Channel bonding"]
+    assert desktop_terms[:2] == ["Before/After Comparison", "Channel bonding"]
 
 
 def test_contextual_glossary_links_target_existing_terms(client, sample_analysis):

@@ -92,7 +92,7 @@
         "advanced": "Das Verhalten des geteilten Mediums hängt von Service-Gruppen-Größe, Scheduling, Kanalkapazität, aktiver Nachfrage und Provider-Richtlinien ab. Ein einzelnes Modem kann das ganze Segment nicht direkt messen.",
         "basic": "Ein geteiltes Medium kann ausgelastet sein, selbst wenn das eigene Modemsignal sauber aussieht. Mire trennt lokale Modem-Belege von providerseitigen Auslastungsaussagen.",
         "eli5": "Kabelinternet teilt Teile des Zugangsnetzes in der Nachbarschaft mit anderen Nutzern.",
-        "technician": "Unterscheiden Sie saubere HF-Belege von Überlastungs-Belegen. Korrelieren Sie Tageszeitmuster, Speedtest-/BQM-/Monitoring-Daten und Provider-Rückmeldungen, bevor Sie das geteilte Medium als Grundursache behandeln."
+        "technician": "Unterscheiden Sie saubere HF-Belege von Überlastungs-Belegen. Korrelieren Sie Tageszeitmuster, Speedtest- und Monitoring-Daten und Provider-Rückmeldungen, bevor Sie das geteilte Medium als Grundursache behandeln."
       },
       "misconceptions": [
         "Ein guter Signalpegel beweist nicht, dass das Anbietersegment nicht überlastet ist."

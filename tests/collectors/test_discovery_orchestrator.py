@@ -14,7 +14,6 @@ import pytest
 from app.collectors.base import Collector, CollectorResult
 from app.collectors.modem import ModemCollector
 from app.modules.speedtest.collector import SpeedtestCollector
-from app.modules.bqm.collector import BQMCollector
 from app.drivers.base import ModemDriver
 
 
@@ -35,7 +34,6 @@ class TestDiscoverCollectors:
         mgr = MagicMock()
         mgr.is_configured.return_value = True
         mgr.is_speedtest_configured.return_value = True
-        mgr.is_bqm_configured.return_value = True
         mgr.is_weather_configured.return_value = False
         mgr.get_all.return_value = {
             "modem_type": "voo_cga4233",
@@ -72,30 +70,24 @@ class TestDiscoverCollectors:
         config_mgr = self._make_config_mgr()
         analyzer = MagicMock()
 
-        # Create mock module collectors for speedtest and bqm
+        # Create mock module collector for speedtest
         mock_speedtest_cls = MagicMock()
         mock_speedtest_instance = MagicMock()
         mock_speedtest_instance.name = "speedtest"
         mock_speedtest_cls.return_value = mock_speedtest_instance
 
-        mock_bqm_cls = MagicMock()
-        mock_bqm_instance = MagicMock()
-        mock_bqm_instance.name = "bqm"
-        mock_bqm_cls.return_value = mock_bqm_instance
 
         web = self._make_web_with_modules([
             (mock_speedtest_cls, "mire.speedtest"),
-            (mock_bqm_cls, "mire.bqm"),
         ])
 
         collectors = discover_collectors(
             config_mgr, self._make_storage(), MagicMock(), None, web, analyzer
         )
-        assert len(collectors) == 3  # modem + speedtest + bqm
+        assert len(collectors) == 2  # modem + speedtest
         names = [c.name for c in collectors]
         assert "modem" in names
         assert "speedtest" in names
-        assert "bqm" in names
 
     @patch("app.drivers.driver_registry.load_driver")
     def test_discover_no_modules_returns_modem_only(self, mock_load):
@@ -176,7 +168,6 @@ class TestPollingLoopOrchestrator:
         }
         mgr.is_mqtt_configured.return_value = False
         mgr.is_speedtest_configured.return_value = False
-        mgr.is_bqm_configured.return_value = False
         mgr.is_configured.return_value = True
         mgr.is_backup_configured.return_value = False
         mgr.get.return_value = ""
@@ -409,7 +400,7 @@ class TestPollingLoopOrchestrator:
     @patch("app.drivers.driver_registry.load_driver")
     @patch("app.main.web")
     def test_orchestrator_skips_disabled_collectors(self, mock_web, mock_load):
-        """Speedtest/BQM collectors should be skipped when not configured."""
+        """Speedtest collector should be skipped when not configured."""
         import threading
         from app.main import polling_loop
 
@@ -439,10 +430,9 @@ class TestPollingLoopOrchestrator:
 
         polling_loop(config_mgr, storage, stop, mock_web)
 
-        # Core storage should not have speedtest/bqm methods called
+        # Core storage should not have speedtest methods called
         # (those are now handled by module-internal storage)
         storage.get_latest_speedtest_id.assert_not_called()
-        storage.save_bqm_graph.assert_not_called()
 
     @patch("app.drivers.driver_registry.load_driver")
     @patch("app.main.web")

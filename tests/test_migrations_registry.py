@@ -354,12 +354,6 @@ def test_unknown_incidents_shape_is_warned_stamped_and_not_renamed(tmp_path, cap
             {"server_id", "server_name", "result_url", "external_ip"},
         ),
         (
-            "bqm",
-            "CREATE TABLE bqm_graphs (id INTEGER PRIMARY KEY, date TEXT, timestamp TEXT, image_blob BLOB)",
-            "bqm_graphs",
-            set(),
-        ),
-        (
             "connection_monitor",
             "CREATE TABLE connection_targets (id INTEGER PRIMARY KEY, label TEXT, host TEXT, created_at REAL)",
             "connection_targets",

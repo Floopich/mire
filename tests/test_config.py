@@ -41,8 +41,8 @@ class TestConfigDefaults:
     def test_mqtt_not_configured_initially(self, config):
         assert config.is_mqtt_configured() is False
 
-    def test_smokeping_module_disabled_by_default(self, config):
-        assert config.get("disabled_modules") == "mire.smokeping"
+    def test_no_module_disabled_by_default(self, config):
+        assert config.get("disabled_modules") == ""
 
     def test_default_value_is_not_reported_as_stored(self, config):
         assert config.get("language") == "fr"
@@ -330,22 +330,9 @@ class TestConfigState:
         assert config.get_theme() == "dark"
 
 
-    def test_existing_smokeping_config_keeps_module_enabled(self, config):
-        config.save({
-            "smokeping_url": "https://smokeping.example.com/smokeping",
-            "smokeping_targets": "InternetSites.Google",
-        })
-        assert config.get("disabled_modules") == ""
-
     def test_explicit_disabled_modules_override_is_preserved(self, config):
-        config.save({"disabled_modules": "mire.smokeping,test.integration"})
-        assert config.get("disabled_modules") == "mire.smokeping,test.integration"
-
-    def test_bqm_requires_url(self, config):
-        assert config.is_bqm_configured() is False
-        config.save({"bqm_url": "https://www.thinkbroadband.com/broadband/monitoring/quality/share/abc123-2-y.csv"})
-        assert config.is_bqm_configured() is True
-
+        config.save({"disabled_modules": "test.integration"})
+        assert config.get("disabled_modules") == "test.integration"
 
 class TestConfigUrlValidation:
     @pytest.mark.parametrize("url", [

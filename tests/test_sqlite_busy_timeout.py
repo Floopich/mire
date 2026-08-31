@@ -1,6 +1,6 @@
 """SQLite busy-timeout contracts for local storage connections."""
 
-from app.modules.bqm.storage import BqmStorage
+from app.modules.connection_monitor.storage import ConnectionMonitorStorage
 from app.storage import SnapshotStorage
 from app.storage.sqlite import (
     DEFAULT_SQLITE_BUSY_TIMEOUT_MS,
@@ -26,7 +26,7 @@ def test_core_storage_connections_set_busy_timeout(tmp_path):
 
 
 def test_module_storage_connections_use_shared_busy_timeout(tmp_path):
-    storage = BqmStorage(str(tmp_path / "bqm.db"))
+    storage = ConnectionMonitorStorage(str(tmp_path / "cm.db"))
 
     with open_read(storage.db_path) as conn:
         value = conn.execute("PRAGMA busy_timeout").fetchone()[0]

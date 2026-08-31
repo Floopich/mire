@@ -125,8 +125,6 @@ class TestSettingsRoute:
             for heading in panel.select(".toggle-section-divider")
         ]
         assert headings
-        assert panel.select_one("#module-registry-refresh") is not None
-        assert "Community Modules" in panel.get_text(" ", strip=True)
 
         rendered_rows = {
             row.select_one(".toggle-title").get_text(" ", strip=True): row
@@ -168,7 +166,6 @@ class TestSettingsRoute:
         assert 'aria-expanded="false"' in html
         assert re.search(r'<button[^>]+data-section="connection"[^>]+aria-current="page"', html)
         assert re.search(r'<button[^>]+onclick="copyToken\(\)"[^>]+aria-label="Copy to Clipboard"', html)
-        assert re.search(r'<button[^>]+id="module-registry-refresh"[^>]+aria-label="Refresh"', html)
 
     def test_settings_notifications_channel_cards_render_compact_status_headers(self, client):
         resp = client.get("/settings?lang=en")

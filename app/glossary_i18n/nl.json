@@ -92,7 +92,7 @@
         "advanced": "Gedrag van een gedeeld medium hangt af van de grootte van de servicegroep, scheduling, kanaalcapaciteit, actieve vraag en providerbeleid. Eén modem kan niet direct het hele segment meten.",
         "basic": "Een gedeeld medium kan druk zijn, zelfs als je eigen modemsignaal er schoon uitziet. Mire scheidt lokaal modembewijs van claims over benutting aan providerzijde.",
         "eli5": "Kabelinternet deelt delen van het toegangsnetwerk in de buurt met andere gebruikers.",
-        "technician": "Onderscheid schoon RF-bewijs van congestiebewijs. Correleer patronen naar tijdstip van de dag, speedtest-/BQM-/monitoringgegevens en providerfeedback voordat een gedeeld medium als hoofdoorzaak wordt aangewezen."
+        "technician": "Onderscheid schoon RF-bewijs van congestiebewijs. Correleer patronen naar tijdstip van de dag, speedtest- en monitoringgegevens en providerfeedback voordat een gedeeld medium als hoofdoorzaak wordt aangewezen."
       },
       "misconceptions": [
         "Een goed signaalniveau bewijst niet dat het providersegment niet overbelast is."

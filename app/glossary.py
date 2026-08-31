@@ -392,7 +392,7 @@ _TERMS: tuple[GlossaryTerm, ...] = (
         'Cable internet shares parts of the neighborhood access network with other users.',
         'A shared medium can be busy even when your own modem signal looks clean. Mire separates local modem evidence from provider-side utilization claims.',
         'Shared-medium behavior depends on service-group size, scheduling, channel capacity, active demand, and provider policy. One modem cannot measure the whole segment directly.',
-        'Distinguish clean RF evidence from congestion evidence. Correlate time-of-day patterns, speedtest/BQM/monitoring data, and provider feedback before treating shared medium as the root cause.',
+        'Distinguish clean RF evidence from congestion evidence. Correlate time-of-day patterns, speedtest and monitoring data, and provider feedback before treating shared medium as the root cause.',
         ('A good signal level does not prove that the provider segment is uncongested.',),
     ),
     _term(
@@ -550,18 +550,6 @@ _TERMS: tuple[GlossaryTerm, ...] = (
         'Mire can record download, upload, latency, and jitter so user-visible performance can be compared with DOCSIS evidence.',
         'A speedtest measures end-to-end IP performance at one moment. It is not the same as DOCSIS channel capacity, tariff speed, or local RF health.',
         'Interpret speedtest results with test server, time of day, connection monitor data, segment clues, and modem evidence. Avoid using one low result as proof of a DOCSIS signal fault.',
-    ),
-    _term(
-        'bqm',
-        'mire_features',
-        'BQM',
-        ('Broadband Quality Monitor', 'ThinkBroadband BQM'),
-        (),
-        ('connection_monitor', 'incident_journal', 'correlation_analysis'),
-        'BQM adds an external view of latency and packet loss over time.',
-        'The BQM integration brings external latency/loss monitoring into Mire so packet-loss windows can be compared with modem evidence.',
-        'BQM observes reachability from outside the home network toward the monitored endpoint. It complements modem data but does not identify the DOCSIS layer by itself.',
-        'Use BQM for timing correlation: match loss blocks with DOCSIS events, signal trends, and user reports. Treat monitor-target or routing caveats separately.',
     ),
     _term(
         'gaming_index',
@@ -788,11 +776,6 @@ _GLOSSARY_WIKI_INDEX: dict[str, dict[str, tuple[str, ...]]] = {
         'source_pages': ('Features-Speedtest.md',),
         'tags': ('mire-feature', 'app-function'),
         'ui_contexts': ('speedtest',),
-    },
-    'bqm': {
-        'source_pages': ('Features-BQM.md',),
-        'tags': ('mire-feature', 'app-function'),
-        'ui_contexts': ('bqm',),
     },
     'gaming_index': {
         'source_pages': ('Features-Glossary.md', 'Features-Gaming-Quality.md'),

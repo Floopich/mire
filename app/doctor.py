@@ -526,13 +526,6 @@ def _check_integrations(raw_config: Mapping[str, Any], environ: Mapping[str, str
             environ,
         ),
         _integration_check(
-            "integration.bqm",
-            "BQM",
-            {"bqm_url": "URL"},
-            raw_config,
-            environ,
-        ),
-        _integration_check(
             "integration.mqtt",
             "MQTT/Home Assistant",
             {"mqtt_host": "host"},

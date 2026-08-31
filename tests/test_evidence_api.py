@@ -41,7 +41,6 @@ class TestEvidenceChecklistApi:
         config = Mock()
         config.get.side_effect = lambda key, default=None: {"modem_type": "fritzbox"}.get(key, default)
         config.is_speedtest_configured.return_value = False
-        config.is_bqm_configured.return_value = False
 
         with app.test_request_context(
             "/api/evidence/checklist?from=2026-06-10T18:00:00Z&to=2026-06-10T23:00:00Z"
@@ -118,7 +117,6 @@ class TestEvidenceChecklistApi:
         config = Mock()
         config.get.side_effect = lambda key, default=None: {"modem_type": "fritzbox"}.get(key, default)
         config.is_speedtest_configured.return_value = True
-        config.is_bqm_configured.return_value = False
 
         with app.test_request_context("/api/evidence/checklist?incident_id=7"):
             with patch.object(routes, "get_storage", return_value=core), \
@@ -147,7 +145,6 @@ class TestEvidenceChecklistApi:
         config = Mock()
         config.get.side_effect = lambda key, default=None: {"modem_type": "generic"}.get(key, default)
         config.is_speedtest_configured.return_value = False
-        config.is_bqm_configured.return_value = False
 
         with app.test_request_context("/api/evidence/checklist?from=2026-06-10T18:00:00Z&to=2026-06-10T23:00:00Z"):
             with patch.object(routes, "get_storage", return_value=core), \
@@ -171,7 +168,6 @@ class TestEvidenceChecklistApi:
             "connection_monitor_enabled": True,
         }.get(key, default)
         config.is_speedtest_configured.return_value = False
-        config.is_bqm_configured.return_value = False
 
         with app.test_request_context("/api/evidence/checklist?from=2026-06-10T18:00:00Z&to=2026-06-10T23:00:00Z"):
             with patch.object(routes, "get_storage", return_value=core), \
@@ -188,8 +184,6 @@ class TestEvidenceChecklistApi:
         assert items["latency"]["action"] == {"view": "connection-monitor"}
         assert items["latency"]["sources"][0]["key"] == "connection_monitor"
         assert items["latency"]["sources"][0]["status"] == "present"
-        assert items["latency"]["sources"][1]["key"] == "bqm"
-        assert items["latency"]["sources"][1]["status"] == "optional"
 
     def test_connection_monitor_latency_rows_read_connection_monitor_database(self, tmp_path, monkeypatch):
         from app.modules.connection_monitor.storage import ConnectionMonitorStorage
@@ -221,7 +215,6 @@ class TestEvidenceChecklistApi:
         config = Mock()
         config.get.side_effect = lambda key, default=None: {"modem_type": "fritzbox"}.get(key, default)
         config.is_speedtest_configured.return_value = False
-        config.is_bqm_configured.return_value = False
 
         with app.test_request_context("/api/evidence/checklist?from=2026-06-10T19:00:00&to=2026-06-10T23:00:00"):
             with patch.object(routes, "get_storage", return_value=core), \
@@ -244,7 +237,6 @@ class TestEvidenceChecklistApi:
         config = Mock()
         config.get.side_effect = lambda key, default=None: {"modem_type": "fritzbox"}.get(key, default)
         config.is_speedtest_configured.return_value = False
-        config.is_bqm_configured.return_value = False
 
         with app.test_request_context("/api/evidence/checklist?from=2026-06-10T19:00:00%2B02:00&to=2026-06-10T23:00:00%2B02:00"):
             with patch.object(routes, "get_storage", return_value=core), \
@@ -305,79 +297,6 @@ class TestEvidenceChecklistApi:
 
         assert [row["title"] for row in rows] == ["UTC day"]
 
-    def test_bqm_rows_filter_to_exact_utc_window_after_local_date_fetch(self, tmp_path):
-        from app.modules.bqm.storage import BqmStorage
-        from app.modules.evidence import routes
-
-        db_path = str(tmp_path / "mire.db")
-        storage = BqmStorage(db_path, "Europe/Berlin")
-        storage.store_csv_data([
-            {"timestamp": "2026-06-10T21:30:00Z", "date": "2026-06-10", "sent_polls": 10, "lost_polls": 0, "latency_min_ms": 10, "latency_avg_ms": 20, "latency_max_ms": 30, "score": 100},
-            {"timestamp": "2026-06-10T22:30:00Z", "date": "2026-06-11", "sent_polls": 10, "lost_polls": 0, "latency_min_ms": 11, "latency_avg_ms": 21, "latency_max_ms": 31, "score": 100},
-            {"timestamp": "2026-06-10T23:30:00Z", "date": "2026-06-11", "sent_polls": 10, "lost_polls": 0, "latency_min_ms": 12, "latency_avg_ms": 22, "latency_max_ms": 32, "score": 100},
-        ])
-
-        with patch.object(routes, "_get_tz_name", return_value="Europe/Berlin"):
-            rows = routes._get_bqm_rows(
-                db_path,
-                "2026-06-10T22:00:00Z",
-                "2026-06-10T23:00:00Z",
-            )
-
-        assert [row["timestamp"] for row in rows] == ["2026-06-10T22:30:00Z"]
-
-    def test_bqm_rows_skip_malformed_timestamps_without_marking_source_unavailable(self, tmp_path):
-        from app.modules.bqm.storage import BqmStorage
-        from app.modules.evidence import routes
-
-        def fake_rows(self, start_date, end_date):
-            return [
-                {"timestamp": "not-a-timestamp", "sent_polls": 10},
-                {"timestamp": "2026-06-10T22:30:00Z", "sent_polls": 10},
-                {"timestamp": "2026-06-10T23:30:00Z", "sent_polls": 10},
-            ]
-
-        with patch.object(routes, "_get_tz_name", return_value="Europe/Berlin"), \
-             patch.object(BqmStorage, "get_data_for_range", fake_rows):
-            rows = routes._get_bqm_rows(
-                str(tmp_path / "mire.db"),
-                "2026-06-10T22:00:00Z",
-                "2026-06-10T23:00:00Z",
-            )
-
-        assert rows == [{"timestamp": "2026-06-10T22:30:00Z", "sent_polls": 10}]
-
-    def test_bqm_rows_return_unavailable_sentinel_on_storage_error(self, tmp_path):
-        from app.modules.evidence import routes
-
-        with patch.object(routes, "_get_tz_name", return_value="Europe/Berlin"):
-            rows = routes._get_bqm_rows(
-                str(tmp_path / "missing" / "mire.db"),
-                "2026-06-10T22:00:00Z",
-                "2026-06-10T23:00:00Z",
-            )
-
-        assert rows is None
-
-    def test_bqm_rows_return_unavailable_sentinel_when_bqm_module_is_missing(self, tmp_path):
-        from app.modules.evidence import routes
-
-        real_import = builtins.__import__
-
-        def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
-            if name == "app.modules.bqm.storage":
-                raise ImportError("BQM module unavailable")
-            return real_import(name, globals, locals, fromlist, level)
-
-        with patch.object(builtins, "__import__", side_effect=guarded_import):
-            rows = routes._get_bqm_rows(
-                str(tmp_path / "mire.db"),
-                "2026-06-10T22:00:00Z",
-                "2026-06-10T23:00:00Z",
-            )
-
-        assert rows is None
-
     def test_manual_range_rejects_malformed_timestamp_with_specific_error(self):
         from app.modules.evidence import routes
 
@@ -385,7 +304,6 @@ class TestEvidenceChecklistApi:
         config = Mock()
         config.get.side_effect = lambda key, default=None: {"modem_type": "fritzbox"}.get(key, default)
         config.is_speedtest_configured.return_value = False
-        config.is_bqm_configured.return_value = False
 
         with app.test_request_context("/api/evidence/checklist?from=not-a-date&to=2026-06-10T23:00:00Z"):
             with patch.object(routes, "get_storage", return_value=core), \

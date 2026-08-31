@@ -11,7 +11,6 @@ from unittest.mock import MagicMock, patch, PropertyMock
 from app.collectors.base import Collector, CollectorResult
 from app.collectors.modem import ModemCollector
 from app.modules.speedtest.collector import SpeedtestCollector
-from app.modules.bqm.collector import BQMCollector
 from app.drivers.base import ModemDriver
 
 

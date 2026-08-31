@@ -11,7 +11,7 @@ from app.runtime import DerivedStorageCache, LoginRateLimiter, RuntimeState, get
 
 
 FACTORY_CONTEXT_MODULES = {
-    "tests.test_auth", "tests.test_bqm", "tests.test_channel_timeline",
+    "tests.test_auth", "tests.test_channel_timeline",
     "tests.test_comparison_module", "tests.test_correlation",
     "tests.test_device_info_display", "tests.test_events", "tests.test_evidence_api",
     "tests.test_first_run_demo", "tests.test_first_run_ux", "tests.test_metrics_endpoint",

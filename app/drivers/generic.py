@@ -10,7 +10,7 @@ from ..types import DocsisData, DeviceInfo, ConnectionInfo
 class GenericDriver(ModemDriver):
     """No-op driver that returns empty but structurally valid data.
 
-    Allows all modem-agnostic features (Speedtest, BQM, Smokeping,
+    Allows all modem-agnostic features (Speedtest,
     Weather, Journal) to work standalone.
     """
 
