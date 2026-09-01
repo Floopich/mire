@@ -50,7 +50,7 @@ def api_test_modem():
         if password == PASSWORD_MASK and _config_manager:
             password = _config_manager.get("modem_password", "")
         from app.drivers import driver_registry
-        modem_type = data.get("modem_type", "fritzbox")
+        modem_type = data.get("modem_type", "generic")
         driver = driver_registry.load_driver(
             modem_type,
             data.get("modem_url") or "http://192.168.100.1",
