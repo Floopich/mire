@@ -161,5 +161,7 @@ def test_public_modem_family_counts_match_registry() -> None:
     family_count = len(driver_registry.get_all_type_keys() - {"generic"})
     plural = "family" if family_count == 1 else "families"
     claim = f"{family_count} modem {plural}"
-    assert claim in README.read_text(encoding="utf-8")
+    fr_plural = "modem" if family_count == 1 else "modems"
+    fr_claim = f"{family_count} {fr_plural} pris en charge"
+    assert fr_claim in README.read_text(encoding="utf-8")
     assert claim in INDEX.read_text(encoding="utf-8")

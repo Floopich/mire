@@ -75,7 +75,7 @@ quand la santé de la ligne change.
 
 ## Matériel
 
-**Modem** Technicolor CGA4233 (firmware VOO), accessible en `192.168.100.1`. Le mode
+**Modem** — 1 modem pris en charge : le Technicolor CGA4233 (firmware VOO), accessible en `192.168.100.1`. Le mode
 bridge n'est pas obligatoire, mais l'adresse et les identifiants sont à vérifier sur
 place plutôt qu'à supposer.
 
