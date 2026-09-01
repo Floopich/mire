@@ -1,0 +1,9 @@
+{
+  "weather_title": "Météo",
+  "weather_optional": "facultatif — corréler la qualité du signal avec la température extérieure",
+  "weather_enable": "Activer la collecte des données météo",
+  "weather_enable_hint": "Récupère la température extérieure horaire depuis Open-Meteo (gratuit, sans clé API). L'historique est complété automatiquement.",
+  "weather_latitude": "Latitude",
+  "weather_longitude": "Longitude",
+  "weather_coord_hint": "Les coordonnées de votre position (par ex. 50.63 / 5.57 pour Liège). À trouver sur latlong.net"
+}
