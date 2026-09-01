@@ -964,5 +964,14 @@
   "correlation_reachability_scope": "Zielbereich",
   "correlation_reachability_drilldown": "Details des Verbindungsmonitors öffnen",
   "correlation_reachability_aria": "Zusammenfassung der Erreichbarkeit",
-  "support_project_link": "Mire auf GitHub"
+  "support_project_link": "Mire auf GitHub",
+  "cleared": "gelöscht",
+  "delete": "Löschen",
+  "directories": "Verzeichnisse",
+  "event_filter_title": "Ereignistypen",
+  "revoke": "Widerrufen",
+  "setup_copied": "Kopiert. Fügen Sie es in Ihre Notizen oder das Terminal ein.",
+  "setup_copy_error": "Automatisches Kopieren fehlgeschlagen. Markieren und manuell kopieren.",
+  "speedtest_no_results": "noch keine Ergebnisse",
+  "unknown": "Unbekannt"
 }

@@ -964,5 +964,14 @@
   "correlation_reachability_scope": "Doelbereik",
   "correlation_reachability_drilldown": "Details van Verbindingsmonitor openen",
   "correlation_reachability_aria": "Samenvatting bereikbaarheid",
-  "support_project_link": "Mire op GitHub"
+  "support_project_link": "Mire op GitHub",
+  "cleared": "gewist",
+  "delete": "Verwijderen",
+  "directories": "mappen",
+  "event_filter_title": "Gebeurtenistypen",
+  "revoke": "Intrekken",
+  "setup_copied": "Gekopieerd. Plak het in uw installatienotities of terminal.",
+  "setup_copy_error": "Automatisch kopiëren mislukt. Selecteer de tekst en kopieer handmatig.",
+  "speedtest_no_results": "nog geen resultaten",
+  "unknown": "Onbekend"
 }

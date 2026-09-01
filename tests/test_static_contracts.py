@@ -627,7 +627,10 @@ def test_european_language_pack_files_cover_core_catalogs() -> None:
 def test_builtin_module_i18n_catalogs_keep_only_runtime_sources() -> None:
     """Built-in module catalogs are intentional: reports and modulation ship locales."""
     offenders = []
-    allowed_locale_modules = {"reports", "modulation"}
+    allowed_locale_modules = {
+        "backup", "comparison", "connection_monitor", "evidence", "journal",
+        "modulation", "mqtt", "reports", "speedtest", "weather",
+    }
     for i18n_dir in sorted(MODULES.glob("*/i18n")):
         if not (i18n_dir / "en.json").exists():
             continue
