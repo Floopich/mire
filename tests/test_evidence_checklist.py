@@ -17,7 +17,8 @@ def test_build_checklist_marks_available_sources_present():
             {"timestamp": "2026-06-10T18:30:00Z", "source": "event", "severity": "critical"},
         ],
         journal_entries=[{"id": 1, "date": "2026-06-10", "title": "Outage note"}],
-        capabilities={"docsis_supported": True, "speedtest_configured": True},
+        connection_latency_rows=[{"timestamp": "2026-06-10T22:10:00Z", "latency_avg_ms": 34}],
+        capabilities={"docsis_supported": True, "speedtest_configured": True, "connection_monitor_configured": True},
     ))
 
     assert items["signal"]["status"] == "present"
@@ -80,7 +81,8 @@ def test_build_checklist_flags_stale_sources_when_latest_sample_is_old():
             {"timestamp": "2026-06-10T18:10:00Z", "source": "speedtest"},
         ],
         journal_entries=[],
-        capabilities={"docsis_supported": True, "speedtest_configured": True},
+        connection_latency_rows=[{"timestamp": "2026-06-10T18:15:00Z"}],
+        capabilities={"docsis_supported": True, "speedtest_configured": True, "connection_monitor_configured": True},
     ))
 
     assert items["signal"]["status"] == "stale"
