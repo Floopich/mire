@@ -92,34 +92,6 @@ def _get_journal_entries_for_window(db_path: str, start_ts: str, end_ts: str) ->
     return [dict(row) for row in rows]
 
 
-def _get_bqm_rows(db_path: str, start_ts: str, end_ts: str) -> list[dict[str, Any]] | None:
-    """Load BQM rows through the external latency-source adapter."""
-    try:
-        from app.modules.bqm.storage import BqmStorage
-        tz_name = _get_tz_name()
-        start_date, end_date = _local_date_bounds_for_window(start_ts, end_ts, tz_name)
-        start_epoch = _utc_ts_to_epoch(start_ts)
-        end_epoch = _utc_ts_to_epoch(end_ts)
-        bqm = BqmStorage(db_path, tz_name)
-        rows = bqm.get_data_for_range(start_date, end_date)
-    except (ImportError, sqlite3.Error, OSError, ValueError, KeyError, TypeError):
-        log.warning("Evidence BQM rows unavailable")
-        return None
-
-    filtered: list[dict[str, Any]] = []
-    for row in rows:
-        try:
-            timestamp = row.get("timestamp")
-            if not timestamp:
-                continue
-            row_epoch = _utc_ts_to_epoch(str(timestamp))
-        except (AttributeError, TypeError, ValueError):
-            continue
-        if start_epoch <= row_epoch <= end_epoch:
-            filtered.append(row)
-    return filtered
-
-
 def _epoch_to_iso(value: float | int | None) -> str | None:
     if value is None:
         return None
@@ -205,7 +177,6 @@ def _capabilities(config_manager) -> dict[str, Any]:
     return {
         "docsis_supported": docsis_supported,
         "speedtest_configured": bool(config_manager.is_speedtest_configured()) if config_manager else False,
-        "bqm_configured": False,
         "connection_monitor_configured": bool(config_manager.get("connection_monitor_enabled", False)) if config_manager else False,
     }
 
@@ -309,7 +280,6 @@ def api_evidence_checklist():
         window["to"],
         sources={"speedtest", "events", "capture"},
     )
-    bqm_rows = _get_bqm_rows(core.db_path, window["from"], window["to"])
     connection_latency_rows = _get_connection_latency_rows(window["from"], window["to"])
     config_manager = get_config_manager()
     capabilities = _capabilities(config_manager)
@@ -317,7 +287,6 @@ def api_evidence_checklist():
         window,
         timeline=timeline,
         journal_entries=journal_entries,
-        bqm_rows=bqm_rows,
         connection_latency_rows=connection_latency_rows,
         capabilities=capabilities,
         snapshot_aggregate=snapshot_aggregate,

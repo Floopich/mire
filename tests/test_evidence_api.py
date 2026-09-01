@@ -48,7 +48,6 @@ class TestEvidenceChecklistApi:
             with patch.object(routes, "get_storage", return_value=core), \
                  patch.object(routes, "get_config_manager", return_value=config), \
                  patch.object(routes, "_get_journal_entries_for_window", return_value=[]), \
-                 patch.object(routes, "_get_bqm_rows", return_value=[]), \
                  patch.object(routes, "_get_connection_latency_rows", return_value=[]):
                 response = getattr(routes.api_evidence_checklist, "__wrapped__")()
 
@@ -122,7 +121,6 @@ class TestEvidenceChecklistApi:
             with patch.object(routes, "get_storage", return_value=core), \
                  patch.object(routes, "get_config_manager", return_value=config), \
                  patch.object(routes, "_get_journal_storage", return_value=journal), \
-                 patch.object(routes, "_get_bqm_rows", return_value=[]), \
                  patch.object(routes, "_get_connection_latency_rows", return_value=[]), \
                  patch.object(routes, "_get_tz_name", return_value="UTC"):
                 response = getattr(routes.api_evidence_checklist, "__wrapped__")()
@@ -150,7 +148,6 @@ class TestEvidenceChecklistApi:
             with patch.object(routes, "get_storage", return_value=core), \
                  patch.object(routes, "get_config_manager", return_value=config), \
                  patch.object(routes, "_get_journal_entries_for_window", return_value=[]), \
-                 patch.object(routes, "_get_bqm_rows", return_value=[]), \
                  patch.object(routes, "_get_connection_latency_rows", return_value=[]):
                 response = getattr(routes.api_evidence_checklist, "__wrapped__")()
 
@@ -173,7 +170,6 @@ class TestEvidenceChecklistApi:
             with patch.object(routes, "get_storage", return_value=core), \
                  patch.object(routes, "get_config_manager", return_value=config), \
                  patch.object(routes, "_get_journal_entries_for_window", return_value=[]), \
-                 patch.object(routes, "_get_bqm_rows", return_value=[]), \
                  patch.object(routes, "_get_connection_latency_rows", return_value=[
                      {"timestamp": "2026-06-10T22:40:00Z", "avg_latency_ms": 18.0}
                  ]):
@@ -220,7 +216,6 @@ class TestEvidenceChecklistApi:
             with patch.object(routes, "get_storage", return_value=core), \
                  patch.object(routes, "get_config_manager", return_value=config), \
                  patch.object(routes, "_get_journal_entries_for_window", return_value=[]), \
-                 patch.object(routes, "_get_bqm_rows", return_value=[]), \
                  patch.object(routes, "_get_connection_latency_rows", return_value=[]), \
                  patch.object(routes, "_get_tz_name", return_value="Europe/Berlin"):
                 response = getattr(routes.api_evidence_checklist, "__wrapped__")()
@@ -242,7 +237,6 @@ class TestEvidenceChecklistApi:
             with patch.object(routes, "get_storage", return_value=core), \
                  patch.object(routes, "get_config_manager", return_value=config), \
                  patch.object(routes, "_get_journal_entries_for_window", return_value=[]), \
-                 patch.object(routes, "_get_bqm_rows", return_value=[]), \
                  patch.object(routes, "_get_connection_latency_rows", return_value=[]), \
                  patch.object(routes, "_get_tz_name", return_value="Europe/Berlin"):
                 response = getattr(routes.api_evidence_checklist, "__wrapped__")()

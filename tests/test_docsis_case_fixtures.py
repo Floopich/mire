@@ -105,7 +105,6 @@ def test_docsis_fixture_checklist_golden_contracts(fixture_path: Path):
         checklist_input["window"],
         timeline=checklist_input.get("timeline", []),
         journal_entries=checklist_input.get("journal_entries", []),
-        bqm_rows=checklist_input.get("bqm_rows", []),
         connection_latency_rows=checklist_input.get("connection_latency_rows", []),
         capabilities=checklist_input.get("capabilities", {}),
     )

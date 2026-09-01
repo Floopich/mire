@@ -124,9 +124,7 @@ def _evidence_status(
 
 def _latency_item(
     *,
-    bqm_rows: list[dict[str, Any]] | None,
     connection_latency_rows: list[dict[str, Any]],
-    bqm_configured: bool,
     connection_monitor_configured: bool,
     window_end: str | None,
 ) -> dict[str, Any]:
@@ -137,51 +135,21 @@ def _latency_item(
         window_end=window_end,
         stale_key="latency",
     )
-    bqm_status, bqm_last = _evidence_status(
-        bqm_rows or [],
-        configured=bqm_configured,
-        optional_when_unconfigured=True,
-        window_end=window_end,
-        stale_key="latency",
-    )
-    if bqm_rows is None and bqm_configured:
-        bqm_status, bqm_last = UNAVAILABLE, None
-    source_statuses = [cm_status, bqm_status]
-    rows = [*connection_latency_rows, *(bqm_rows or [])]
-    if PRESENT in source_statuses:
-        status = PRESENT
-    elif STALE in source_statuses:
-        status = STALE
-    elif MISSING in source_statuses or UNAVAILABLE in source_statuses:
+    cm_count = _row_count(connection_latency_rows)
+    if cm_status in {MISSING, UNAVAILABLE}:
         status = MISSING
     else:
-        status = OPTIONAL
-
-    cm_count = _row_count(connection_latency_rows)
-    bqm_count = _row_count(bqm_rows or [])
-    if cm_count and bqm_count:
-        hint_key = "mire.evidence.item.latency.present_both" if status == PRESENT else None
-        action = {"view": "connection-monitor"}
-    elif cm_count:
-        hint_key = "mire.evidence.item.latency.present_cm_only" if status in {PRESENT, STALE} else None
-        action = {"view": "connection-monitor"}
-    elif bqm_count:
-        hint_key = "mire.evidence.item.latency.present_bqm_only" if status in {PRESENT, STALE} else None
-        action = {"view": "bqm"}
-    else:
-        hint_key = None
-        action = {"view": "connection-monitor"} if connection_monitor_configured else {"view": "bqm"}
-
+        status = cm_status
+    hint_key = "mire.evidence.item.latency.present_cm_only" if status in {PRESENT, STALE} else None
     return _item(
         "latency",
         status,
-        cm_count + bqm_count,
-        _latest_ts(rows),
-        action,
+        cm_count,
+        _latest_ts(connection_latency_rows),
+        {"view": "connection-monitor"},
         hint_key=hint_key,
         sources=[
             {"key": "connection_monitor", "status": cm_status, "count": cm_count, "last_ts": cm_last},
-            {"key": "bqm", "status": bqm_status, "count": bqm_count, "last_ts": bqm_last},
         ],
     )
 
@@ -191,7 +159,6 @@ def build_checklist(
     *,
     timeline: list[dict[str, Any]],
     journal_entries: list[dict[str, Any]],
-    bqm_rows: list[dict[str, Any]] | None,
     connection_latency_rows: list[dict[str, Any]] | None = None,
     capabilities: dict[str, Any] | None = None,
     snapshot_aggregate: Mapping[str, Any] | None = None,
@@ -201,7 +168,6 @@ def build_checklist(
     connection_latency_rows = connection_latency_rows or []
     docsis_supported = bool(capabilities.get("docsis_supported", True))
     speedtest_configured = bool(capabilities.get("speedtest_configured", True))
-    bqm_configured = bool(capabilities.get("bqm_configured", True))
     connection_monitor_configured = bool(capabilities.get("connection_monitor_configured", False))
     window_end = window.get("to")
 
@@ -247,9 +213,7 @@ def build_checklist(
         _item("signal", signal_status, signal_count, signal_last, {"view": "correlation"}),
         _item("speedtest", speed_status, len(speedtest_rows), speed_last, {"view": "speedtest"}),
         _latency_item(
-            bqm_rows=bqm_rows,
             connection_latency_rows=connection_latency_rows,
-            bqm_configured=bqm_configured,
             connection_monitor_configured=connection_monitor_configured,
             window_end=window_end,
             ),
