@@ -964,5 +964,14 @@
   "correlation_reachability_scope": "Périmètre des cibles",
   "correlation_reachability_drilldown": "Ouvrir les détails du Moniteur de connexion",
   "correlation_reachability_aria": "Résumé de l’accessibilité",
-  "support_project_link": "Mire sur GitHub"
+  "support_project_link": "Mire sur GitHub",
+  "cleared": "vidés",
+  "delete": "Supprimer",
+  "directories": "dossiers",
+  "event_filter_title": "Types d'événements",
+  "revoke": "Révoquer",
+  "setup_copied": "Copié. Collez-le dans vos notes de configuration ou dans un terminal.",
+  "setup_copy_error": "Copie automatique impossible. Sélectionnez le texte et copiez-le manuellement.",
+  "speedtest_no_results": "aucun résultat pour l'instant",
+  "unknown": "Inconnu"
 }

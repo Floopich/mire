@@ -18,21 +18,7 @@ PLAIN_TEXT_FIELDS = ("title", "body", "link_label")
 NOTICE_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]{1,80}$")
 MAX_DISMISSED_NOTICE_IDS = 200
 
-LOCAL_NOTICES: tuple[dict[str, Any], ...] = (
-    {
-        "id": "mire-local-notices-2026-05",
-        "severity": "info",
-        "title": "Maintainer notices are now local-first",
-        "body": (
-            "Mire can show bundled project notices without contacting a remote "
-            "feed or sending telemetry. Dismissals are stored only in your local "
-            "Mire configuration."
-        ),
-        "locations": ("dashboard", "settings"),
-        "link_label": "View release notes",
-        "link_url": "https://github.com/floopich/mire/releases",
-    },
-)
+LOCAL_NOTICES: tuple[dict[str, Any], ...] = ()
 
 
 class NoticeValidationError(ValueError):
