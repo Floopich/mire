@@ -28,6 +28,20 @@ une coupure. Et quand un problème persiste malgré les échanges avec l'opérat
 mêmes données produisent un dossier daté : rapport PDF, chronologie des incidents,
 courrier de plainte conforme à la procédure belge.
 
+## En bref
+
+| | |
+|---|---|
+| Modem pris en charge | Technicolor CGA4233 (firmware VOO) |
+| Repli | Mode routeur générique, sans données DOCSIS |
+| Collecte | Interrogation continue, historique en base SQLite locale |
+| Seuils | Pratique VOO, lignes OFDM issues de CableLabs DOCSIS 3.1 PHY |
+| Modules | 10 embarqués, activables individuellement |
+| Langues | Français, néerlandais, allemand, anglais |
+| Recours documenté | Service de médiation pour les télécommunications (Belgique) |
+| Déploiement | Docker, image GHCR multi-architecture (amd64, arm64, armv7) |
+| Interface | Web, port 8765 |
+
 ## Fonctionnalités
 
 **Tableau de bord.** État de santé de la ligne en un coup d'œil, avec le détail par
