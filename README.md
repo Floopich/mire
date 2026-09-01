@@ -5,45 +5,99 @@
 <h1 align="center">Mire</h1>
 
 <p align="center">
-  <strong>Votre opérateur dit que tout va bien. Mire montre la chronologie.</strong>
-</p>
-
-<p align="center">
-  Fork de <a href="https://github.com/itsDNNS/docsight">DOCSight</a> réduit à un seul matériel :
-  le CGA4233, plus le mode routeur générique.
+  <strong>Ce qui se passe vraiment sur votre ligne câble, mesuré en continu.</strong>
 </p>
 
 ---
 
-## Différences avec l'amont
+## Ce que fait Mire
 
-| Domaine | DOCSight | Mire |
-|---|---|---|
-| Drivers | 21 familles de modems | 1 modem family (`voo_cga4233`) + `Generic Router` |
-| Modem par défaut | `fritzbox` | `generic` |
-| Seuils intégrés | `docsight.thresholds_vfkd` | `mire.thresholds_voo` |
-| Module BNetzA | présent | supprimé |
-| Langues | 24 | fr, nl, de, en |
-| Langue par défaut | `en` | `fr` |
-| Opérateur par défaut | vide | `VOO` |
-| Seuils de repli de l'analyseur | valeurs VFKD | valeurs VOO |
-| Marque affichée | DOCSight | Mire |
-| Courrier de plainte | BNetzA / ARCEP | Service de médiation pour les télécommunications |
+Une connexion câble se dégrade rarement d'un coup. Le signal s'affaiblit, le bruit
+monte, quelques canaux passent en modulation basse, et l'on constate surtout des
+symptômes : une visio qui saute, une partie qui décroche, un débit qui s'effondre
+le soir. Le modem, lui, sait exactement ce qui se passe — mais n'en garde aucune trace.
 
-## État de ce dépôt
+Mire interroge le modem en continu et conserve l'historique : puissances descendante
+et montante, MER/SNR par canal, modulation, compteurs d'erreurs, pertes de
+synchronisation. Ces mesures s'accumulent dans une base locale et deviennent lisibles :
+graphiques, chronologies, alertes, comparaisons entre deux périodes.
 
-Le delta est **déjà appliqué** : 6 fichiers modifiés (`app/drivers/__init__.py`, `app/config.py`,
-`app/main.py`, `app/collectors/__init__.py`, `app/blueprints/__init__.py`, `app/web.py`) et
-24 fichiers supprimés.
+L'usage courant est la surveillance — savoir où en est la ligne, repérer une dérive
+avant qu'elle ne devienne gênante, comprendre après coup ce qui s'est passé pendant
+une coupure. Et quand un problème persiste malgré les échanges avec l'opérateur, les
+mêmes données produisent un dossier daté : rapport PDF, chronologie des incidents,
+courrier de plainte conforme à la procédure belge.
 
-Le driver `voo_cga4233` et le profil de seuils VOO sont intégrés. Rien à déposer.
+## Fonctionnalités
 
-Le driver est autonome : il hérite directement de `ModemDriver`, sans dépendance à un autre
-driver. La séquence d'authentification double PBKDF2-SHA256, la gestion de session et la
-politique de reprise sont intégrées dans `app/drivers/voo_cga4233.py`.
+**Tableau de bord.** État de santé de la ligne en un coup d'œil, avec le détail par
+canal descendant et montant. Les seuils sont ceux de la pratique VOO, pas des valeurs
+génériques : un signal à 8 dBmV n'est pas signalé en anomalie s'il ne pose pas de
+problème en pratique.
 
-`app/drivers/` ne contient donc plus que `voo_cga4233.py`, `generic.py` et l'infrastructure
-partagée (`base.py`, `registry.py`, `utils.py`, `formats/`, `format_compat.py`).
+**Historique et tendances.** Chaque mesure est conservée. On revient sur une soirée
+précise, on compare une semaine à la précédente, on suit l'évolution d'un canal sur un
+mois. C'est là qu'apparaissent les motifs récurrents — la dégradation quotidienne aux
+heures de pointe, la dérive lente après une intervention.
+
+**Détection d'événements.** Perte de synchronisation, chute de modulation, sortie de
+plage : Mire les repère seul et les inscrit dans un journal horodaté, sans qu'il faille
+regarder au bon moment.
+
+**Corrélation.** Signal du modem, débits mesurés et événements détectés sur une même
+chronologie. C'est ce qui relie un symptôme ressenti à une cause mesurable.
+
+**Latence continue.** Sondes ICMP/TCP vers des cibles configurables, pour documenter la
+perte de paquets et la gigue — invisibles dans un test de débit ponctuel.
+
+**Journal d'incidents.** Décrire un problème, y rattacher captures et mesures, regrouper
+plusieurs entrées en un incident unique.
+
+**Rapports et plainte.** Rapport PDF d'incident, et courrier suivant la procédure belge :
+plainte écrite à l'opérateur, puis saisine du Service de médiation si nécessaire.
+
+**Notifications.** Alertes vers Home Assistant en MQTT, ou par les canaux configurés,
+quand la santé de la ligne change.
+
+## Matériel
+
+**Modem** Technicolor CGA4233 (firmware VOO), accessible en `192.168.100.1`. Le mode
+bridge n'est pas obligatoire, mais l'adresse et les identifiants sont à vérifier sur
+place plutôt qu'à supposer.
+
+**Collecteur** : Raspberry Pi 3B+ ou mieux, sous Pi OS Lite 64 bits avec Docker.
+N'importe quelle machine Docker convient — NAS, Proxmox, Debian.
+
+Un mode **routeur générique** existe pour les modems non pris en charge : les fonctions
+indépendantes du modem restent disponibles, sans les données DOCSIS.
+
+## Installation
+
+Prérequis, puis reconnexion obligatoire pour que le groupe `docker` prenne effet :
+
+```bash
+sudo apt update && sudo apt install -y git && \
+curl -fsSL https://get.docker.com | sh && \
+sudo usermod -aG docker $USER && \
+sudo timedatectl set-timezone Europe/Brussels
+```
+
+L'image est publiée sur GHCR depuis un dépôt privé : il faut un jeton GitHub avec les
+portées `repo` et `read:packages` (Settings > Developer settings > Tokens classic).
+
+```bash
+read -rsp 'Jeton GitHub : ' T; echo
+```
+
+```bash
+echo "$T" | docker login ghcr.io -u Floopich --password-stdin && \
+git clone https://Floopich:$T@github.com/Floopich/mire.git ~/mire && \
+cd ~/mire && git remote set-url origin https://github.com/Floopich/mire.git && \
+unset T && ./scripts/site.sh start maison
+```
+
+L'interface écoute sur le port **8765**. Au premier démarrage, `http://<ip>:8765` ouvre
+l'assistant : URL du modem, utilisateur, mot de passe.
 
 ## Campagne de mesure
 
@@ -55,63 +109,32 @@ Un dossier de données par site, pour ne pas mélanger deux lignes dans la même
 ./scripts/site.sh list
 ```
 
-L'image vient de GHCR. Le compte propriétaire est déduit du remote git et écrit dans `.env` au
-premier `start` — rien à éditer. Pour construire localement à la place, décommenter `build: .` — à éviter sur un Pi 3, la compilation des helpers
-C et l'installation pip avec vérification de hachages y sont pénibles avec 1 Go de RAM.
+Le compte propriétaire de l'image est déduit du remote git et écrit dans `.env` au
+premier `start` — rien à éditer.
+
+### Durée
+
+Une à deux semaines par site. Une session courte ne capte pas les dégradations d'heure
+de pointe, qui sont l'essentiel de ce qu'on cherche à documenter.
 
 ### Boîtier itinérant
 
 Trois points comptent quand le collecteur passe de ligne en ligne :
 
-- **Une horloge sauvegardée.** Un Pi sans RTC prend l'heure par NTP au démarrage. Si la ligne
-  tombe — l'événement même qu'on veut prouver — un redémarrage sans réseau repart sur une heure
-  fausse et les horodatages deviennent inopposables. Un DS3231 en I²C règle le problème :
-  `dtoverlay=i2c-rtc,ds3231` dans `/boot/firmware/config.txt`, puis purger `fake-hwclock`.
-- **Le modem n'est pas toujours en bridge.** L'adresse `192.168.100.1` et les identifiants sont
-  à saisir sur place, pas à supposer.
-- **L'accès distant vaut accès à un réseau tiers.** Le prévenir, et délier l'appareil du compte
-  à la fin de chaque campagne.
-
-### Durée
-
-Une à deux semaines par site. Une session courte ne capte pas les dégradations d'heure de pointe,
-qui sont l'essentiel de ce qu'on cherche à documenter.
-
-`scripts/mire-fork.sh` reste dans le dépôt pour réappliquer le delta après un merge de l'amont :
-les fichiers de drivers reviennent avec le merge, le script les re-supprime.
-
-## Le script
-
-`scripts/mire-fork.sh` supprime tous les drivers sauf `generic.py` et `voo_cga4233.py`,
-réécrit `app/drivers/__init__.py` avec les deux seules entrées du registre, bascule les
-valeurs par défaut de `modem_type` de `fritzbox` vers `generic`, et retire la fonction
-d'utilisation de segment.
-
-Il s'arrête si `app/drivers/voo_cga4233.py` est absent, si un motif de patch ne correspond plus
-(l'amont a bougé), s'il reste une référence orpheline, ou si un fichier Python ne parse plus —
-les 164 fichiers de `app/` sont vérifiés à la fin.
-
-À relancer après chaque merge de l'amont :
-
-```bash
-git fetch upstream && git merge upstream/main
-./scripts/mire-fork.sh
-```
-
-## Seuils
-
-`mire.thresholds_voo` remplace le profil allemand dans `app/threshold_profiles.py`.
-
-Les lignes `ofdm` de `downstream_power` et `snr` ne viennent pas de la pratique VOO mais de la
-spec CableLabs DOCSIS 3.1 PHY, reprises du profil VFKD. Sans elles, un canal OFDM serait jugé
-sur le `good_min` de 40 dB du 4096QAM alors que son MER agrégé se mesure autrement, et sortirait
-en critique alors qu'il va bien.
+- **Une horloge sauvegardée.** Un Pi sans RTC prend l'heure par NTP au démarrage. Si la
+  ligne tombe — l'événement même qu'on veut prouver — un redémarrage sans réseau repart
+  sur une heure fausse et les horodatages deviennent inopposables. Un DS3231 en I²C règle
+  le problème : `dtoverlay=i2c-rtc,ds3231` dans `/boot/firmware/config.txt`, puis purger
+  `fake-hwclock`.
+- **La carte SD s'use.** Mire écrit en continu dans SQLite. Sur une campagne longue ou
+  répétée, monter `sites/` sur un SSD USB.
+- **L'accès distant vaut accès à un réseau tiers.** Le prévenir, et délier l'appareil du
+  compte à la fin de chaque campagne.
 
 ## Débits souscrits
 
-Le modem n'expose aucune information WAN en mode bridge, donc le driver renvoie un dict vide.
-Le rapport se replie sur les réglages existants `booked_download` / `booked_upload`
-(Paramètres > Speedtest, en Mbit/s), qui servaient déjà au calcul de santé du speedtest.
+Le modem n'expose aucune information WAN en mode bridge. Le rapport se replie sur les
+réglages `booked_download` / `booked_upload` (Paramètres > Speedtest, en Mbit/s).
 
 ```bash
 BOOKED_DOWNLOAD=1000 BOOKED_UPLOAD=50 ./scripts/site.sh start dupont
@@ -120,73 +143,79 @@ BOOKED_DOWNLOAD=1000 BOOKED_UPLOAD=50 ./scripts/site.sh start dupont
 Non renseignés, la ligne tarifaire affiche « N/A » — préférable à la valeur d'un autre
 abonnement dans un document destiné à appuyer une plainte.
 
+## Seuils
+
+Le profil `mire.thresholds_voo` porte les seuils utilisés pour qualifier l'état de la
+ligne. Ils viennent de la pratique VOO, à deux exceptions près : les lignes `ofdm` de
+`downstream_power` et `snr` s'appuient sur la spec CableLabs DOCSIS 3.1 PHY. Sans elles,
+un canal OFDM serait jugé sur le `good_min` de 40 dB du 4096QAM alors que son MER agrégé
+se mesure autrement, et sortirait en critique alors qu'il va bien.
+
+Le repli codé en dur de `app/analyzer.py`, utilisé quand aucun profil n'est chargé, porte
+les mêmes valeurs : une instance fraîche analyse correctement avant même l'activation du
+profil.
+
 ## Courrier de plainte
 
-Les textes visaient la BNetzA en anglais et l'ARCEP en français. Ils sont réécrits sur la
-procédure belge : plainte écrite au service de traitement des plaintes de l'opérateur, puis, à
-défaut de solution dans un délai raisonnable, saisine du Service de médiation pour les
-télécommunications — instance de recours gratuite instituée auprès de l'IBPT par la loi du
-21 mars 1991, entité qualifiée au sens du livre XVI du Code de droit économique. L'IBPT ne
-traite pas les litiges individuels.
+Le générateur suit la procédure belge : plainte écrite au service de traitement des
+plaintes de l'opérateur, puis, à défaut de solution dans un délai raisonnable, saisine du
+**Service de médiation pour les télécommunications** — instance de recours gratuite
+instituée auprès de l'IBPT par la loi du 21 mars 1991, entité qualifiée au sens du livre
+XVI du Code de droit économique. L'IBPT ne traite pas les litiges individuels.
 
-Adapté dans les quatre langues conservées. Le néerlandais et l'allemand comptent : ce sont des
-langues officielles belges, et la Communauté germanophone est en Wallonie.
+Disponible en français, néerlandais, allemand et anglais. Le néerlandais et l'allemand
+comptent : ce sont des langues officielles belges, et la Communauté germanophone est en
+Wallonie. Une locale inconnue retombe sur l'anglais.
 
-Les 20 autres locales sont supprimées de `app/i18n`, `app/modules/reports/i18n` et
-`app/modules/modulation/i18n`. Le sélecteur de langue est construit à partir des fichiers
-présents, il n'affiche donc plus que les quatre. Une locale inconnue retombe sur l'anglais.
+## Modules
 
-## Cohérence
+Dix modules sont embarqués, activables individuellement dans les réglages.
 
-- Le repli codé en dur de `app/analyzer.py`, utilisé quand aucun profil de seuils n'est chargé,
-  reprenait les valeurs allemandes. Il porte désormais les valeurs VOO : une instance fraîche
-  analyse correctement avant même l'activation du profil.
-- `isp_name` vaut `VOO` par défaut, sinon le courrier s'ouvre sur « Service technique de , ».
-- L'onglet « utilisation de segment » est retiré de la barre latérale avec son gabarit, la
-  fonction ayant été supprimée.
-- La marque affichée passe à Mire dans les gabarits et les chaînes traduites. Les identifiants
-  techniques ne bougent pas : préfixes de clés `mire.`, nom de la base, identifiants de
-  modules, `packaging/windows/mire.spec` et son icône.
-- `.github/workflows/image.yml` est supprimé : il faisait doublon avec `docker.yml`, qui publie
-  la même image sur les mêmes tags et couvre en plus `linux/arm/v7`.
+| Module | Rôle |
+|---|---|
+| `journal` | Documenter les incidents, y attacher des preuves |
+| `evidence` | Guider d'une fenêtre d'incident vers un dossier exploitable |
+| `reports` | Rapports PDF et courriers de plainte |
+| `comparison` | Comparer deux périodes arbitraires |
+| `modulation` | Distribution de modulation, exposition aux bas QAM |
+| `connection_monitor` | Latence continue par sondes ICMP/TCP |
+| `speedtest` | Résultats Speedtest Tracker avec classification |
+| `weather` | Corrélation signal / température extérieure (Open-Meteo) |
+| `backup` | Sauvegardes planifiées et restauration |
+| `mqtt` | Publication vers Home Assistant (auto-discovery) |
 
-## Tests
+## Mise à jour
 
-Les tests des drivers et modules supprimés sont retirés par `scripts/mire-fork.sh`.
-Le workflow `windows-desktop.yml` est conservé : il produit une application desktop Windows
-autonome depuis `packaging/windows/`, utile pour installer Mire chez un abonné qui ne veut pas
-de Docker. Le spec PyInstaller découvre les modules de `app/` dynamiquement, il ne référence
-aucun driver par son nom — la réduction des drivers ne le casse pas.
+```bash
+cd ~/mire && git pull --ff-only && docker compose pull && docker compose up -d
+```
 
-Il reste des fichiers de tests qui **mentionnent** du code supprimé sans lui être dédiés —
-`conftest.py`, les tests de collecteurs et de vues web utilisent des noms de drivers comme
-valeurs de fixture. Ils demandent des retouches, pas des suppressions. À traiter en lançant la
-suite localement, ce que je n'ai pas pu faire ici.
+Un timer systemd automatise l'opération chaque dimanche à 23h — `Persistent=true`
+rattrape une exécution manquée si la machine était éteinte.
 
-## Retiré
+```bash
+systemctl list-timers mire-update.timer
+```
 
-Le module BNetzA (`app/modules/bnetz`) est supprimé : c'est un importeur du fichier CSV produit
-par l'outil de mesure officiel allemand, sans équivalent publié par l'IBPT. Toutes ses
-références externes sont sous `try/except` ou en paramètre optionnel, la suppression dégrade
-proprement — les sections correspondantes du rapport et du journal restent simplement vides.
+## Maintenance du fork
 
-La mesure d'utilisation de segment est câblée au FRITZ!Box et n'a pas d'équivalent ici :
-`app/fritzbox.py`, `app/collectors/segment_utilization.py` et `app/blueprints/segment_bp.py`
-sont supprimés, le blueprint désenregistré, le collecteur retiré de la boucle, la carte
-correspondante retirée des modules et le réglage passé à `False` par défaut.
+Mire dérive de DOCSight. `scripts/mire-fork.sh` réapplique le delta après un merge de
+l'amont : réduction des drivers à `voo_cga4233` et `generic`, valeurs par défaut,
+suppression des composants sans objet ici.
 
-## Effets de bord connus
+```bash
+git fetch upstream && git merge upstream/main
+./scripts/mire-fork.sh
+```
 
-- `app/main.py` importe `TransientHtmlChannelPageError` depuis le driver Surfboard dans un
-  `try/except ImportError` avec une classe de repli : sa suppression est sans effet.
-- Les fichiers `app/i18n/*.json` gardent les libellés des modems supprimés. Sans conséquence
-  fonctionnelle.
+Le script s'arrête si un motif de patch ne correspond plus, s'il reste une référence
+orpheline, ou si un fichier Python ne parse plus.
 
 ## Licence et marque
 
 Fork MIT de DOCSight, Copyright (c) 2026 Dennis Braun — voir [LICENSE](LICENSE).
 
-Mire est **basé sur DOCSight** sans en être une version officielle. Le nom et le logo DOCSight
-relèvent de la politique de marque du projet amont
-([TRADEMARKS.md](https://github.com/itsDNNS/docsight/blob/main/TRADEMARKS.md)) et ne sont pas
-repris ici.
+Mire est **basé sur DOCSight** sans en être une version officielle. Le nom et le logo
+DOCSight relèvent de la politique de marque du projet amont
+([TRADEMARKS.md](https://github.com/itsDNNS/docsight/blob/main/TRADEMARKS.md)) et ne sont
+pas repris ici.
