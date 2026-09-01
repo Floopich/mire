@@ -175,8 +175,9 @@ class ConnectionMonitorCollector(Collector):
             return
         self._seeded = True
         if not self._cm_storage.get_targets():
+            self._cm_storage.create_target("DNS VOO", "195.238.2.21")
             self._cm_storage.create_target("Cloudflare DNS", "1.1.1.1")
-            self._cm_storage.create_target("Google DNS", "8.8.8.8")
+            self._cm_storage.create_target("Quad9 DNS", "9.9.9.9")
             logger.info("Connection Monitor: seeded default targets")
 
     def get_storage(self) -> ConnectionMonitorStorage:
