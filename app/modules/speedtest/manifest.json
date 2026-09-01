@@ -1,7 +1,7 @@
 {
   "id": "mire.speedtest",
-  "name": "Speedtest Tracker",
-  "description": "Speed test results from Speedtest Tracker with health classification",
+  "name": "Suivi de débit",
+  "description": "Résultats Speedtest Tracker avec classification de santé",
   "version": "1.0.0",
   "author": "itsDNNS",
   "minAppVersion": "2026.2",

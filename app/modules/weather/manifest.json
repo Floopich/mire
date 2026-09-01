@@ -1,7 +1,7 @@
 {
   "id": "mire.weather",
-  "name": "Weather Integration",
-  "description": "Correlate signal quality with outdoor temperature via Open-Meteo",
+  "name": "Intégration météo",
+  "description": "Corréler la qualité du signal avec la température extérieure (Open-Meteo)",
   "version": "1.0.0",
   "author": "itsDNNS",
   "minAppVersion": "2026.2",

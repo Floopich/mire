@@ -1,7 +1,7 @@
 {
   "id": "mire.mqtt",
   "name": "MQTT / Home Assistant",
-  "description": "Publish DOCSIS data to MQTT with Home Assistant Auto-Discovery",
+  "description": "Publier les données DOCSIS en MQTT avec auto-discovery Home Assistant",
   "version": "1.0.0",
   "author": "itsDNNS",
   "minAppVersion": "2026.2",

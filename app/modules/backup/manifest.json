@@ -1,7 +1,7 @@
 {
   "id": "mire.backup",
-  "name": "Backup & Restore",
-  "description": "Scheduled backups and one-click restore for Mire data",
+  "name": "Sauvegarde et restauration",
+  "description": "Sauvegardes planifiées et restauration en un clic des données Mire",
   "version": "1.0.0",
   "author": "itsDNNS",
   "minAppVersion": "2026.2",

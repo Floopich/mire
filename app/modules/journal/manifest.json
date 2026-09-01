@@ -1,7 +1,7 @@
 {
   "id": "mire.journal",
-  "name": "Incident Journal",
-  "description": "Document connection issues, attach evidence, and group entries into incidents for ISP complaints",
+  "name": "Journal d'incidents",
+  "description": "Documenter les problèmes, joindre des preuves, regrouper en incidents",
   "version": "1.0.0",
   "author": "itsDNNS",
   "minAppVersion": "2026.2",

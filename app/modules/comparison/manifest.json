@@ -1,7 +1,7 @@
 {
   "id": "mire.comparison",
-  "name": "Before/After Comparison",
-  "description": "Compare signal quality between two arbitrary time periods",
+  "name": "Comparaison de périodes",
+  "description": "Comparer la qualité du signal entre deux périodes au choix",
   "version": "1.0.0",
   "author": "itsDNNS",
   "minAppVersion": "2026.2",

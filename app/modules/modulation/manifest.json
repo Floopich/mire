@@ -1,7 +1,7 @@
 {
   "id": "mire.modulation",
-  "name": "Modulation Performance",
-  "description": "Daily modulation distribution, low-QAM exposure, and health index",
+  "name": "Performance de modulation",
+  "description": "Distribution quotidienne de modulation, exposition aux bas QAM, indice de santé",
   "version": "1.0.0",
   "author": "itsDNNS",
   "minAppVersion": "2026.2",

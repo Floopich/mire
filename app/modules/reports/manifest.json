@@ -1,7 +1,7 @@
 {
   "id": "mire.reports",
-  "name": "Reports & Complaints",
-  "description": "Generate PDF incident reports and ISP complaint letters",
+  "name": "Rapports et plaintes",
+  "description": "Générer des rapports d'incident PDF et des courriers de plainte",
   "version": "1.0.0",
   "author": "itsDNNS",
   "minAppVersion": "2026.2",
