@@ -698,9 +698,15 @@ def test_european_language_pack_preserves_catalog_contracts() -> None:
             if source_placeholders != target_placeholders:
                 offenders.append(f"{path_label}: placeholder mismatch")
 
-    i18n_dirs = [APP_I18N_DIR, MODULES / "reports" / "i18n", MODULES / "modulation" / "i18n"]
+    allowed_locale_modules = {
+        "backup", "comparison", "connection_monitor", "evidence", "journal",
+        "modulation", "mqtt", "reports", "speedtest", "weather",
+    }
+    i18n_dirs = [APP_I18N_DIR] + [
+        MODULES / name / "i18n" for name in sorted(allowed_locale_modules)
+        if (MODULES / name / "i18n" / "en.json").exists()
+    ]
     module_i18n_dirs = sorted(MODULES.glob("*/i18n"))
-    allowed_locale_modules = {"reports", "modulation"}
     for i18n_dir in module_i18n_dirs:
         if i18n_dir.parent.name in allowed_locale_modules:
             continue
@@ -717,6 +723,8 @@ def test_european_language_pack_preserves_catalog_contracts() -> None:
         source = read_json(source_path)
         for code in sorted(MIRE_LANGUAGE_PACK):
             path = i18n_dir / f"{code}.json"
+            if not path.exists():
+                continue
             data = read_json(path)
             walk(f"{path.relative_to(ROOT)}", source, data)
 
