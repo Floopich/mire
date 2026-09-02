@@ -189,17 +189,36 @@ def _get_snr_thresholds(modulation=None, *, channel_family: str | None = None):
     )
 
 
+_ofdma_low_qam_flag = False
+
+
+def set_ofdma_low_qam_expected(value: bool) -> None:
+    """Declare that this segment runs OFDMA upstream at low QAM by design."""
+    global _ofdma_low_qam_flag
+    _ofdma_low_qam_flag = bool(value)
+
+
+def _ofdma_low_qam_expected() -> bool:
+    return _ofdma_low_qam_flag
+
+
 def _get_us_modulation_thresholds():
     """Get upstream modulation QAM order thresholds."""
     us_mod = _t().get("upstream_modulation", {})
     ofdma = us_mod.get("ofdma", {}) if isinstance(us_mod.get("ofdma"), dict) else {}
-    return {
+    result = {
         "critical_max_qam": us_mod.get("critical_max_qam", 4),
         "warning_max_qam": us_mod.get("warning_max_qam", 16),
         "ofdma_critical_max_qam": ofdma.get("critical_max_qam", 32),
         "ofdma_warning_max_qam": ofdma.get("warning_max_qam", 64),
         "ofdma_tolerated_max_qam": ofdma.get("tolerated_max_qam", 128),
     }
+    if _ofdma_low_qam_expected():
+        # Segment declare comme configure en basse modulation OFDMA :
+        # 16QAM n'est plus une degradation mais un ecart tolere.
+        result["ofdma_critical_max_qam"] = 8
+        result["ofdma_warning_max_qam"] = 8
+    return result
 
 
 def _modulation_issue(health: str | None) -> str | None:
