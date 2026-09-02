@@ -118,6 +118,8 @@ def _handle_config_changed(config_mgr, storage, stop_polling, start_polling):
     stop_polling()
     config_mgr._load()
     _apply_timezone(config_mgr)
+    from app.analyzer import set_ofdma_low_qam_expected
+    set_ofdma_low_qam_expected(config_mgr.is_ofdma_low_qam_expected())
     storage.max_days = config_mgr.get("history_days", 7)
     if config_mgr.is_configured():
         start_polling()
