@@ -425,6 +425,8 @@ def main(server_lifecycle: ServerLifecycleController | None = None):
     data_dir = os.environ.get("DATA_DIR", "/data")
     config_mgr = ConfigManager(data_dir)
     _apply_timezone(config_mgr)
+    from app.analyzer import set_ofdma_low_qam_expected
+    set_ofdma_low_qam_expected(config_mgr.is_ofdma_low_qam_expected())
 
     log.info("Mire starting")
 
