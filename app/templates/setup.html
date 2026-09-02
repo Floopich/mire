@@ -175,6 +175,25 @@
                 <div class="test-result" id="test-result"></div>
             </div>
         </div>
+        <div class="toggle-row">
+            <div class="toggle-info">
+                <span class="toggle-title">{{ t.modem_bridge_mode }}</span>
+                <span class="toggle-desc">{{ t.modem_bridge_mode_hint }}</span>
+            </div>
+            <label class="toggle">
+                <input type="checkbox" id="modem_bridge_mode" name="modem_bridge_mode" value="true"
+                       onchange="toggleRouterIpField(this.checked)" {% if config.modem_bridge_mode %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="form-grid" id="router-ip-row" style="display:{% if config.modem_bridge_mode %}grid{% else %}none{% endif %}">
+            <div class="form-field">
+                <label class="form-label" for="router_ip">{{ t.router_ip }}</label>
+                <input class="form-input" type="text" id="router_ip" name="router_ip"
+                       value="{{ config.router_ip or '' }}" placeholder="192.168.1.1">
+                <span class="form-hint">{{ t.router_ip_hint }}</span>
+            </div>
+        </div>
 
         <div class="setup-actions">
             <button type="button" class="btn btn-primary" onclick="nextStep(2)">

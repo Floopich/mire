@@ -979,5 +979,9 @@
   "ofdma_low_qam_hint_link": "Modulation basse depuis l'installation ? Déclarez votre segment dans les paramètres",
   "tariff_preset": "Offre souscrite",
   "tariff_preset_custom": "Choix libre",
-  "tariff_preset_hint": "Sélectionnez votre offre pour remplir les débits, ou saisissez-les manuellement"
+  "tariff_preset_hint": "Sélectionnez votre offre pour remplir les débits, ou saisissez-les manuellement",
+  "modem_bridge_mode": "Modem en mode bridge",
+  "modem_bridge_mode_hint": "Cochez si le modem est en bridge et qu'un routeur assure le routage",
+  "router_ip": "Adresse IP du routeur",
+  "router_ip_hint": "Sera surveillée comme premier saut du réseau local"
 }

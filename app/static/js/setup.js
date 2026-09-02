@@ -396,3 +396,8 @@ function applyTariffPreset(value) {
     if (dl) dl.value = parts[0];
     if (ul) ul.value = parts[1];
 }
+
+function toggleRouterIpField(checked) {
+    var row = document.getElementById('router-ip-row');
+    if (row) row.style.display = checked ? 'grid' : 'none';
+}

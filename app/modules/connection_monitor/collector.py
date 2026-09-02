@@ -185,6 +185,11 @@ class ConnectionMonitorCollector(Collector):
         isp = ""
         if self._config_mgr:
             isp = str(self._config_mgr.get("isp_name", "") or "").strip().lower()
+        router_ip = ""
+        if self._config_mgr:
+            router_ip = str(self._config_mgr.get("router_ip", "") or "").strip()
+        if router_ip:
+            self._cm_storage.create_target("Passerelle", router_ip)
         resolver = self.ISP_RESOLVERS.get(isp)
         if resolver:
             self._cm_storage.create_target(resolver[0], resolver[1])
