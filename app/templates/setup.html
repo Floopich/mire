@@ -242,15 +242,6 @@
                        min="0" step="1" value="{{ config.booked_upload or '' }}">
             </div>
         </div>
-        <script>
-        function applyTariffPreset(v) {
-            if (!v) return;
-            var p = v.split(',');
-            document.getElementById('booked_download').value = p[0];
-            document.getElementById('booked_upload').value = p[1];
-        }
-        </script>
-
         <div class="setup-actions">
             <button type="button" class="btn btn-ghost" onclick="prevStep(1)">
                 <i data-lucide="arrow-left" class="setup-icon-sm"></i>

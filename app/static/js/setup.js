@@ -379,3 +379,12 @@ async function doRestore() {
         btn.disabled = false;
     }
 }
+
+function applyTariffPreset(value) {
+    if (!value) return;
+    var parts = value.split(',');
+    var dl = document.getElementById('booked_download');
+    var ul = document.getElementById('booked_upload');
+    if (dl) dl.value = parts[0];
+    if (ul) ul.value = parts[1];
+}
