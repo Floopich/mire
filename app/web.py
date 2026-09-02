@@ -1427,6 +1427,21 @@ def health():
     return {"status": "ok", "docsis_health": "waiting", "version": APP_VERSION}
 
 
+def _detected_gateway() -> str:
+    """Return the host's default gateway, or an empty string when unavailable."""
+    import socket
+    import struct
+    try:
+        with open("/proc/net/route", encoding="utf-8") as handle:
+            for line in handle.readlines()[1:]:
+                parts = line.split()
+                if len(parts) > 2 and parts[1] == "00000000":
+                    return socket.inet_ntoa(struct.pack("<L", int(parts[2], 16)))
+    except (OSError, ValueError, struct.error):
+        pass
+    return ""
+
+
 def setup():
     _config_manager = get_config_manager()
     if _config_manager and _config_manager.is_configured():
@@ -1440,7 +1455,7 @@ def setup():
     driver_hints = driver_registry.get_driver_hints()
     iana_tz = _guess_iana_timezone()
     theme = _config_manager.get_theme() if _config_manager else "dark"
-    return render_template("setup.html", config=config, poll_min=POLL_MIN, poll_max=POLL_MAX, t=t, lang=lang, languages=LANGUAGES, lang_flags=LANG_FLAGS, server_tz=tz_name, server_tz_offset=tz_offset, modem_types=modem_types, driver_hints=driver_hints, timezones=_get_iana_timezones(), iana_tz=iana_tz, theme=theme)
+    return render_template("setup.html", config=config, poll_min=POLL_MIN, poll_max=POLL_MAX, t=t, lang=lang, languages=LANGUAGES, lang_flags=LANG_FLAGS, server_tz=tz_name, server_tz_offset=tz_offset, modem_types=modem_types, driver_hints=driver_hints, timezones=_get_iana_timezones(), iana_tz=iana_tz, theme=theme, detected_gateway=_detected_gateway())
 
 
 @require_auth

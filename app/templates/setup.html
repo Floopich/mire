@@ -190,7 +190,7 @@
             <div class="form-field">
                 <label class="form-label" for="router_ip">{{ t.router_ip }}</label>
                 <input class="form-input" type="text" id="router_ip" name="router_ip"
-                       value="{{ config.router_ip or '' }}" placeholder="192.168.1.1">
+                       value="{{ config.router_ip or detected_gateway or '' }}" placeholder="192.168.1.1">
                 <span class="form-hint">{{ t.router_ip_hint }}</span>
             </div>
         </div>
