@@ -570,6 +570,9 @@
                     {% if issue_actions.get(issue) %}
                     <div class="insight-action"><i data-lucide="arrow-right" style="width:12px;height:12px;"></i> {{ issue_actions[issue] }}</div>
                     {% endif %}
+                    {% if issue in ('us_modulation_critical', 'us_modulation_marginal') and not config.ofdma_low_qam_expected %}
+                    <div class="insight-action"><i data-lucide="arrow-right" style="width:12px;height:12px;"></i> <a href="{{ url_for('settings', _anchor='panel-connection') }}">{{ t.ofdma_low_qam_hint_link }}</a></div>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>

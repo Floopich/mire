@@ -975,5 +975,6 @@
   "speedtest_no_results": "nog geen resultaten",
   "unknown": "Onbekend",
   "ofdma_low_qam_expected": "Segment met lage OFDMA-modulatie",
-  "ofdma_low_qam_expected_hint": "Inschakelen als de stroomopwaartse OFDMA-drager sinds de installatie op lage modulatie staat en niet na een verslechtering. Betrokken kanalen worden dan als getolereerd gemeld in plaats van kritiek."
+  "ofdma_low_qam_expected_hint": "Inschakelen als de stroomopwaartse OFDMA-drager sinds de installatie op lage modulatie staat en niet na een verslechtering. Betrokken kanalen worden dan als getolereerd gemeld in plaats van kritiek.",
+  "ofdma_low_qam_hint_link": "Lage modulatie sinds de installatie? Geef uw segment op in de instellingen"
 }

@@ -975,5 +975,6 @@
   "speedtest_no_results": "noch keine Ergebnisse",
   "unknown": "Unbekannt",
   "ofdma_low_qam_expected": "Segment mit niedriger OFDMA-Modulation",
-  "ofdma_low_qam_expected_hint": "Aktivieren, wenn der Upstream-OFDMA-Träger seit der Installation auf niedriger Modulation läuft und nicht infolge einer Verschlechterung. Betroffene Kanäle werden dann als toleriert statt kritisch gemeldet."
+  "ofdma_low_qam_expected_hint": "Aktivieren, wenn der Upstream-OFDMA-Träger seit der Installation auf niedriger Modulation läuft und nicht infolge einer Verschlechterung. Betroffene Kanäle werden dann als toleriert statt kritisch gemeldet.",
+  "ofdma_low_qam_hint_link": "Niedrige Modulation seit der Installation? Deklarieren Sie Ihr Segment in den Einstellungen"
 }
