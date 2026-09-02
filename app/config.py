@@ -59,7 +59,7 @@ def is_secret_key(key: str) -> bool:
 
 DEFAULTS = {
     "modem_type": "generic",
-    "modem_url": "http://192.168.178.1",
+    "modem_url": "http://192.168.100.1",
     "modem_user": "",
     "modem_password": "",
     "poll_interval": 900,

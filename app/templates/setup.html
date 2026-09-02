@@ -149,8 +149,8 @@
             <div class="form-field">
                 <label class="form-label" for="modem_url">{{ t.url }}</label>
                 <input class="form-input" type="text" id="modem_url" name="modem_url"
-                       value="{{ config.modem_url or 'http://192.168.178.1' }}"
-                       placeholder="http://192.168.178.1">
+                       value="{{ config.modem_url or 'http://192.168.100.1' }}"
+                       placeholder="http://192.168.100.1">
             </div>
 
             <div class="form-field">
@@ -175,16 +175,16 @@
                 <div class="test-result" id="test-result"></div>
             </div>
         </div>
-        <div class="toggle-row">
-            <div class="toggle-info">
-                <span class="toggle-title">{{ t.modem_bridge_mode }}</span>
-                <span class="toggle-desc">{{ t.modem_bridge_mode_hint }}</span>
+        <div class="form-grid">
+            <div class="form-field">
+                <label class="form-label" for="modem_bridge_mode">{{ t.modem_bridge_mode }}</label>
+                <label class="toggle">
+                    <input type="checkbox" id="modem_bridge_mode" name="modem_bridge_mode" value="true"
+                           onchange="toggleRouterIpField(this.checked)" {% if config.modem_bridge_mode %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+                <span class="form-hint">{{ t.modem_bridge_mode_hint }}</span>
             </div>
-            <label class="toggle">
-                <input type="checkbox" id="modem_bridge_mode" name="modem_bridge_mode" value="true"
-                       onchange="toggleRouterIpField(this.checked)" {% if config.modem_bridge_mode %}checked{% endif %}>
-                <span class="toggle-slider"></span>
-            </label>
         </div>
         <div class="form-grid" id="router-ip-row" style="display:{% if config.modem_bridge_mode %}grid{% else %}none{% endif %}">
             <div class="form-field">
