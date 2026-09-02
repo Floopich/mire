@@ -23,6 +23,9 @@ class _Config:
             return self.history_days
         return default
 
+    def is_ofdma_low_qam_expected(self):
+        return False
+
     def _load(self):
         self.load_calls += 1
 
