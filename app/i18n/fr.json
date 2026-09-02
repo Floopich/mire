@@ -367,9 +367,9 @@
   "no_channel_data": "Aucune donnée disponible pour ce canal.",
   "channel_select_prompt": "Sélectionnez un canal ci-dessus pour voir son historique.",
   "step_modem": "Modem",
-  "step_general": "General",
+  "step_general": "Général",
   "step_integrations": "Intégrations",
-  "step_review": "Apercu",
+  "step_review": "Aperçu",
   "next": "Suivant",
   "back": "Retour",
   "modem_test_required": "Veuillez d'abord tester la connexion modem.",
@@ -976,5 +976,8 @@
   "unknown": "Inconnu",
   "ofdma_low_qam_expected": "Segment en basse modulation OFDMA",
   "ofdma_low_qam_expected_hint": "À cocher si la porteuse OFDMA montante est en basse modulation depuis l'installation, et non à la suite d'une dégradation. Les canaux concernés sont alors signalés comme tolérés au lieu de critiques.",
-  "ofdma_low_qam_hint_link": "Modulation basse depuis l'installation ? Déclarez votre segment dans les paramètres"
+  "ofdma_low_qam_hint_link": "Modulation basse depuis l'installation ? Déclarez votre segment dans les paramètres",
+  "tariff_preset": "Offre souscrite",
+  "tariff_preset_custom": "Choix libre",
+  "tariff_preset_hint": "Sélectionnez votre offre pour remplir les débits, ou saisissez-les manuellement"
 }

@@ -976,5 +976,8 @@
   "unknown": "Unknown",
   "ofdma_low_qam_expected": "Segment runs OFDMA at low QAM",
   "ofdma_low_qam_expected_hint": "Enable if the upstream OFDMA carrier has been at low modulation since installation rather than after a degradation. Affected channels are then reported as tolerated instead of critical.",
-  "ofdma_low_qam_hint_link": "Low modulation since installation? Declare your segment in the settings"
+  "ofdma_low_qam_hint_link": "Low modulation since installation? Declare your segment in the settings",
+  "tariff_preset": "Subscribed plan",
+  "tariff_preset_custom": "Custom",
+  "tariff_preset_hint": "Pick your plan to fill in the speeds, or enter them manually"
 }
