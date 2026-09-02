@@ -26,7 +26,7 @@ def config(tmp_data_dir):
 
 class TestConfigDefaults:
     def test_defaults_applied(self, config):
-        assert config.get("modem_url") == "http://192.168.178.1"
+        assert config.get("modem_url") == "http://192.168.100.1"
         assert config.get("poll_interval") == 900
         assert config.get("web_port") == 8765
         assert config.get("theme") == "dark"
