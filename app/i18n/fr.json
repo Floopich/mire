@@ -435,7 +435,7 @@
   "gaming_comp_docsis_health_detail": "État général du signal câble base sur les niveaux de puissance, le SNR et les taux d'erreur.",
   "gaming_comp_snr_headroom_detail": "Marge signal-bruit au-dessus du seuil minimum. Plus de marge signifie plus de stabilité.",
   "gaming_genres_all_ok": "Tous les genres de jeux : Excellente connexion pour tous les types de jeux en ligne.",
-  "gaming_genres_title": "Compatibilite des jeux",
+  "gaming_genres_title": "Compatibilité des jeux",
   "gaming_genre_fps": "FPS Competitif",
   "gaming_genre_fps_a": "Parfait. Jeu competitif au plus haut niveau.",
   "gaming_genre_fps_b": "Super pour le ranked. Desavantage minimal.",

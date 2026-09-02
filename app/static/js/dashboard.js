@@ -280,7 +280,7 @@ var CORRELATION_CM_AVAILABLE = dashboardBootstrap.connectionMonitorAvailable;
         if (!skipHash) location.hash = view === 'live' ? '' : view;
         syncNavActiveState(view);
         // Generic: remove active from all views, add to target
-        document.querySelectorAll('.main-content > .view').forEach(function(v) {
+        document.querySelectorAll('.main-content .view').forEach(function(v) {
             v.classList.remove('active');
         });
         var targetId = view === 'live' ? 'view-dashboard' : 'view-' + view;
