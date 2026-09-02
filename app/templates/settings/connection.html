@@ -78,6 +78,17 @@
                 <input class="form-input" type="text" id="isp_other_input" value="{% if config.isp_name and config.isp_name not in t.isp_options %}{{ config.isp_name }}{% endif %}" placeholder="{{ t.isp_other_placeholder }}">
             </div>
         </div>
+        <div class="toggle-row">
+            <div class="toggle-info">
+                <span class="toggle-title">{{ t.ofdma_low_qam_expected }}</span>
+                <span class="toggle-desc">{{ t.ofdma_low_qam_expected_hint }}</span>
+            </div>
+            <input type="hidden" name="ofdma_low_qam_expected" value="false">
+            <label class="toggle">
+                <input type="checkbox" id="ofdma_low_qam_expected" name="ofdma_low_qam_expected" value="true" {% if config.ofdma_low_qam_expected %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
     </div>
 
 </div>

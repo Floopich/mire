@@ -973,5 +973,7 @@
   "setup_copied": "Copié. Collez-le dans vos notes de configuration ou dans un terminal.",
   "setup_copy_error": "Copie automatique impossible. Sélectionnez le texte et copiez-le manuellement.",
   "speedtest_no_results": "aucun résultat pour l'instant",
-  "unknown": "Inconnu"
+  "unknown": "Inconnu",
+  "ofdma_low_qam_expected": "Segment en basse modulation OFDMA",
+  "ofdma_low_qam_expected_hint": "À cocher si la porteuse OFDMA montante est en basse modulation depuis l'installation, et non à la suite d'une dégradation. Les canaux concernés sont alors signalés comme tolérés au lieu de critiques."
 }

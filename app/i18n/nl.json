@@ -973,5 +973,7 @@
   "setup_copied": "Gekopieerd. Plak het in uw installatienotities of terminal.",
   "setup_copy_error": "Automatisch kopiëren mislukt. Selecteer de tekst en kopieer handmatig.",
   "speedtest_no_results": "nog geen resultaten",
-  "unknown": "Onbekend"
+  "unknown": "Onbekend",
+  "ofdma_low_qam_expected": "Segment met lage OFDMA-modulatie",
+  "ofdma_low_qam_expected_hint": "Inschakelen als de stroomopwaartse OFDMA-drager sinds de installatie op lage modulatie staat en niet na een verslechtering. Betrokken kanalen worden dan als getolereerd gemeld in plaats van kritiek."
 }

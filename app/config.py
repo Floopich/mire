@@ -438,6 +438,10 @@ class ConfigManager:
         """True if gaming quality index is enabled."""
         return self._get_bool("gaming_quality_enabled")
 
+    def is_ofdma_low_qam_expected(self):
+        """True if this segment is declared to run OFDMA upstream at low QAM."""
+        return self._get_bool("ofdma_low_qam_expected")
+
     def is_notify_configured(self):
         """True if any notification channel is configured."""
         pwa_push_configured = (

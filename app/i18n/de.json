@@ -973,5 +973,7 @@
   "setup_copied": "Kopiert. Fügen Sie es in Ihre Notizen oder das Terminal ein.",
   "setup_copy_error": "Automatisches Kopieren fehlgeschlagen. Markieren und manuell kopieren.",
   "speedtest_no_results": "noch keine Ergebnisse",
-  "unknown": "Unbekannt"
+  "unknown": "Unbekannt",
+  "ofdma_low_qam_expected": "Segment mit niedriger OFDMA-Modulation",
+  "ofdma_low_qam_expected_hint": "Aktivieren, wenn der Upstream-OFDMA-Träger seit der Installation auf niedriger Modulation läuft und nicht infolge einer Verschlechterung. Betroffene Kanäle werden dann als toleriert statt kritisch gemeldet."
 }

@@ -973,5 +973,7 @@
   "setup_copied": "Copied. Paste it into your setup notes or terminal when ready.",
   "setup_copy_error": "Could not copy automatically. Select the snippet and copy it manually.",
   "speedtest_no_results": "no results yet",
-  "unknown": "Unknown"
+  "unknown": "Unknown",
+  "ofdma_low_qam_expected": "Segment runs OFDMA at low QAM",
+  "ofdma_low_qam_expected_hint": "Enable if the upstream OFDMA carrier has been at low modulation since installation rather than after a degradation. Affected channels are then reported as tolerated instead of critical."
 }
