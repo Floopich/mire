@@ -169,16 +169,28 @@ class ConnectionMonitorCollector(Collector):
             if self._smart_capture:
                 self._smart_capture.evaluate(all_events)
 
+    # Resolveurs publics par operateur belge. Verifies au moment de l ajout ;
+    # a confirmer sur place si une cible ne repond plus.
+    ISP_RESOLVERS = {
+        "voo": ("DNS VOO", "195.238.2.21"),
+    }
+
     def _ensure_default_targets(self):
-        """Seed default targets on first enable."""
+        """Seed default targets on first enable, adapted to the configured ISP."""
         if self._seeded:
             return
         self._seeded = True
-        if not self._cm_storage.get_targets():
-            self._cm_storage.create_target("DNS VOO", "195.238.2.21")
-            self._cm_storage.create_target("Cloudflare DNS", "1.1.1.1")
-            self._cm_storage.create_target("Quad9 DNS", "9.9.9.9")
-            logger.info("Connection Monitor: seeded default targets")
+        if self._cm_storage.get_targets():
+            return
+        isp = ""
+        if self._config_mgr:
+            isp = str(self._config_mgr.get("isp_name", "") or "").strip().lower()
+        resolver = self.ISP_RESOLVERS.get(isp)
+        if resolver:
+            self._cm_storage.create_target(resolver[0], resolver[1])
+        self._cm_storage.create_target("Cloudflare DNS", "1.1.1.1")
+        self._cm_storage.create_target("Quad9 DNS", "9.9.9.9")
+        logger.info("Connection Monitor: seeded default targets (isp=%s)", isp or "inconnu")
 
     def get_storage(self) -> ConnectionMonitorStorage:
         """Expose storage for routes."""
