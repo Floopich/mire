@@ -1361,10 +1361,6 @@ def index():
         report_customer_address = _config_manager.get("report_customer_address", "")
     speedtest_configured = _config_manager.is_speedtest_configured() if _config_manager else False
     gaming_quality_enabled = _config_manager.is_gaming_quality_enabled() if _config_manager else False
-    from app.analyzer import set_ofdma_low_qam_expected
-    set_ofdma_low_qam_expected(
-        _config_manager.is_ofdma_low_qam_expected() if _config_manager else False
-    )
     state = get_state()
     speedtest_latest = state.get("speedtest_latest")
     booked_download = _config_manager.get("booked_download", 0) if _config_manager else 0
