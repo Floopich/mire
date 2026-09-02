@@ -39,7 +39,7 @@ case "$action" in
     docker compose up -d
     ip="$(hostname -I | awk '{print $1}')"
     echo "Campagne demarree pour $site"
-    echo "Interface : http://$ip:8765"
+    echo "Interface : http://$ip:${WEB_PORT:-1340}"
     echo "Verifier l'heure : $(date -Is)"
     ;;
   stop)
