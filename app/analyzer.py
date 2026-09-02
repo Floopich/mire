@@ -58,7 +58,11 @@ _FALLBACK_THRESHOLDS = {
         "1024QAM": {"good_min": 39.0, "warning_min": 37.0, "critical_min": 36.0},
         "4096QAM": {"good_min": 40.0, "warning_min": 38.0, "critical_min": 36.0},
     },
-    "upstream_modulation": {"critical_max_qam": 4, "warning_max_qam": 16},
+    "upstream_modulation": {
+        "critical_max_qam": 4,
+        "warning_max_qam": 16,
+        "ofdma": {"critical_max_qam": 32, "warning_max_qam": 64, "tolerated_max_qam": 128},
+    },
     "errors": {"uncorrectable_pct": {"warning": 1.0, "critical": 3.0, "min_codewords": 1000}},
 }
 
@@ -188,9 +192,13 @@ def _get_snr_thresholds(modulation=None, *, channel_family: str | None = None):
 def _get_us_modulation_thresholds():
     """Get upstream modulation QAM order thresholds."""
     us_mod = _t().get("upstream_modulation", {})
+    ofdma = us_mod.get("ofdma", {}) if isinstance(us_mod.get("ofdma"), dict) else {}
     return {
         "critical_max_qam": us_mod.get("critical_max_qam", 4),
         "warning_max_qam": us_mod.get("warning_max_qam", 16),
+        "ofdma_critical_max_qam": ofdma.get("critical_max_qam", 32),
+        "ofdma_warning_max_qam": ofdma.get("warning_max_qam", 64),
+        "ofdma_tolerated_max_qam": ofdma.get("tolerated_max_qam", 128),
     }
 
 
@@ -241,16 +249,16 @@ def _assess_us_modulation(ch, docsis_ver: str) -> str:
     if qam_order is None:
         return "good"
 
+    mt = _get_us_modulation_thresholds()
     if docsis_ver == "3.1" and family == "ofdma":
-        if qam_order <= 32:
+        if qam_order <= mt["ofdma_critical_max_qam"]:
             return "critical"
-        if qam_order <= 64:
+        if qam_order <= mt["ofdma_warning_max_qam"]:
             return "warning"
-        if qam_order <= 128:
+        if qam_order <= mt["ofdma_tolerated_max_qam"]:
             return "tolerated"
         return "good"
 
-    mt = _get_us_modulation_thresholds()
     if qam_order <= mt["critical_max_qam"]:
         return "critical"
     if qam_order <= mt["warning_max_qam"]:

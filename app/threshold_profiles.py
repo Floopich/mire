@@ -50,6 +50,11 @@ BUILTIN_THRESHOLD_PROFILES: tuple[dict[str, object], ...] = (
             "upstream_modulation": {
                 "critical_max_qam": 4,
                 "warning_max_qam": 16,
+                "ofdma": {
+                    "critical_max_qam": 32,
+                    "warning_max_qam": 64,
+                    "tolerated_max_qam": 128,
+                },
             },
             "errors": {
                 "uncorrectable_pct": {"warning": 1.0, "critical": 3.0},
