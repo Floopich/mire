@@ -4,14 +4,14 @@ services:
     # build: .          # decommenter pour construire localement au lieu de tirer l'image
     container_name: mire
     restart: unless-stopped
-    ports:
-      - "8765:8765"
+    network_mode: host
     volumes:
       - ./sites/${SITE:?definir SITE dans .env, ou lancer ./scripts/site.sh start <site>}/data:/data
     cap_add:
       - NET_RAW
     environment:
       - TZ=${TZ:-Europe/Brussels}
+      - WEB_PORT=${WEB_PORT:-1340}
       - BOOKED_DOWNLOAD=${BOOKED_DOWNLOAD:-}
       - BOOKED_UPLOAD=${BOOKED_UPLOAD:-}
     logging:

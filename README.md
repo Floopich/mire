@@ -40,7 +40,7 @@ courrier de plainte conforme à la procédure belge.
 | Langues | Français, néerlandais, allemand, anglais |
 | Recours documenté | Service de médiation pour les télécommunications (Belgique) |
 | Déploiement | Docker, image GHCR multi-architecture (amd64, arm64, armv7) |
-| Interface | Web, port 8765 |
+| Interface | Web, port 1340 |
 
 ## Fonctionnalités
 
@@ -110,7 +110,7 @@ cd ~/mire && git remote set-url origin https://github.com/Floopich/mire.git && \
 unset T && ./scripts/site.sh start maison
 ```
 
-L'interface écoute sur le port **8765**. Au premier démarrage, `http://<ip>:8765` ouvre
+L'interface écoute sur le port **1340**. Au premier démarrage, `http://<ip>:1340` ouvre
 l'assistant : URL du modem, utilisateur, mot de passe.
 
 ## Campagne de mesure
