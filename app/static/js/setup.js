@@ -41,6 +41,14 @@ function updateReview() {
     document.getElementById('review-modem-url').textContent = document.getElementById('modem_url').value;
     document.getElementById('review-poll').textContent = document.getElementById('poll_interval').value;
     document.getElementById('review-tz').textContent = document.getElementById('timezone').value;
+    var rb = document.getElementById('review-booked');
+    if (rb) {
+        var dl = document.getElementById('booked_download');
+        var ul = document.getElementById('booked_upload');
+        var dlv = dl && dl.value ? dl.value : '—';
+        var ulv = ul && ul.value ? ul.value : '—';
+        rb.textContent = dlv + ' / ' + ulv + ' Mbps';
+    }
 }
 
 function _setButtonLoading(btn, iconName, text) {
