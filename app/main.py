@@ -135,6 +135,51 @@ def _get_modem_config_key(config_mgr):
     )
 
 
+def _weekly_digest_due(now, last_sent) -> bool:
+    """True on Sunday at 14:00, at most once per week."""
+    if now.tm_wday != 6 or now.tm_hour != 14:
+        return False
+    stamp = f"{now.tm_year}-{now.tm_yday}"
+    return stamp != last_sent
+
+
+def _build_weekly_digest(storage, runtime) -> dict:
+    """Compose the weekly summary as an event, dispatched through the usual channels."""
+    import time
+    events = []
+    try:
+        events = storage.get_events(limit=500, exclude_operational=True)
+    except Exception:
+        pass
+    cutoff = time.time() - 7 * 86400
+    recent = []
+    for item in events:
+        try:
+            parsed = time.strptime(str(item.get("timestamp", ""))[:19], "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            try:
+                parsed = time.strptime(str(item.get("timestamp", ""))[:19], "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                continue
+        if time.mktime(parsed) >= cutoff:
+            recent.append(item)
+    crit = sum(1 for e in recent if e.get("severity") == "critical")
+    warn = sum(1 for e in recent if e.get("severity") == "warning")
+    state = runtime.get_state()
+    analysis = state.get("analysis") or {}
+    health = (analysis.get("summary") or {}).get("health", "?")
+    return {
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "severity": "info",
+        "event_type": "weekly_summary",
+        "message": (
+            f"Resume 7 jours - sante actuelle : {health}. "
+            f"{len(recent)} evenement(s) dont {crit} critique(s) et {warn} avertissement(s)."
+        ),
+        "details": {"events": len(recent), "critical": crit, "warning": warn, "health": health},
+    }
+
+
 def polling_loop(config_mgr, storage, stop_event, runtime: MireRuntime):
     """Flat orchestrator: tick every second, let each collector decide when to poll."""
     config = config_mgr.get_all()
@@ -322,8 +367,19 @@ def polling_loop(config_mgr, storage, stop_event, runtime: MireRuntime):
                     runtime.update_state(error=e)
 
     try:
+        _digest_last_sent = ""
         while not stop_event.is_set():
             _process_in_flight()
+
+            # Weekly digest, Sunday 14:00
+            _tm = time.localtime()
+            if notifier and _weekly_digest_due(_tm, _digest_last_sent):
+                _digest_last_sent = f"{_tm.tm_year}-{_tm.tm_yday}"
+                try:
+                    notifier.dispatch([_build_weekly_digest(storage, runtime)])
+                    log.info("Weekly digest sent")
+                except Exception as exc:
+                    log.warning("Weekly digest failed: %s", type(exc).__name__)
 
             # ── Driver hot-swap: detect modem config change ──
             if modem_config_key is not None and modem_collector:

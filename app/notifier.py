@@ -429,6 +429,10 @@ class NotificationDispatcher:
                     )
 
     def _should_send(self, event) -> bool:
+        # The weekly digest is requested explicitly, not a health alert:
+        # it bypasses the severity filter but keeps the cooldown logic.
+        if event.get("event_type") == "weekly_summary":
+            return True
         # Severity filter
         min_severity = self._config_mgr.get("notify_min_severity", "warning")
         min_level = SEVERITY_ORDER.get(min_severity, 1)
