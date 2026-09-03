@@ -175,10 +175,22 @@
                 <div class="test-result" id="test-result"></div>
             </div>
         </div>
-        {% if link_speed %}
+        {% if net_ctx %}
         <div class="form-grid">
             <div class="form-field">
-                <span class="form-hint">{{ t.link_speed_label }} : <strong>{{ link_speed.interface }} — {{ link_speed.speed }} Mbit/s{% if link_speed.duplex %} ({{ link_speed.duplex }}){% endif %}</strong></span>
+                <label class="form-label">{{ t.net_context_title }}</label>
+                {% if net_ctx.link %}
+                <span class="form-hint">{{ t.link_speed_label }} : <strong>{{ net_ctx.link.interface }} — {{ net_ctx.link.speed }} Mbit/s{% if net_ctx.link.duplex %} ({{ net_ctx.link.duplex }}){% endif %}</strong></span>
+                {% endif %}
+                {% if net_ctx.local_ip %}
+                <span class="form-hint">{{ t.net_context_collector }} : <strong>{{ net_ctx.local_ip }}</strong>{% if net_ctx.prefix %} ({{ net_ctx.prefix }}){% endif %}</span>
+                {% endif %}
+                {% if net_ctx.gateway %}
+                <span class="form-hint">{{ t.router_ip }} : <strong>{{ net_ctx.gateway }}</strong></span>
+                {% endif %}
+                {% if net_ctx.bridge_likely is not none %}
+                <span class="form-hint">{{ t.net_context_mode }} : <strong>{{ t.net_context_bridge if net_ctx.bridge_likely else t.net_context_router }}</strong></span>
+                {% endif %}
                 <span class="form-hint">{{ t.link_speed_hint }}</span>
             </div>
         </div>

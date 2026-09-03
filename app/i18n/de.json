@@ -985,5 +985,10 @@
   "router_ip": "IP-Adresse des Routers",
   "router_ip_hint": "Wird als erster Hop des lokalen Netzwerks überwacht",
   "link_speed_label": "Netzwerkverbindung des Collectors",
-  "link_speed_hint": "Eine mit 100 Mbit/s statt 1000 ausgehandelte Verbindung begrenzt die Durchsatzmessungen unabhängig von der Leitung."
+  "link_speed_hint": "Eine mit 100 Mbit/s statt 1000 ausgehandelte Verbindung begrenzt die Durchsatzmessungen unabhängig von der Leitung.",
+  "net_context_title": "Erkanntes Netzwerk",
+  "net_context_collector": "Collector",
+  "net_context_mode": "Wahrscheinlicher Modus",
+  "net_context_bridge": "Bridge (Modem außerhalb des lokalen Netzes)",
+  "net_context_router": "Router (das Modem routet)"
 }

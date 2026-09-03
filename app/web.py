@@ -1427,6 +1427,35 @@ def health():
     return {"status": "ok", "docsis_health": "waiting", "version": APP_VERSION}
 
 
+def _network_context(modem_url: str = "") -> dict:
+    """Describe the collector's network, to prefill the wizard. The user confirms."""
+    import ipaddress
+    import re
+    import socket
+    ctx = {"gateway": _detected_gateway(), "link": _link_speed(), "local_ip": "", "prefix": "", "bridge_likely": None}
+    try:
+        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        probe.connect(("192.0.2.1", 1))
+        ctx["local_ip"] = probe.getsockname()[0]
+        probe.close()
+    except OSError:
+        pass
+    host = ""
+    match = re.search(r"//([0-9.]+)", modem_url or "")
+    if match:
+        host = match.group(1)
+    if ctx["local_ip"] and host:
+        try:
+            local = ipaddress.ip_address(ctx["local_ip"])
+            modem = ipaddress.ip_address(host)
+            net = ipaddress.ip_network(f"{local}/24", strict=False)
+            ctx["prefix"] = str(net)
+            ctx["bridge_likely"] = modem not in net
+        except ValueError:
+            pass
+    return ctx
+
+
 def _link_speed() -> dict:
     """Return the host's physical link speed, used to rule out a cabling limit."""
     import glob
@@ -1482,7 +1511,7 @@ def setup():
     driver_hints = driver_registry.get_driver_hints()
     iana_tz = _guess_iana_timezone()
     theme = _config_manager.get_theme() if _config_manager else "dark"
-    return render_template("setup.html", config=config, poll_min=POLL_MIN, poll_max=POLL_MAX, t=t, lang=lang, languages=LANGUAGES, lang_flags=LANG_FLAGS, server_tz=tz_name, server_tz_offset=tz_offset, modem_types=modem_types, driver_hints=driver_hints, timezones=_get_iana_timezones(), iana_tz=iana_tz, theme=theme, detected_gateway=_detected_gateway(), link_speed=_link_speed())
+    return render_template("setup.html", config=config, poll_min=POLL_MIN, poll_max=POLL_MAX, t=t, lang=lang, languages=LANGUAGES, lang_flags=LANG_FLAGS, server_tz=tz_name, server_tz_offset=tz_offset, modem_types=modem_types, driver_hints=driver_hints, timezones=_get_iana_timezones(), iana_tz=iana_tz, theme=theme, detected_gateway=_detected_gateway(), link_speed=_link_speed(), net_ctx=_network_context(config.get("modem_url", "")))
 
 
 @require_auth
