@@ -82,7 +82,7 @@ def test_landing_page_has_required_canonical_and_social_metadata() -> None:
 
     assert parser.title.strip()
     assert parser.meta[("name", "description")]
-    assert parser.canonical == "https://itsdnns.github.io/mire/"
+    assert parser.canonical == "https://floopich.github.io/mire/"
     assert parser.meta[("property", "og:type")] == "website"
     assert parser.meta[("property", "og:site_name")] == "Mire"
     assert parser.meta[("property", "og:title")].strip()
