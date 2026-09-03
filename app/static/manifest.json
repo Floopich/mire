@@ -7,7 +7,7 @@
   "display": "standalone",
   "orientation": "any",
   "background_color": "#06080f",
-  "theme_color": "#7c3aed",
+  "theme_color": "#e8817f",
   "start_url": "../?source=pwa",
   "scope": "../",
   "categories": ["network-monitoring", "utilities", "productivity"],
