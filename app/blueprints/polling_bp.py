@@ -65,13 +65,22 @@ def detect_modem():
                 request = urllib.request.Request(url, method="GET")
                 with urllib.request.urlopen(request, timeout=1.5) as response:
                     if response.status < 500:
-                        found.append({"url": url, "host": host})
+                        body = response.read(4096).decode("utf-8", "ignore").lower()
+                        entry = {"url": url, "host": host, "match": ""}
+                        if "theme/voo" in body:
+                            entry["match"] = "voo"
+                        elif "technicolor" in body:
+                            entry["match"] = "technicolor"
+                        elif "docsis" in body:
+                            entry["match"] = "docsis"
+                        found.append(entry)
                         break
             except urllib.error.HTTPError:
-                found.append({"url": url, "host": host})
+                found.append({"url": url, "host": host, "match": ""})
                 break
             except (urllib.error.URLError, OSError, ValueError):
                 continue
+    found.sort(key=lambda c: 0 if c.get("match") else 1)
     return jsonify({"success": bool(found), "candidates": found})
 
 

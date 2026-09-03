@@ -414,7 +414,9 @@ async function detectModem() {
             document.getElementById('modem_url').value = d.candidates[0].url;
             if (out) {
                 out.className = 'test-result success';
-                out.textContent = '\u2713 ' + d.candidates.map(function(c) { return c.url; }).join(', ');
+                out.textContent = '\u2713 ' + d.candidates.map(function(c) {
+                    return c.url + (c.match === 'voo' ? ' (VOO)' : c.match ? ' (' + c.match + ')' : '');
+                }).join(', ');
                 out.style.display = 'block';
             }
         } else if (out) {
