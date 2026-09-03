@@ -983,5 +983,7 @@
   "modem_bridge_mode": "Modem in bridge mode",
   "modem_bridge_mode_hint": "Check if the modem is bridged and a separate router handles routing",
   "router_ip": "Router IP address",
-  "router_ip_hint": "Will be monitored as the local network's first hop"
+  "router_ip_hint": "Will be monitored as the local network's first hop",
+  "link_speed_label": "Collector network link",
+  "link_speed_hint": "A link negotiated at 100 Mbit/s instead of 1000 caps throughput measurements regardless of the line."
 }

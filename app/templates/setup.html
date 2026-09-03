@@ -175,6 +175,14 @@
                 <div class="test-result" id="test-result"></div>
             </div>
         </div>
+        {% if link_speed %}
+        <div class="form-grid">
+            <div class="form-field">
+                <span class="form-hint">{{ t.link_speed_label }} : <strong>{{ link_speed.interface }} — {{ link_speed.speed }} Mbit/s{% if link_speed.duplex %} ({{ link_speed.duplex }}){% endif %}</strong></span>
+                <span class="form-hint">{{ t.link_speed_hint }}</span>
+            </div>
+        </div>
+        {% endif %}
         <div class="form-grid">
             <div class="form-field">
                 <label class="form-label" for="modem_bridge_mode">{{ t.modem_bridge_mode }}</label>

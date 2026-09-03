@@ -983,5 +983,7 @@
   "modem_bridge_mode": "Modem en mode bridge",
   "modem_bridge_mode_hint": "Cochez si le modem est en bridge et qu'un routeur assure le routage",
   "router_ip": "Adresse IP du routeur",
-  "router_ip_hint": "Sera surveillée comme premier saut du réseau local"
+  "router_ip_hint": "Sera surveillée comme premier saut du réseau local",
+  "link_speed_label": "Lien réseau du collecteur",
+  "link_speed_hint": "Un lien négocié à 100 Mbit/s au lieu de 1000 limite les mesures de débit indépendamment de la ligne."
 }

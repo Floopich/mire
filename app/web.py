@@ -1427,6 +1427,33 @@ def health():
     return {"status": "ok", "docsis_health": "waiting", "version": APP_VERSION}
 
 
+def _link_speed() -> dict:
+    """Return the host's physical link speed, used to rule out a cabling limit."""
+    import glob
+    import os
+    best = {}
+    for path in sorted(glob.glob("/sys/class/net/*/speed")):
+        name = os.path.basename(os.path.dirname(path))
+        if name.startswith(("docker", "br-", "veth", "lo")):
+            continue
+        try:
+            with open(path, encoding="utf-8") as handle:
+                speed = int(handle.read().strip())
+        except (OSError, ValueError):
+            continue
+        if speed <= 0:
+            continue
+        duplex = ""
+        try:
+            with open(os.path.join(os.path.dirname(path), "duplex"), encoding="utf-8") as handle:
+                duplex = handle.read().strip()
+        except OSError:
+            pass
+        if not best or speed > best.get("speed", 0):
+            best = {"interface": name, "speed": speed, "duplex": duplex}
+    return best
+
+
 def _detected_gateway() -> str:
     """Return the host's default gateway, or an empty string when unavailable."""
     import socket
@@ -1455,7 +1482,7 @@ def setup():
     driver_hints = driver_registry.get_driver_hints()
     iana_tz = _guess_iana_timezone()
     theme = _config_manager.get_theme() if _config_manager else "dark"
-    return render_template("setup.html", config=config, poll_min=POLL_MIN, poll_max=POLL_MAX, t=t, lang=lang, languages=LANGUAGES, lang_flags=LANG_FLAGS, server_tz=tz_name, server_tz_offset=tz_offset, modem_types=modem_types, driver_hints=driver_hints, timezones=_get_iana_timezones(), iana_tz=iana_tz, theme=theme, detected_gateway=_detected_gateway())
+    return render_template("setup.html", config=config, poll_min=POLL_MIN, poll_max=POLL_MAX, t=t, lang=lang, languages=LANGUAGES, lang_flags=LANG_FLAGS, server_tz=tz_name, server_tz_offset=tz_offset, modem_types=modem_types, driver_hints=driver_hints, timezones=_get_iana_timezones(), iana_tz=iana_tz, theme=theme, detected_gateway=_detected_gateway(), link_speed=_link_speed())
 
 
 @require_auth

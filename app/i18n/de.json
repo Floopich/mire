@@ -983,5 +983,7 @@
   "modem_bridge_mode": "Modem im Bridge-Modus",
   "modem_bridge_mode_hint": "Aktivieren, wenn das Modem gebrückt ist und ein Router das Routing übernimmt",
   "router_ip": "IP-Adresse des Routers",
-  "router_ip_hint": "Wird als erster Hop des lokalen Netzwerks überwacht"
+  "router_ip_hint": "Wird als erster Hop des lokalen Netzwerks überwacht",
+  "link_speed_label": "Netzwerkverbindung des Collectors",
+  "link_speed_hint": "Eine mit 100 Mbit/s statt 1000 ausgehandelte Verbindung begrenzt die Durchsatzmessungen unabhängig von der Leitung."
 }

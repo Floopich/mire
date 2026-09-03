@@ -983,5 +983,7 @@
   "modem_bridge_mode": "Modem in bridge-modus",
   "modem_bridge_mode_hint": "Aanvinken als de modem in bridge staat en een router de routering doet",
   "router_ip": "IP-adres van de router",
-  "router_ip_hint": "Wordt bewaakt als eerste hop van het lokale netwerk"
+  "router_ip_hint": "Wordt bewaakt als eerste hop van het lokale netwerk",
+  "link_speed_label": "Netwerkverbinding van de collector",
+  "link_speed_hint": "Een link die op 100 Mbit/s in plaats van 1000 wordt onderhandeld, beperkt de doorvoermetingen ongeacht de lijn."
 }
