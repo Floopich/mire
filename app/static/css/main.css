@@ -598,7 +598,7 @@ body.is-offline .offline-banner { display: flex; }
 .metric-icon.blue { background: var(--info-muted); color: var(--info); }
 .metric-icon.green { background: var(--good-muted); color: var(--good); }
 .metric-icon.amber { background: var(--warn-muted); color: var(--warn); }
-.metric-icon.ds-signal { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+.metric-icon.ds-signal { background: rgba(139, 157, 195, 0.15); color: #8b9dc3; }
 .metric-icon.us-signal { background: rgba(56, 189, 248, 0.14); color: #38bdf8; }
 
 .metric-value {
