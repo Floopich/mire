@@ -136,6 +136,16 @@
 
         <div class="form-grid">
             <div class="form-field">
+                <button type="button" class="btn btn-ghost" onclick="detectModem()" id="detect-modem-btn">
+                    <i data-lucide="radio" class="setup-icon-sm"></i>
+                    {{ t.detect_modem }}
+                </button>
+                <span class="form-hint">{{ t.detect_modem_hint }}</span>
+                <div class="test-result" id="detect-result" style="display:none;"></div>
+            </div>
+        </div>
+        <div class="form-grid">
+            <div class="form-field">
                 <label class="form-label" for="modem_type">{{ t.modem_type }}</label>
                 <select class="form-select" id="modem_type" name="modem_type" required>
                     {% for key, name in modem_types %}
@@ -151,11 +161,6 @@
                 <input class="form-input" type="text" id="modem_url" name="modem_url"
                        value="{{ config.modem_url or 'http://192.168.100.1' }}"
                        placeholder="http://192.168.100.1">
-                <button type="button" class="btn btn-ghost" onclick="detectModem()" id="detect-modem-btn" style="margin-top:8px;">
-                    <i data-lucide="radio" class="setup-icon-sm"></i>
-                    {{ t.detect_modem }}
-                </button>
-                <div class="test-result" id="detect-result" style="display:none;"></div>
             </div>
 
             <div class="form-field">

@@ -994,5 +994,6 @@
   "detect_modem": "Détecter le modem",
   "detect_none": "Aucun modem détecté",
   "collection_stale_title": "Collecte interrompue",
-  "collection_stale_body": "Aucun relevé n'a été enregistré depuis un moment. Vérifiez que le modem reste joignable. Dernier relevé :"
+  "collection_stale_body": "Aucun relevé n'a été enregistré depuis un moment. Vérifiez que le modem reste joignable. Dernier relevé :",
+  "detect_modem_hint": "Recherche le modem sur le réseau et remplit l'adresse"
 }

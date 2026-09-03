@@ -994,5 +994,6 @@
   "detect_modem": "Modem detecteren",
   "detect_none": "Geen modem gedetecteerd",
   "collection_stale_title": "Verzameling onderbroken",
-  "collection_stale_body": "Er is al een tijd geen meting vastgelegd. Controleer of de modem bereikbaar blijft. Laatste meting:"
+  "collection_stale_body": "Er is al een tijd geen meting vastgelegd. Controleer of de modem bereikbaar blijft. Laatste meting:",
+  "detect_modem_hint": "Zoekt de modem op het netwerk en vult het adres in"
 }

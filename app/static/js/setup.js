@@ -412,6 +412,14 @@ async function detectModem() {
         var d = await r.json();
         if (d.success && d.candidates.length) {
             document.getElementById('modem_url').value = d.candidates[0].url;
+            if (d.candidates[0].match === 'voo') {
+                var sel = document.getElementById('modem_type');
+                if (sel) {
+                    for (var i = 0; i < sel.options.length; i++) {
+                        if (sel.options[i].value.indexOf('voo') !== -1) { sel.selectedIndex = i; break; }
+                    }
+                }
+            }
             if (out) {
                 out.className = 'test-result success';
                 out.textContent = '\u2713 ' + d.candidates.map(function(c) {

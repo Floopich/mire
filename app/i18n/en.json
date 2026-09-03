@@ -994,5 +994,6 @@
   "detect_modem": "Detect modem",
   "detect_none": "No modem detected",
   "collection_stale_title": "Collection stopped",
-  "collection_stale_body": "No sample has been recorded for a while. Check that the modem is still reachable. Last sample:"
+  "collection_stale_body": "No sample has been recorded for a while. Check that the modem is still reachable. Last sample:",
+  "detect_modem_hint": "Finds the modem on the network and fills in the address"
 }
