@@ -1006,7 +1006,7 @@ class TestIndexRoute:
         ]:
             card = _element_by_id(html, element_id)
             assert 'metric-icon ds-signal"><i data-lucide="arrow-down"' in card
-            assert 'data-spark-color="#8b5cf6"' in card
+            assert 'data-spark-color="#8b9dc3"' in card
         for element_id in ["metric-us-sc-qam-card", "metric-us-ofdma-card"]:
             card = _element_by_id(html, element_id)
             assert 'metric-icon us-signal"><i data-lucide="arrow-up"' in card
