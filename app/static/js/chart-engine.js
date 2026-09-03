@@ -458,9 +458,9 @@ function renderChart(canvasId, labels, datasets, type, zones, opts) {
         if (showPoints === undefined) showPoints = n <= 30 && !isBar;
         var s = {
             label: ds.label,
-            stroke: ds.color || 'rgba(168,85,247,0.9)',
+            stroke: ds.color || 'rgba(139,157,195,0.9)',
             width: ds.lineWidth !== undefined ? ds.lineWidth : (isBar ? 0 : 2),
-            fill: isBar ? (ds.color || '#a855f7') + 'cc' : (ds.fill || undefined),
+            fill: isBar ? (ds.color || '#8b9dc3') + 'cc' : (ds.fill || undefined),
             points: { show: showPoints, size: ds.pointSize || 6 },
             spanGaps: ds.spanGaps !== undefined ? ds.spanGaps : false,
             show: ds.show !== undefined ? ds.show : true,
@@ -776,9 +776,9 @@ function openChartZoom(canvasId) {
             if (zoomShowPoints === undefined) zoomShowPoints = n <= 30 && !isBar;
             var s = {
                 label: ds.label,
-                stroke: ds.color || 'rgba(168,85,247,0.9)',
+                stroke: ds.color || 'rgba(139,157,195,0.9)',
                 width: ds.lineWidth !== undefined ? ds.lineWidth : (isBar ? 0 : 2),
-                fill: isBar ? (ds.color || '#a855f7') + 'cc' : (ds.fill || undefined),
+                fill: isBar ? (ds.color || '#8b9dc3') + 'cc' : (ds.fill || undefined),
                 points: { show: zoomShowPoints, size: isBar ? 0 : (ds.pointSize || (n > 30 ? 4 : 8)) },
                 spanGaps: ds.spanGaps !== undefined ? ds.spanGaps : false
             };

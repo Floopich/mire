@@ -714,7 +714,7 @@ window.loadChannelTimeline = loadChannelTimeline;
 
 /* ── Channel Compare ── */
 var _compareChannels = [];
-var _compareColors = ['#a855f7', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];
+var _compareColors = ['#e8817f', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];
 var _compareChannelData = null;
 var _comparePreset = null;
 var _compareState = { ds: { channels: [], preset: null }, us: { channels: [], preset: null } };

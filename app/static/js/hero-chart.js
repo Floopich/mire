@@ -17,7 +17,7 @@
             textMuted: isDark ? 'rgba(224,224,224,0.6)' : 'rgba(60,60,60,0.6)',
             grid: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.08)',
             tooltipBg: isDark ? 'rgba(15,20,25,0.95)' : 'rgba(255,255,255,0.95)',
-            tooltipBorder: isDark ? 'rgba(168,85,247,0.3)' : 'rgba(168,85,247,0.4)',
+            tooltipBorder: isDark ? 'rgba(139,157,195,0.3)' : 'rgba(139,157,195,0.4)',
             placeholder: isDark ? 'rgba(224,224,224,0.5)' : 'rgba(60,60,60,0.5)'
         };
     }
@@ -191,7 +191,7 @@
                 {
                     scale: 'power',
                     side: 3,
-                    stroke: 'rgba(168,85,247,0.9)',
+                    stroke: 'rgba(139,157,195,0.9)',
                     grid: { stroke: c.grid, width: 1 },
                     ticks: { stroke: c.grid, width: 1 },
                     font: '10px system-ui',
@@ -213,8 +213,8 @@
                 { label: 'X', value: function(u, v) { return xLabels[v] || ''; } },
                 {
                     label: T.chart_ds_power || 'DS Power (dBmV)',
-                    stroke: 'rgba(168,85,247,0.9)',
-                    fill: 'rgba(168,85,247,0.15)',
+                    stroke: 'rgba(139,157,195,0.9)',
+                    fill: 'rgba(139,157,195,0.15)',
                     width: 2,
                     scale: 'power',
                     points: { show: false }

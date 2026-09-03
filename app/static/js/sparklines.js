@@ -8,7 +8,7 @@
     'use strict';
 
     var DEFAULT_SPARKS = [
-        { id: 'spark-ds-power',  key: 'ds_power_avg',           color: '#a78bfa' },
+        { id: 'spark-ds-power',  key: 'ds_power_avg',           color: '#8b9dc3' },
         { id: 'spark-us-power',  key: 'us_power_avg',           color: '#06b6d4' },
         { id: 'spark-snr',       key: 'ds_snr_avg',             color: '#10b981' },
         { id: 'spark-errors',    key: 'ds_uncorrectable_errors', color: '#f59e0b' }

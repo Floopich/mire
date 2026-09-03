@@ -525,7 +525,7 @@ function renderCorrelationChart(data) {
     var uploadColor = _cssColor('--corr-color-upload', '#06b6d4');
     var snrColor = _cssColor('--corr-color-snr', '#3b82f6');
     var txColor = _cssColor('--corr-color-tx-power', '#f59e0b');
-    var dsPowerColor = _cssColor('--corr-color-ds-power', '#a855f7');
+    var dsPowerColor = _cssColor('--corr-color-ds-power', '#8b9dc3');
     var errorColor = _cssColor('--corr-color-errors', 'rgba(239,68,68,0.6)');
     var tempColor = _cssColor('--corr-color-temperature', '#f97316');
 
@@ -1080,9 +1080,9 @@ function _setupCorrelationTooltip(overlay, octx) {
             newOctx.clearRect(0, 0, st.W, st.H);
             var x1 = Math.max(st.pad.left, Math.min(dragStart, mouseX));
             var x2 = Math.min(st.pad.left + st.plotW, Math.max(dragStart, mouseX));
-            newOctx.fillStyle = 'rgba(168,85,247,0.15)';
+            newOctx.fillStyle = 'rgba(139,157,195,0.15)';
             newOctx.fillRect(x1, st.pad.top, x2 - x1, st.plotH);
-            newOctx.strokeStyle = 'rgba(168,85,247,0.5)';
+            newOctx.strokeStyle = 'rgba(139,157,195,0.5)';
             newOctx.lineWidth = 1;
             newOctx.strokeRect(x1, st.pad.top, x2 - x1, st.plotH);
             tooltip.style.display = 'none';

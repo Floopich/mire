@@ -1216,7 +1216,7 @@ function _renderTimelineChart(data) {
     var goodColor = style.getPropertyValue('--good').trim() || '#4caf50';
     var warnColor = style.getPropertyValue('--warn').trim() || '#ff9800';
     var critColor = style.getPropertyValue('--crit').trim() || '#f44336';
-    var accentColor = style.getPropertyValue('--accent').trim() || '#a855f7';
+    var accentColor = style.getPropertyValue('--accent').trim() || '#e8817f';
     var uploadColor = '#06b6d4';
 
     // Grid

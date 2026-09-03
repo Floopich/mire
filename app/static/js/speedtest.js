@@ -605,7 +605,7 @@ function renderSpeedtestChart() {
     
     // Phase 4.2: Purple gradient for download, green for upload, amber line for ping
     drawLine(uls, ySpeed, '#22c55e', ['rgba(34,197,94,0.3)', 'rgba(34,197,94,0)']);
-    drawLine(dls, ySpeed, '#a855f7', ['rgba(168,85,247,0.3)', 'rgba(168,85,247,0)']);
+    drawLine(dls, ySpeed, '#8b9dc3', ['rgba(139,157,195,0.3)', 'rgba(139,157,195,0)']);
     drawLine(pings, yPing, '#f59e0b', 'rgba(245,158,11,0.10)');
     // Hover / touch interaction
     var tooltip = document.getElementById('speedtest-chart-tooltip');
@@ -631,7 +631,7 @@ function renderSpeedtestChart() {
         strong.textContent = formatSpeedtestTimestamp(data[idx].timestamp);
         tooltip.appendChild(strong);
         var lines = [
-            {color: '#a855f7', sym: '\u25BC', label: T.speedtest_dl || 'DL', val: dls[idx].toFixed(2) + ' Mbps'},
+            {color: '#8b9dc3', sym: '\u25BC', label: T.speedtest_dl || 'DL', val: dls[idx].toFixed(2) + ' Mbps'},
             {color: '#22c55e', sym: '\u25B2', label: T.speedtest_ul || 'UL', val: uls[idx].toFixed(2) + ' Mbps'},
             {color: '#f59e0b', sym: '\u25CF', label: T.speedtest_ping || 'Ping', val: pings[idx].toFixed(1) + ' ms'}
         ];
