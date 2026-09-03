@@ -992,5 +992,7 @@
   "net_context_bridge": "bridge (modem outside the local network)",
   "net_context_router": "router (the modem routes)",
   "detect_modem": "Detect modem",
-  "detect_none": "No modem detected"
+  "detect_none": "No modem detected",
+  "collection_stale_title": "Collection stopped",
+  "collection_stale_body": "No sample has been recorded for a while. Check that the modem is still reachable. Last sample:"
 }

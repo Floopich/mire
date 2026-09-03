@@ -1389,6 +1389,7 @@ def index():
         "index.html",
         analysis=analysis,
         last_update=state["last_update"],
+        collection_stale=_collection_staleness(state["last_update"], state["poll_interval"]),
         poll_interval=state["poll_interval"],
         error=state["error"],
         theme=theme,
@@ -1425,6 +1426,26 @@ def health():
     if state["analysis"]:
         return {"status": "ok", "docsis_health": state["analysis"]["summary"]["health"], "version": APP_VERSION}
     return {"status": "ok", "docsis_health": "waiting", "version": APP_VERSION}
+
+
+def _collection_staleness(last_update, poll_interval) -> dict:
+    """Return how far behind the collection is, to warn when it stopped."""
+    import time
+    if not last_update:
+        return {}
+    try:
+        parsed = time.strptime(str(last_update), "%Y-%m-%d %H:%M:%S")
+        elapsed = time.time() - time.mktime(parsed)
+        interval = max(int(poll_interval or 900), 60)
+    except (ValueError, TypeError):
+        return {}
+    if elapsed < interval * 3:
+        return {}
+    return {
+        "minutes": int(elapsed // 60),
+        "last_update": last_update,
+        "severity": "critical" if elapsed >= interval * 6 else "warning",
+    }
 
 
 def _network_context(modem_url: str = "") -> dict:

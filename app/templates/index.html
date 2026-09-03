@@ -250,6 +250,20 @@
 
 
 
+{% if collection_stale %}
+<div class="notice-stack dashboard-notice-stack">
+    <article class="maintainer-notice notice-{{ collection_stale.severity }}">
+        <div class="notice-icon"><i data-lucide="{{ 'shield-alert' if collection_stale.severity == 'critical' else 'alert-triangle' }}"></i></div>
+        <div class="notice-content">
+            <div class="notice-title-row">
+                <h2>{{ t.collection_stale_title }}</h2>
+                <span class="badge badge-{{ 'crit' if collection_stale.severity == 'critical' else 'warn' }}">{{ collection_stale.minutes }} min</span>
+            </div>
+            <p>{{ t.collection_stale_body }} {{ collection_stale.last_update }}</p>
+        </div>
+    </article>
+</div>
+{% endif %}
 {% if dashboard_notices %}
 <div class="notice-stack dashboard-notice-stack">
     {% for notice in dashboard_notices %}

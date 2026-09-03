@@ -992,5 +992,7 @@
   "net_context_bridge": "bridge (modem buiten het lokale netwerk)",
   "net_context_router": "router (de modem routeert)",
   "detect_modem": "Modem detecteren",
-  "detect_none": "Geen modem gedetecteerd"
+  "detect_none": "Geen modem gedetecteerd",
+  "collection_stale_title": "Verzameling onderbroken",
+  "collection_stale_body": "Er is al een tijd geen meting vastgelegd. Controleer of de modem bereikbaar blijft. Laatste meting:"
 }
