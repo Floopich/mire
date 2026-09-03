@@ -16,7 +16,7 @@ HELPER = ROOT / "app/static/js/url-contract.js"
 EXPECTED_CONTRACT_CALLS = {
     "app/static/js/dashboard.js": 1,
     "app/static/js/service-worker-registration.js": 3,
-    "app/static/js/setup.js": 6,
+    "app/static/js/setup.js": 7,
     "app/static/js/channels.js": 7,
     "app/static/js/correlation.js": 4,
     "app/static/js/events.js": 5,
@@ -331,7 +331,7 @@ def test_inventoried_files_keep_the_reviewed_contract_sites():
     }
 
     assert actual == EXPECTED_CONTRACT_CALLS
-    assert sum(actual.values()) == 109  # reviewed browser URL contract sites
+    assert sum(actual.values()) == 110  # reviewed browser URL contract sites
 
 
 def test_inventoried_actual_literal_forms_have_no_unwrapped_url_sink():
