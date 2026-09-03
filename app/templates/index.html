@@ -932,16 +932,16 @@
 
         {# Family-aware signal cards: DS power, DS quality, then US power by DOCSIS family. #}
         {% if ds_signal_families.get('sc_qam') %}
-        {{ signal_family_card('metric-ds-sc-qam-power-card', t.get('signal_family_ds_power_sc_qam', 'DS POWER (SC-QAM)'), ds_signal_families.get('sc_qam'), 'power', 'dBmV', '', 'ds_scqam_power_avg', 'ds-signal', 'arrow-down', metric_ranges.get('ds_sc_qam_power'), t.glossary_ds_power, '#8b5cf6') }}
+        {{ signal_family_card('metric-ds-sc-qam-power-card', t.get('signal_family_ds_power_sc_qam', 'DS POWER (SC-QAM)'), ds_signal_families.get('sc_qam'), 'power', 'dBmV', '', 'ds_scqam_power_avg', 'ds-signal', 'arrow-down', metric_ranges.get('ds_sc_qam_power'), t.glossary_ds_power, '#8b9dc3') }}
         {% endif %}
         {% if ds_signal_families.get('ofdm') %}
-        {{ signal_family_card('metric-ds-ofdm-power-card', t.get('signal_family_ds_power_ofdm', 'DS POWER (OFDM)'), ds_signal_families.get('ofdm'), 'power', 'dBmV', '', 'ds_ofdm_power_avg', 'ds-signal', 'arrow-down', metric_ranges.get('ds_ofdm_power'), t.glossary_ds_power, '#8b5cf6') }}
+        {{ signal_family_card('metric-ds-ofdm-power-card', t.get('signal_family_ds_power_ofdm', 'DS POWER (OFDM)'), ds_signal_families.get('ofdm'), 'power', 'dBmV', '', 'ds_ofdm_power_avg', 'ds-signal', 'arrow-down', metric_ranges.get('ds_ofdm_power'), t.glossary_ds_power, '#8b9dc3') }}
         {% endif %}
         {% if ds_signal_families.get('sc_qam') %}
-        {{ signal_family_card('metric-ds-sc-qam-snr-card', t.get('signal_family_ds_snr_sc_qam', 'DS SNR (SC-QAM)'), ds_signal_families.get('sc_qam'), 'snr', 'dB', '', 'ds_scqam_snr_avg', 'ds-signal', 'arrow-down', metric_ranges.get('ds_sc_qam_snr'), t.glossary_snr, '#8b5cf6') }}
+        {{ signal_family_card('metric-ds-sc-qam-snr-card', t.get('signal_family_ds_snr_sc_qam', 'DS SNR (SC-QAM)'), ds_signal_families.get('sc_qam'), 'snr', 'dB', '', 'ds_scqam_snr_avg', 'ds-signal', 'arrow-down', metric_ranges.get('ds_sc_qam_snr'), t.glossary_snr, '#8b9dc3') }}
         {% endif %}
         {% if ds_signal_families.get('ofdm') %}
-        {{ signal_family_card('metric-ds-ofdm-mer-card', t.get('signal_family_ds_mer_ofdm', 'DS MER (OFDM)'), ds_signal_families.get('ofdm'), 'mer', 'dB', '', 'ds_ofdm_mer_avg', 'ds-signal', 'arrow-down', metric_ranges.get('ds_ofdm_mer'), t.glossary_snr, '#8b5cf6') }}
+        {{ signal_family_card('metric-ds-ofdm-mer-card', t.get('signal_family_ds_mer_ofdm', 'DS MER (OFDM)'), ds_signal_families.get('ofdm'), 'mer', 'dB', '', 'ds_ofdm_mer_avg', 'ds-signal', 'arrow-down', metric_ranges.get('ds_ofdm_mer'), t.glossary_snr, '#8b9dc3') }}
         {% endif %}
         {% if us_signal_families.get('sc_qam') %}
         {{ signal_family_card('metric-us-sc-qam-card', t.get('signal_family_us_power_sc_qam', 'US POWER (SC-QAM)'), us_signal_families.get('sc_qam'), 'power', 'dBmV', '', 'us_scqam_power_avg', 'us-signal', 'arrow-up', metric_ranges.get('us_sc_qam_power'), t.glossary_us_power, '#38bdf8') }}
