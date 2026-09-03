@@ -990,5 +990,7 @@
   "net_context_collector": "Collector",
   "net_context_mode": "Likely mode",
   "net_context_bridge": "bridge (modem outside the local network)",
-  "net_context_router": "router (the modem routes)"
+  "net_context_router": "router (the modem routes)",
+  "detect_modem": "Detect modem",
+  "detect_none": "No modem detected"
 }

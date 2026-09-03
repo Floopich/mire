@@ -37,6 +37,44 @@ def _pwa_push_configured(config_mgr):
     )
 
 
+@polling_bp.route("/api/detect-modem", methods=["POST"])
+@require_auth
+def detect_modem():
+    """Probe a short list of documented modem addresses. No credentials needed."""
+    import socket
+    candidates = ["192.168.100.1", "192.168.0.1", "192.168.1.1"]
+    try:
+        with open("/proc/net/route", encoding="utf-8") as handle:
+            for line in handle.readlines()[1:]:
+                parts = line.split()
+                if len(parts) > 2 and parts[1] == "00000000":
+                    import struct
+                    gw = socket.inet_ntoa(struct.pack("<L", int(parts[2], 16)))
+                    if gw not in candidates:
+                        candidates.insert(0, gw)
+                    break
+    except (OSError, ValueError):
+        pass
+    import urllib.error
+    import urllib.request
+    found = []
+    for host in candidates:
+        for scheme in ("http", "https"):
+            url = f"{scheme}://{host}"
+            try:
+                request = urllib.request.Request(url, method="GET")
+                with urllib.request.urlopen(request, timeout=1.5) as response:
+                    if response.status < 500:
+                        found.append({"url": url, "host": host})
+                        break
+            except urllib.error.HTTPError:
+                found.append({"url": url, "host": host})
+                break
+            except (urllib.error.URLError, OSError, ValueError):
+                continue
+    return jsonify({"success": bool(found), "candidates": found})
+
+
 @polling_bp.route("/api/test-modem", methods=["POST"])
 @polling_bp.route("/api/test-fritz", methods=["POST"])  # deprecated alias
 @require_auth

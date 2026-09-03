@@ -401,3 +401,29 @@ function toggleRouterIpField(checked) {
     var row = document.getElementById('router-ip-row');
     if (row) row.style.display = checked ? 'grid' : 'none';
 }
+
+async function detectModem() {
+    var btn = document.getElementById('detect-modem-btn');
+    var out = document.getElementById('detect-result');
+    if (btn) btn.disabled = true;
+    if (out) { out.style.display = 'none'; out.textContent = ''; }
+    try {
+        var r = await fetch(mireUrl('/api/detect-modem'), {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
+        var d = await r.json();
+        if (d.success && d.candidates.length) {
+            document.getElementById('modem_url').value = d.candidates[0].url;
+            if (out) {
+                out.className = 'test-result success';
+                out.textContent = '\u2713 ' + d.candidates.map(function(c) { return c.url; }).join(', ');
+                out.style.display = 'block';
+            }
+        } else if (out) {
+            out.className = 'test-result';
+            out.textContent = (window.SETUP_T && SETUP_T.detect_none) || 'Aucun modem detecte';
+            out.style.display = 'block';
+        }
+    } catch (e) {
+        if (out) { out.className = 'test-result'; out.textContent = String(e); out.style.display = 'block'; }
+    }
+    if (btn) btn.disabled = false;
+}
