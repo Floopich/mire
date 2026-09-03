@@ -14,7 +14,7 @@
   --amethyst-light: #a78bfa;
   --amethyst-muted: rgba(124, 58, 237, 0.15);
   --sapphire: #3b82f6;
-  --grad-primary: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%);
+  --grad-primary: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
 
   /* Semantic */
   --good: #10b981;
