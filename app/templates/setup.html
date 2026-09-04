@@ -13,6 +13,20 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css', v=version) }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css', v=version) }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/setup.css', v=version) }}">
+    {% if active_theme_data %}
+    <style id="theme-module-vars">
+    :root, [data-theme="dark"] {
+        {% for key, value in active_theme_data.get('dark', {}).items() %}
+        {{ key }}: {{ value }};
+        {% endfor %}
+    }
+    [data-theme="light"] {
+        {% for key, value in active_theme_data.get('light', {}).items() %}
+        {{ key }}: {{ value }};
+        {% endfor %}
+    }
+    </style>
+    {% endif %}
     {% include 'partials/browser_url_bootstrap.html' %}
     <script src="{{ url_for('static', filename='vendor/lucide.min.js', v=version) }}"></script>
 </head>
