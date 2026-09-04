@@ -99,7 +99,7 @@ DEFAULTS = {
     "notify_cooldowns": "{}",
     "timezone": "",
     "disabled_modules": "",  # comma-separated list of module IDs to disable
-    "active_theme": "",  # Module ID of active theme (empty = first available)
+    "active_theme": "mire.theme_classic",  # Module ID of active theme (empty = first available)
     "show_reserved_modules": False,
     "module_registry_url": "",
     "health_hysteresis": 0,

@@ -985,7 +985,7 @@
   "router_ip": "Router IP address",
   "router_ip_hint": "Will be monitored as the local network's first hop",
   "link_speed_label": "Collector network link",
-  "link_speed_hint": "A link negotiated at 100 Mbit/s instead of 1000 caps throughput measurements regardless of the line.",
+  "link_speed_hint": "A link negotiated at 100 Mbit/s would cap throughput measurements, regardless of the line.",
   "net_context_title": "Detected network",
   "net_context_collector": "Collector",
   "net_context_mode": "Likely mode",

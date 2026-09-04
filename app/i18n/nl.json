@@ -985,7 +985,7 @@
   "router_ip": "IP-adres van de router",
   "router_ip_hint": "Wordt bewaakt als eerste hop van het lokale netwerk",
   "link_speed_label": "Netwerkverbinding van de collector",
-  "link_speed_hint": "Een link die op 100 Mbit/s in plaats van 1000 wordt onderhandeld, beperkt de doorvoermetingen ongeacht de lijn.",
+  "link_speed_hint": "Een link die op 100 Mbit/s wordt onderhandeld, zou de doorvoermetingen beperken, ongeacht de lijn.",
   "net_context_title": "Gedetecteerd netwerk",
   "net_context_collector": "Collector",
   "net_context_mode": "Waarschijnlijke modus",

@@ -985,7 +985,7 @@
   "router_ip": "Adresse IP du routeur",
   "router_ip_hint": "Sera surveillée comme premier saut du réseau local",
   "link_speed_label": "Lien réseau du collecteur",
-  "link_speed_hint": "Un lien négocié à 100 Mbit/s au lieu de 1000 limite les mesures de débit indépendamment de la ligne.",
+  "link_speed_hint": "Un lien négocié à 100 Mbit/s limiterait les mesures de débit, indépendamment de la ligne.",
   "net_context_title": "Réseau détecté",
   "net_context_collector": "Collecteur",
   "net_context_mode": "Mode probable",
