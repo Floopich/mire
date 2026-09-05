@@ -218,6 +218,7 @@
   "isp_select": "Select provider",
   "isp_options": [
     "VOO",
+    "hey!",
     "Proximus",
     "Telenet",
     "Orange",
