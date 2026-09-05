@@ -11,6 +11,7 @@ services:
       - NET_RAW
     environment:
       - TZ=${TZ:-Europe/Brussels}
+      - SITE=${SITE}
       - WEB_PORT=${WEB_PORT:-1340}
       - BOOKED_DOWNLOAD=${BOOKED_DOWNLOAD:-}
       - BOOKED_UPLOAD=${BOOKED_UPLOAD:-}

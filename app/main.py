@@ -168,12 +168,21 @@ def _build_weekly_digest(storage, runtime) -> dict:
     state = runtime.get_state()
     analysis = state.get("analysis") or {}
     health = (analysis.get("summary") or {}).get("health", "?")
+    site = ""
+    try:
+        site = str(runtime.get_state().get("report_customer_name", "") or "")
+    except Exception:
+        pass
+    if not site:
+        import os
+        site = os.environ.get("SITE", "")
+    prefix = f"[{site}] " if site else ""
     return {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "severity": "info",
         "event_type": "weekly_summary",
         "message": (
-            f"Resume 7 jours - sante actuelle : {health}. "
+            f"{prefix}Resume 7 jours - sante actuelle : {health}. "
             f"{len(recent)} evenement(s) dont {crit} critique(s) et {warn} avertissement(s)."
         ),
         "details": {"events": len(recent), "critical": crit, "warning": warn, "health": health},
