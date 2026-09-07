@@ -41,7 +41,7 @@
 }
 .chart-zoom-modal .modal-header h2 {
     font-size: 1.1em;
-    color: var(--amethyst-light, var(--accent));
+    color: var(--accent-hover);
     margin: 0;
 }
 .chart-zoom-modal > div:last-child {
@@ -103,7 +103,7 @@
 }
 .modal-header h2 {
     font-size: 1.2em;
-    color: var(--amethyst-light, var(--accent));
+    color: var(--accent-hover);
     margin: 0;
     font-weight: 600;
 }
@@ -127,13 +127,13 @@
     min-height: 44px;
 }
 .modal-close:hover {
-    color: var(--amethyst-light, var(--accent));
+    color: var(--accent-hover);
 }
 .modal-close:active {
     opacity: 0.7;
 }
 .modal-close:focus-visible {
-    outline: 2px solid var(--amethyst);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
 
@@ -323,7 +323,7 @@
 }
 .modal-body textarea:focus {
     outline: none;
-    border-color: var(--amethyst);
+    border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-muted);
 }
 
@@ -426,7 +426,7 @@
     color: var(--text-primary);
 }
 .export-mode-selector input[type="radio"] {
-    accent-color: var(--amethyst);
+    accent-color: var(--accent);
     width: 16px;
     height: 16px;
     cursor: pointer;
@@ -434,7 +434,7 @@
 .export-mode-selector svg {
     width: 16px;
     height: 16px;
-    color: var(--amethyst-light);
+    color: var(--accent-hover);
 }
 
 /* ── Modal Footer ── */
@@ -476,7 +476,7 @@
     box-shadow: 0 2px 4px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 .btn-accent:focus-visible {
-    outline: 2px solid var(--amethyst);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
 
@@ -487,7 +487,7 @@
 }
 .btn-muted:hover {
     background: var(--accent-muted);
-    border-color: var(--amethyst);
+    border-color: var(--accent);
     transform: translateY(-1px);
 }
 .btn-muted:active {
@@ -495,7 +495,7 @@
     opacity: 0.8;
 }
 .btn-muted:focus-visible {
-    outline: 2px solid var(--amethyst);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
 

@@ -10,9 +10,9 @@
   --hover: #1f2847;
 
   /* Accent */
-  --amethyst: #7c3aed;
-  --amethyst-light: #a78bfa;
-  --amethyst-muted: rgba(124, 58, 237, 0.15);
+  --coral: #e8817f;
+  --coral-light: #f0a09e;
+  --coral-muted: rgba(232, 129, 127, 0.15);
   --sapphire: #3b82f6;
   --grad-primary: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
 
@@ -90,9 +90,9 @@
   --card-border: var(--glass-border);
   --text-primary: var(--text);
   --text-muted: var(--muted);
-  --accent: var(--amethyst);
-  --accent-hover: var(--amethyst-light);
-  --accent-muted: var(--amethyst-muted);
+  --accent: var(--coral);
+  --accent-hover: var(--coral-light);
+  --accent-muted: var(--coral-muted);
   --success: var(--good);
   --warning: var(--warn);
   --danger: var(--crit);

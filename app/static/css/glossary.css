@@ -9,7 +9,7 @@
   /* Keyboard focusable via JS tabindex */
 }
 .glossary-hint:focus-visible {
-  outline: 2px solid var(--amethyst);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -47,7 +47,7 @@
 .glossary-hint:hover > i,
 .glossary-hint:hover > svg {
   opacity: 1;
-  color: var(--amethyst-light);
+  color: var(--accent-hover);
 }
 
 /* Hidden source text inside hints (JS copies to body-level overlay) */
@@ -104,7 +104,7 @@ body > .glossary-popover.above::before {
 body > .glossary-popover .glossary-popover-link {
   display: block;
   margin-top: 10px;
-  color: var(--amethyst-light);
+  color: var(--accent-hover);
   font-weight: 700;
   text-decoration: none;
 }
@@ -218,7 +218,7 @@ body > .glossary-popover .glossary-popover-link:focus-visible {
 .glossary-back-link:hover,
 .glossary-term-link:hover,
 .glossary-chip-link:hover {
-  color: var(--amethyst-light);
+  color: var(--accent-hover);
 }
 
 .glossary-page h1,
@@ -299,7 +299,7 @@ body > .glossary-popover .glossary-popover-link:focus-visible {
 .glossary-mobile-picker-close:focus-visible,
 .glossary-chip-link:focus-visible,
 .glossary-related-link:focus-visible {
-  outline: 2px solid var(--amethyst);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -352,8 +352,8 @@ body > .glossary-popover .glossary-popover-link:focus-visible {
 }
 
 .glossary-term-link.active {
-  border-color: var(--amethyst);
-  background: color-mix(in srgb, var(--amethyst) 14%, transparent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .glossary-article {
@@ -457,12 +457,12 @@ body > .glossary-popover .glossary-popover-link:focus-visible {
 .glossary-related-link {
   color: var(--text-primary);
   text-decoration: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--amethyst) 50%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
 }
 
 .glossary-related-link:hover,
 .glossary-related-link:focus-visible {
-  color: var(--amethyst-light);
+  color: var(--accent-hover);
 }
 
 .glossary-empty-state[hidden] {
@@ -589,7 +589,7 @@ body > .glossary-popover .glossary-popover-link:focus-visible {
   }
 
   .glossary-mobile-picker-trigger strong {
-    color: var(--amethyst-light);
+    color: var(--accent-hover);
     font-size: 1rem;
   }
 

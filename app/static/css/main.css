@@ -112,7 +112,7 @@
   text-decoration: none;
   color: var(--text-primary);
 }
-.sidebar-header:hover { color: var(--amethyst-light); }
+.sidebar-header:hover { color: var(--accent-hover); }
 .sidebar-logo {
   width: 32px; height: 32px;
   border-radius: var(--radius-sm);
@@ -138,7 +138,7 @@
   cursor: pointer;
 }
 .sidebar-close svg { width: 18px; height: 18px; }
-.sidebar-close:focus-visible { outline: 2px solid var(--amethyst); outline-offset: 2px; }
+.sidebar-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .sidebar-content {
   flex: 1;
@@ -183,7 +183,7 @@
 .nav-item:hover { background: var(--tint-hover); color: var(--text-primary); }
 .nav-item:active { background: var(--tint-active); }
 .nav-item:focus { outline: none; }
-.nav-item:focus-visible { outline: 2px solid var(--amethyst); outline-offset: -2px; }
+.nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .nav-item.active { background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--text-primary); font-weight: 550; }
 .nav-item.active::before {
   content: '';
@@ -252,7 +252,7 @@
   display: inline-flex;
   align-items: center;
 }
-.sidebar-footer a:hover { color: var(--amethyst-light); }
+.sidebar-footer a:hover { color: var(--accent-hover); }
 .sidebar-icons {
   display: flex;
   gap: 0;
@@ -301,7 +301,7 @@
   border-radius: 50%;
   transition: transform 0.3s var(--ease-smooth);
 }
-.toggle input:checked + .toggle-slider { background: var(--amethyst); }
+.toggle input:checked + .toggle-slider { background: var(--accent); }
 .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
 
 /* Backdrop */
@@ -594,7 +594,7 @@ body.is-offline .offline-banner { display: flex; }
   justify-content: center;
 }
 .metric-icon svg { width: 16px; height: 16px; }
-.metric-icon.purple { background: var(--accent-muted); color: var(--amethyst-light); }
+.metric-icon.purple { background: var(--accent-muted); color: var(--accent-hover); }
 .metric-icon.blue { background: var(--info-muted); color: var(--info); }
 .metric-icon.green { background: var(--good-muted); color: var(--good); }
 .metric-icon.amber { background: var(--warn-muted); color: var(--warn); }

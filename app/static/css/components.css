@@ -172,7 +172,7 @@ body {
   border-radius: 50%;
   transition: transform 0.3s var(--ease-smooth);
 }
-.toggle input:checked + .slider { background: var(--amethyst); }
+.toggle input:checked + .slider { background: var(--accent); }
 .toggle input:checked + .slider::before { transform: translateX(16px); }
 
 /* ── Screen Reader Only ── */
@@ -360,7 +360,7 @@ body {
   gap: var(--space-md);
   margin-bottom: var(--space-md);
   padding: 10px 14px;
-  border: 1px solid color-mix(in srgb, var(--amethyst) 28%, var(--glass-border));
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--glass-border));
 }
 .demo-banner-copy {
   display: flex;
@@ -373,7 +373,7 @@ body {
   width: 18px;
   height: 18px;
   margin-top: 2px;
-  color: var(--amethyst-light);
+  color: var(--accent-hover);
   flex: 0 0 auto;
 }
 .demo-banner-copy div {
@@ -411,7 +411,7 @@ body {
   color: var(--text-primary);
 }
 .demo-exit-action:focus-visible {
-  outline: 2px solid var(--amethyst);
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
   border-radius: var(--radius-xs);
 }
