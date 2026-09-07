@@ -26,7 +26,11 @@ def safe_child_path(base_dir: str, child_name: str) -> str:
     real_base = os.path.realpath(base_dir)
     real_candidate = os.path.realpath(candidate)
 
-    if os.path.commonpath([real_base, real_candidate]) != real_base:
+    if os.path.normcase(real_candidate) == os.path.normcase(real_base) or not os.path.normcase(real_candidate).startswith(
+
+        os.path.normcase(real_base).rstrip(os.sep) + os.sep
+
+    ):
         raise ValueError(f"Path escapes base directory: {child_name!r}")
 
     return real_candidate
@@ -48,7 +52,11 @@ def safe_child_file(validated_dir: str, filename: str) -> str:
     real_dir = os.path.realpath(validated_dir)
     real_candidate = os.path.realpath(candidate)
 
-    if os.path.commonpath([real_dir, real_candidate]) != real_dir:
+    if os.path.normcase(real_candidate) == os.path.normcase(real_dir) or not os.path.normcase(real_candidate).startswith(
+
+        os.path.normcase(real_dir).rstrip(os.sep) + os.sep
+
+    ):
         raise ValueError(f"Child file escapes directory: {filename!r}")
 
     return real_candidate
@@ -109,7 +117,11 @@ def safe_manifest_ref(module_dir: str, filename: str) -> str:
     real_base = os.path.realpath(module_dir)
     real_candidate = os.path.realpath(candidate)
 
-    if os.path.commonpath([real_base, real_candidate]) != real_base:
+    if os.path.normcase(real_candidate) == os.path.normcase(real_base) or not os.path.normcase(real_candidate).startswith(
+
+        os.path.normcase(real_base).rstrip(os.sep) + os.sep
+
+    ):
         raise ValueError(f"Manifest reference escapes module directory: {filename!r}")
 
     return real_candidate
