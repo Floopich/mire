@@ -84,3 +84,25 @@ en y déposant au minimum le profil de seuils VOO.
 seule ligne, à un instant donné, sur une ligne en bon état. Elle ne couvre donc
 aucun cas dégradé. Une capture prise pendant un incident chez un abonné aurait
 une vraie valeur de non-régression.
+
+---
+
+## Deux noms pour la meme couleur d accent
+
+**Statut : cosmetique, non corrige.**
+
+Le CSS utilise deux familles de variables pour la meme chose :
+`--accent` / `--accent-hover` et `--amethyst` / `--amethyst-light`. Les
+quatorze themes definissent les deux, donc l affichage est correct quel
+que soit le theme. Mais le nom `amethyst` vient de la palette violette de
+DOCSight et n a plus de sens dans un projet corail.
+
+Repartition actuelle : environ deux tiers des usages passent encore par
+`var(--amethyst*)`, un tiers par `var(--accent*)`, souvent dans le meme
+bloc de regles.
+
+A faire : remplacer `var(--amethyst)` par `var(--accent)` et
+`var(--amethyst-light)` par `var(--accent-hover)` partout, puis retirer
+les trois definitions de `tokens.css` et les surcharges correspondantes
+des quatorze themes. Aucun test ne couvre les couleurs : verification
+visuelle necessaire sur les quatorze themes, en clair et en sombre.
