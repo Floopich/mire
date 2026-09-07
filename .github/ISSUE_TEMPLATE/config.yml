@@ -1,14 +1,14 @@
 blank_issues_enabled: false
 contact_links:
   - name: 🙋 Q&A and troubleshooting
-    url: https://github.com/itsDNNS/docsight/discussions/categories/q-a
+    url: https://github.com/Floopich/mire/discussions/categories/q-a
     about: Discussions du projet amont DOCSight, en anglais : installation, reverse proxy, depannage
   - name: 💡 Ideas and roadmap feedback
-    url: https://github.com/itsDNNS/docsight/discussions/categories/ideas
+    url: https://github.com/Floopich/mire/discussions/categories/ideas
     about: Idees et feuille de route du projet amont DOCSight (anglais)
   - name: 🧰 Show and tell
     url: https://github.com/floopich/mire/discussions
     about: Partagez votre installation, vos tableaux de bord et vos dossiers de preuve
   - name: 📚 Docs and installation guides
-    url: https://github.com/itsDNNS/docsight/wiki
+    url: https://github.com/Floopich/mire/blob/main/ARCHITECTURE.md
     about: Wiki du projet amont DOCSight (anglais) ; voir INSTALL.md pour Mire

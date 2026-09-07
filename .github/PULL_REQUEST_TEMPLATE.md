@@ -25,7 +25,7 @@ Fixes #<!-- issue number -->
 
 <!-- Mark completed items with an 'x' -->
 
-- [ ] I have read the [Contributing Guidelines](https://github.com/itsDNNS/docsight/blob/main/CONTRIBUTING.md)
+- [ ] I have read the [CONTRIBUTING.md](https://github.com/Floopich/mire/blob/main/CONTRIBUTING.md)
 - [ ] I have opened an issue **before** starting work on this PR
 - [ ] My code follows the project's code style
 - [ ] I have tested my changes locally

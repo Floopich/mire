@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for requesting support for a new modem! Before filling out this form, please follow the [Requesting Modem Support](https://github.com/itsDNNS/docsight/wiki/Requesting-Modem-Support) guide to collect the data we need (HAR file, screenshot, firmware version).
+        Thanks for requesting support for a new modem! Before filling out this form, please follow the [CONTRIBUTING.md](https://github.com/Floopich/mire/blob/main/CONTRIBUTING.md) guide to collect the data we need (HAR file, screenshot, firmware version).
 
         For modems with login-protected web UIs, the HAR file must include the actual login exchange, not only requests made after you are already logged in.
 

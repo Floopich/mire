@@ -7,8 +7,8 @@ body:
       value: |
         Thanks for the feature request.
 
-        Please check the [Roadmap](https://github.com/itsDNNS/docsight/wiki/Roadmap) first.
-        If you want to discuss scope, tradeoffs, or rough direction before opening a formal request, start in [Ideas Discussions](https://github.com/itsDNNS/docsight/discussions/categories/ideas).
+        Please check the [TODO.md](https://github.com/Floopich/mire/blob/main/TODO.md) first.
+        If you want to discuss scope, tradeoffs, or rough direction before opening a formal request, start in [Ideas Discussions](https://github.com/Floopich/mire/discussions/categories/ideas).
 
   - type: dropdown
     id: request_type

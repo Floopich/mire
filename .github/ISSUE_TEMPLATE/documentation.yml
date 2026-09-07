@@ -30,7 +30,7 @@ body:
     attributes:
       label: Page or File
       description: Link the page, wiki entry, or file if possible
-      placeholder: e.g. README.md or https://github.com/itsDNNS/docsight/wiki/Installation
+      placeholder: e.g. README.md or https://github.com/Floopich/mire/blob/main/INSTALL.md
     validations:
       required: true
 
