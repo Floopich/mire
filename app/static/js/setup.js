@@ -269,7 +269,7 @@ function _showResultLoading(resultDiv, text) {
     resultDiv.className = 'test-result';
     resultDiv.style.display = 'block';
     resultDiv.style.background = 'var(--amethyst-muted)';
-    resultDiv.style.border = '1px solid rgba(124,58,237,0.2)';
+    resultDiv.style.border = '1px solid ' + getComputedStyle(document.documentElement).getPropertyValue('--accent-muted').trim();
     resultDiv.style.color = 'var(--text-secondary)';
     // Build DOM nodes instead of innerHTML
     while (resultDiv.firstChild) resultDiv.removeChild(resultDiv.firstChild);

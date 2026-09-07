@@ -57,7 +57,7 @@ body {
 }
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px -4px rgba(124,58,237,0.3);
+  box-shadow: 0 8px 24px -4px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 .btn-ghost {
   background: rgba(255,255,255,0.05);
