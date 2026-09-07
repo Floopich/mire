@@ -17,6 +17,11 @@ from .contract import ParseResult, docsis_split
 from .primitives import normalize_modulation, parse_number
 
 
+def parse_vodafone_number(value):
+    """Tolere les firmwares qui renvoient des nombres au lieu de chaines."""
+    return parse_number(value) if isinstance(value, str) else float(value or 0)
+
+
 def _mhz(value) -> str:
     """Format a unit-bearing frequency string using the integer-MHz convention."""
     freq = parse_number(str(value or ""))
@@ -45,12 +50,12 @@ def _errors(source: dict) -> dict:
 
 
 def parse_ds_scqam(ch: dict) -> RawChannel:
-    snr = abs(parse_number(ch.get("SNRLevel", "0")))
+    snr = abs(parse_vodafone_number(ch.get("SNRLevel", "0")))
     return {
-        "channelID": int(parse_number(ch.get("ChannelID", "0"))),
+        "channelID": int(parse_vodafone_number(ch.get("ChannelID", "0"))),
         "type": normalize_modulation(ch.get("Modulation", "")),
         "frequency": _mhz(ch.get("Frequency")),
-        "powerLevel": parse_number(ch.get("PowerLevel", "0")),
+        "powerLevel": parse_vodafone_number(ch.get("PowerLevel", "0")),
         "mse": -snr if snr else None,
         "mer": snr if snr else None,
         "latency": 0,
@@ -59,12 +64,12 @@ def parse_ds_scqam(ch: dict) -> RawChannel:
 
 
 def parse_ds_ofdm(ch: dict, errors: dict) -> RawChannel:
-    snr = abs(parse_number(ch.get("SNRLevel", "0")))
+    snr = abs(parse_vodafone_number(ch.get("SNRLevel", "0")))
     channel: RawChannel = {
-        "channelID": int(parse_number(ch.get("ChannelID", "0"))),
+        "channelID": int(parse_vodafone_number(ch.get("ChannelID", "0"))),
         "type": "OFDM",
         "frequency": _mhz(ch.get("CentralFrequency")),
-        "powerLevel": parse_number(ch.get("PowerLevel", "0")),
+        "powerLevel": parse_vodafone_number(ch.get("PowerLevel", "0")),
         "mse": -snr if snr else None,
         "mer": snr if snr else None,
         "latency": 0,
@@ -80,10 +85,10 @@ def parse_ds_ofdm(ch: dict, errors: dict) -> RawChannel:
 
 def parse_us_scqam(ch: dict) -> RawChannel:
     return {
-        "channelID": int(parse_number(ch.get("ChannelID", "0"))),
+        "channelID": int(parse_vodafone_number(ch.get("ChannelID", "0"))),
         "type": normalize_modulation(ch.get("Modulation", "")),
         "frequency": _mhz(ch.get("Frequency")),
-        "powerLevel": parse_number(ch.get("PowerLevel", "0")),
+        "powerLevel": parse_vodafone_number(ch.get("PowerLevel", "0")),
         "multiplex": "",
         "symbolRate": (lambda v: v // 1000 if v and v > 20000 else v)(_to_int(ch.get("SymbolRate"))),
     }
@@ -92,11 +97,11 @@ def parse_us_scqam(ch: dict) -> RawChannel:
 def parse_us_ofdma(ch: dict) -> RawChannel:
     modulation = normalize_modulation(ch.get("FFT", ""))
     return {
-        "channelID": int(parse_number(ch.get("ChannelID", "0"))),
+        "channelID": int(parse_vodafone_number(ch.get("ChannelID", "0"))),
         "type": "OFDMA",
         "modulation": modulation or "OFDMA",
         "frequency": _mhz(ch.get("CentralFrequency")),
-        "powerLevel": parse_number(ch.get("PowerLevel", "0")),
+        "powerLevel": parse_vodafone_number(ch.get("PowerLevel", "0")),
         "multiplex": "",
     }
 
