@@ -13,8 +13,7 @@ services:
     cap_add:
       - NET_RAW
     environment:
-      - TZ=Europe/Berlin
-      - DEMO_MODE=true
+      - TZ=Europe/Brussels
 
 volumes:
   mire_v2_dev_data:
