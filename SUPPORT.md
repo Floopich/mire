@@ -13,7 +13,7 @@ Mire has a few different channels on purpose. Using the right one keeps troubles
 | Missing, outdated, or confusing docs | [Documentation improvement form](https://github.com/floopich/mire/issues/new?template=documentation.yml) | Best for README, wiki, setup, and screenshot fixes |
 | Request support for a new modem model | [Modem support request form](https://github.com/floopich/mire/issues/new?template=modem_support.yml) | Collects the HAR file, screenshots, and firmware details needed for a driver |
 | Security vulnerabilities | [Private security advisory](https://github.com/floopich/mire/security/advisories/new) | Keeps users safe and avoids publishing exploit details too early |
-| Documentation, install, and architecture references | [Wiki](https://github.com/floopich/mire/wiki), [INSTALL.md](INSTALL.md), [ARCHITECTURE.md](ARCHITECTURE.md) | Start here before opening support threads |
+| Documentation, install, and architecture references | [INSTALL.md](INSTALL.md), [ARCHITECTURE.md](ARCHITECTURE.md) | Start here before opening support threads |
 
 ## Before opening a bug
 
@@ -51,7 +51,7 @@ Useful details include:
 
 ## Before requesting modem support
 
-Please follow the [Requesting Modem Support](https://github.com/floopich/mire/wiki/Requesting-Modem-Support) guide first. Driver work usually depends on:
+Le travail sur un pilote demande generalement :
 
 - the full modem model
 - firmware version

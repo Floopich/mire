@@ -207,8 +207,10 @@ The helper is loaded before module scripts on Mire's standalone pages. It accept
 
 Keep server-rendered Jinja URLs on `url_for()` or `module_static_url()`. External links, `blob:`/`data:` URLs, and current-document query/hash navigation do not use `mireUrl()`. Do not patch browser globals such as `fetch` or `location`, and do not copy or infer the deployment prefix in module code.
 
-See the **[Mire Community Modules](https://github.com/floopich/mire-modules)** repository for the development guide, starter template, and submission process.
+Voir `app/modules/` pour la structure d'un module (manifest.json, i18n/, templates/).
 
 ## Adding Modem Support
 
-See the **[Adding Modem Support](https://github.com/floopich/mire/wiki/Adding-Modem-Support)** wiki page for the full guide, including raw data format, analyzer output reference, and wanted drivers.
+Voir `app/drivers/base.py` pour l'interface `ModemDriver`, `app/drivers/voo_cga4233.py`
+comme implementation de reference, et `tests/drivers/fixtures/` pour le format des
+captures attendues.

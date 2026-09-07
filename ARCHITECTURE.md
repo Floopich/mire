@@ -394,7 +394,6 @@ Scan watch_dir for new .pdf/.csv files (not in .imported marker)
 **Related files:**
 - `app/bnetz_parser.py` - PDF parser for official BNetzA Messprotokolle
 - `app/bnetz_csv_parser.py` - CSV parser for BNetzA Desktop App exports
-- See wiki [Example Compose Stacks](https://github.com/floopich/mire/wiki/Example-Compose-Stacks) for sidecar examples
 
 ### BackupCollector (`app/collectors/backup.py`)
 
@@ -1097,5 +1096,5 @@ MIT
 ## Further Reading
 
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Development guide
-- [Wiki](https://github.com/floopich/mire/wiki) - User documentation
-- [Roadmap](https://github.com/floopich/mire/wiki/Roadmap) - Future plans
+- [INSTALL.md](INSTALL.md) - Installation et configuration
+- [TODO.md](TODO.md) - Future plans

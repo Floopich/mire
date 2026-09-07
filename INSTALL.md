@@ -1,8 +1,7 @@
 # Installation Guide
 
-👉 **See the [full installation guide](https://github.com/floopich/mire/wiki/Installation) in the wiki.**
-
-Covers Docker Run, Docker Compose, Portainer, Synology NAS, Unraid, updating, and troubleshooting.
+Ce document couvre Docker Run, Docker Compose, Portainer, Synology NAS,
+Unraid, la mise a jour et le depannage.
 
 ## Windows chooser
 
@@ -63,5 +62,5 @@ Without these binaries, traceroute and ICMP probes will log errors but the rest 
 
 For HTTPS, forwarded client/protocol headers, or an external path prefix such as
 `/mire`, start with the in-repository [path-prefix reverse-proxy guide](docs/reverse-proxy.md).
-The broader [reverse proxy wiki guide](https://github.com/floopich/mire/wiki/Reverse-Proxy)
+The broader [reverse proxy wiki guide](docs/reverse-proxy.md)
 covers additional Caddy, Nginx, and Traefik deployment examples.
