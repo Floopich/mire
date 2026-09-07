@@ -102,3 +102,32 @@ A faire : au premier site hey! ou Orange visite par le collecteur,
 confirmer l'identifiant et capturer une fixture, comme cela a ete fait
 pour VOO dans `tests/drivers/fixtures/cga4233_voo_bridge.json`.
 
+---
+
+## Captures d ecran a refaire
+
+**Statut : reporte, en attente de stabilisation de l interface.**
+
+Les captures de `docs/screenshots/` et `app/static/screenshots/` datent du
+31 aout, avant le rebranding corail : elles montrent encore l accent violet
+de DOCSight, et pour certaines des vues supprimees depuis (BQM, segment).
+Elles pesent environ 4,4 Mo au total et sont referencees par le README et
+la page de presentation `docs/index.html`.
+
+A refaire une fois l interface stabilisee : tableau de bord clair et sombre,
+themes, parametres, speedtest, chronologie des canaux, correlation,
+workflow de plainte. Verifier au passage qu aucune donnee de site reel
+n apparait dessus.
+
+## Logo Proximus a remplacer
+
+**Statut : identifie, contournement applique.**
+
+`app/static/img/providers/proximus.svg` pese 334 Ko contre 2 a 11 Ko pour
+les autres logos. Le decapage des metadonnees n a gagne que 14 % : le
+fichier est une vectorisation automatique d une image matricielle, avec
+1030 chemins dont le premier est un simple rectangle.
+
+A faire : le remplacer par un vrai logo vectoriel, ou par un PNG comme
+`hey.png` (2 Ko) — `iconMap` accepte deja les deux formats.
+
