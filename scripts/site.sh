@@ -30,9 +30,9 @@ case "$action" in
   start)
     [ -n "$site" ] || usage
     mkdir -p "sites/$site/data"
-    printf 'GH_OWNER=%s\nSITE=%s\nTZ=%s\nBOOKED_DOWNLOAD=%s\nBOOKED_UPLOAD=%s\n' \
+    printf 'GH_OWNER=%s\nSITE=%s\nTZ=%s\nBOOKED_DOWNLOAD=%s\nBOOKED_UPLOAD=%s\nMIRE_TAG=%s\n' \
       "$(owner)" "$site" "${TZ:-Europe/Brussels}" \
-      "${BOOKED_DOWNLOAD:-}" "${BOOKED_UPLOAD:-}" > .env
+      "${BOOKED_DOWNLOAD:-}" "${BOOKED_UPLOAD:-}" "${MIRE_TAG:-latest}" > .env
     if [ -z "${BOOKED_DOWNLOAD:-}" ] || [ -z "${BOOKED_UPLOAD:-}" ]; then
       echo "Debits souscrits non renseignes : le rapport affichera N/A." >&2
     fi
