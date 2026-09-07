@@ -407,6 +407,7 @@ function onIspChange() {
     var isp = sel.value.toLowerCase();
     var iconMap = {
         'voo': '/static/img/providers/voo.svg',
+        'hey!': '/static/img/providers/hey.png',
         'proximus': '/static/img/providers/proximus.svg',
         'telenet': '/static/img/providers/telenet.svg',
         'orange': '/static/img/providers/orange.svg',

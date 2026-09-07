@@ -284,6 +284,25 @@
         </div>
         <div class="form-grid">
             <div class="form-field">
+                <label class="form-label" for="isp_select">{{ t.isp_name }}</label>
+                <select class="form-select" id="isp_select" name="isp_name" onchange="onSetupIspChange()">
+                    <option value="">{{ t.get('isp_select', 'Choisir') }}</option>
+                    {% for isp in t.isp_options %}
+                    <option value="{{ isp }}" {% if config.isp_name == isp %}selected{% endif %}>{{ isp }}</option>
+                    {% endfor %}
+                    <option value="__other__" {% if config.isp_name and config.isp_name not in t.isp_options %}selected{% endif %}>{{ t.get('isp_other', 'Autre') }}</option>
+                </select>
+            </div>
+            <div class="form-field" id="setup-isp-other-row" style="display:{% if config.isp_name and config.isp_name not in t.isp_options %}grid{% else %}none{% endif %}">
+                <label class="form-label" for="isp_other_input">{{ t.get('isp_other', 'Autre') }}</label>
+                <input class="form-input" type="text" id="isp_other_input"
+                       value="{% if config.isp_name and config.isp_name not in t.isp_options %}{{ config.isp_name }}{% endif %}"
+                       placeholder="{{ t.get('isp_other_placeholder', '') }}">
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-field">
                 <label class="form-label" for="tariff_preset">{{ t.tariff_preset }}</label>
                 <select class="form-select" id="tariff_preset" onchange="applyTariffPreset(this.value)">
                     <option value="">{{ t.tariff_preset_custom }}</option>

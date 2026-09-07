@@ -148,6 +148,10 @@ document.getElementById('setup-form').addEventListener('submit', async function(
 
     var formData = new FormData(e.target);
     var data = Object.fromEntries(formData.entries());
+    var ispSel = document.getElementById('isp_select');
+    if (ispSel && ispSel.value === '__other__') {
+        data.isp_name = document.getElementById('isp_other_input').value;
+    }
 
     try {
         var response = await fetch(mireUrl('/api/config'), {
@@ -399,6 +403,14 @@ function applyTariffPreset(value) {
     // attend l'utilisateur "voo", les versions hey! et Orange attendent "admin".
     var user = document.getElementById('modem_user');
     if (user && parts[2] && !user.disabled) user.value = parts[2];
+    var isp = document.getElementById('isp_select');
+    if (isp && parts[3]) { isp.value = parts[3]; onSetupIspChange(); }
+}
+
+function onSetupIspChange() {
+    var sel = document.getElementById('isp_select');
+    var row = document.getElementById('setup-isp-other-row');
+    if (sel && row) row.style.display = sel.value === '__other__' ? 'grid' : 'none';
 }
 
 function toggleRouterIpField(checked) {
