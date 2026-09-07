@@ -970,7 +970,7 @@
   "ofdma_low_qam_hint_link": "Low modulation since installation? Declare your segment in the settings",
   "tariff_preset": "Subscribed plan",
   "tariff_preset_custom": "Custom",
-  "tariff_preset_hint": "Pick your plan to fill in the speeds, or enter them manually",
+  "tariff_preset_hint": "Select your plan to fill in the speeds and the modem username, or enter them manually",
   "modem_bridge_mode": "Modem in bridge mode",
   "modem_bridge_mode_hint": "Check if the modem is bridged and a separate router handles routing",
   "router_ip": "Router IP address",

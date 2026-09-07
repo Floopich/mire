@@ -970,7 +970,7 @@
   "ofdma_low_qam_hint_link": "Lage modulatie sinds de installatie? Geef uw segment op in de instellingen",
   "tariff_preset": "Gekozen abonnement",
   "tariff_preset_custom": "Vrije keuze",
-  "tariff_preset_hint": "Kies uw abonnement om de snelheden in te vullen, of voer ze handmatig in",
+  "tariff_preset_hint": "Selecteer uw abonnement om de snelheden en de modemgebruikersnaam in te vullen, of voer ze handmatig in",
   "modem_bridge_mode": "Modem in bridge-modus",
   "modem_bridge_mode_hint": "Aanvinken als de modem in bridge staat en een router de routering doet",
   "router_ip": "IP-adres van de router",

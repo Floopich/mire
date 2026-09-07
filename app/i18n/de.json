@@ -970,7 +970,7 @@
   "ofdma_low_qam_hint_link": "Niedrige Modulation seit der Installation? Deklarieren Sie Ihr Segment in den Einstellungen",
   "tariff_preset": "Gebuchter Tarif",
   "tariff_preset_custom": "Freie Eingabe",
-  "tariff_preset_hint": "Wählen Sie Ihren Tarif, um die Geschwindigkeiten auszufüllen, oder geben Sie sie manuell ein",
+  "tariff_preset_hint": "Wahle deinen Tarif, um Geschwindigkeiten und Modem-Benutzernamen auszufullen, oder gib sie manuell ein",
   "modem_bridge_mode": "Modem im Bridge-Modus",
   "modem_bridge_mode_hint": "Aktivieren, wenn das Modem gebrückt ist und ein Router das Routing übernimmt",
   "router_ip": "IP-Adresse des Routers",

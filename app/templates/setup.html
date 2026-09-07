@@ -181,7 +181,7 @@
                 <label class="form-label" for="modem_user">{{ t.username }}</label>
                 <input class="form-input" type="text" id="modem_user" name="modem_user"
                        value="{{ config.modem_user or '' }}"
-                       placeholder="admin">
+                       placeholder="voo">
             </div>
 
             <div class="form-field">
@@ -288,16 +288,16 @@
                 <select class="form-select" id="tariff_preset" onchange="applyTariffPreset(this.value)">
                     <option value="">{{ t.tariff_preset_custom }}</option>
                     <optgroup label="VOO">
-                        <option value="200,10">Net Super Relax — 200 / 10 Mbps</option>
-                        <option value="1000,50">Net Giga Max — 1000 / 50 Mbps</option>
+                        <option value="200,10,voo,VOO">Net Super Relax — 200 / 10 Mbps</option>
+                        <option value="1000,50,voo,VOO">Net Giga Max — 1000 / 50 Mbps</option>
                     </optgroup>
                     <optgroup label="hey!">
-                        <option value="200,10">hey! internet — 200 / 10 Mbps</option>
+                        <option value="200,10,admin,hey!">hey! internet — 200 / 10 Mbps</option>
                     </optgroup>
                     <optgroup label="Orange">
-                        <option value="200,10">Livebox — 200 / 10 Mbps</option>
-                        <option value="500,50">Livebox Up — 500 / 50 Mbps</option>
-                        <option value="1000,50">Livebox All in — 1000 / 50 Mbps</option>
+                        <option value="200,10,admin,Orange">Livebox — 200 / 10 Mbps</option>
+                        <option value="500,50,admin,Orange">Livebox Up — 500 / 50 Mbps</option>
+                        <option value="1000,50,admin,Orange">Livebox All in — 1000 / 50 Mbps</option>
                     </optgroup>
                 </select>
                 <span class="form-hint">{{ t.tariff_preset_hint }}</span>

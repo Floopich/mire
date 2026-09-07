@@ -395,6 +395,10 @@ function applyTariffPreset(value) {
     var ul = document.getElementById('booked_upload');
     if (dl) dl.value = parts[0];
     if (ul) ul.value = parts[1];
+    // Le CGA4233 est livre par plusieurs operateurs : le firmware marque VOO
+    // attend l'utilisateur "voo", les versions hey! et Orange attendent "admin".
+    var user = document.getElementById('modem_user');
+    if (user && parts[2] && !user.disabled) user.value = parts[2];
 }
 
 function toggleRouterIpField(checked) {
