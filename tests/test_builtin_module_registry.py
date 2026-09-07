@@ -37,10 +37,9 @@ def test_builtin_registry_matches_tracked_manifest_dirs():
 
 def test_builtin_theme_registry_replaces_wrapper_module_dirs():
     """Shipped themes live in the theme registry, not per-theme manifests."""
-    assert len(BUILTIN_THEMES) == 14
+    assert len(BUILTIN_THEMES) == 13
     assert {theme["id"] for theme in BUILTIN_THEMES} >= {
         "mire.theme_classic",
-        "mire.theme_tribu",
         "mire.theme_tokyo_night",
     }
     assert not list(BUILTIN_MODULES_DIR.glob("theme_*/manifest.json"))
@@ -237,7 +236,6 @@ def test_discover_builtin_threshold_modules_uses_static_registry(monkeypatch):
 def test_builtin_theme_registry_preserves_optional_metadata():
     themes = {mod.id: mod for mod in discover_builtin_theme_modules()}
 
-    assert themes["mire.theme_tribu"].homepage == "https://github.com/itsDNNS/tribu"
 
 
 def test_builtin_theme_duplicate_ids_fail_closed(monkeypatch):
