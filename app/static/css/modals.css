@@ -324,7 +324,7 @@
 .modal-body textarea:focus {
     outline: none;
     border-color: var(--amethyst);
-    box-shadow: 0 0 0 3px var(--amethyst-muted);
+    box-shadow: 0 0 0 3px var(--accent-muted);
 }
 
 /* ── AI export privacy workflow ── */
@@ -487,7 +487,7 @@
     border: 1px solid var(--glass-border);
 }
 .btn-muted:hover {
-    background: var(--amethyst-muted);
+    background: var(--accent-muted);
     border-color: var(--amethyst);
     transform: translateY(-1px);
 }

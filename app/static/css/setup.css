@@ -28,7 +28,7 @@
 @keyframes meshDrift2 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(60px,-40px) scale(1.1)} }
 
 /* ── Card Icon Colors ── */
-.card-icon.purple { background: var(--amethyst-muted); color: var(--amethyst-light); }
+.card-icon.purple { background: var(--accent-muted); color: var(--amethyst-light); }
 [data-theme="light"] .card-icon.purple { color: var(--amethyst); }
 [data-theme="light"] .stepper-step.active .stepper-label { color: var(--amethyst); }
 [data-theme="light"] .setup-info strong { color: var(--amethyst); }
@@ -358,7 +358,7 @@
 .form-input:focus,
 .form-select:focus {
   border-color: var(--amethyst);
-  box-shadow: 0 0 0 3px var(--amethyst-muted);
+  box-shadow: 0 0 0 3px var(--accent-muted);
   background: color-mix(in srgb, var(--amethyst) 4%, transparent);
 }
 .form-input::placeholder {
@@ -387,7 +387,7 @@
 
 /* ── Info Box ── */
 .setup-info {
-  background: var(--amethyst-muted);
+  background: var(--accent-muted);
   border: 1px solid color-mix(in srgb, var(--amethyst) 20%, transparent);
   border-radius: var(--radius-md);
   padding: var(--space-md);

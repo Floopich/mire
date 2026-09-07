@@ -87,7 +87,7 @@
 }
 .trend-tab:hover {
     color: var(--text);
-    background: var(--amethyst-muted);
+    background: var(--accent-muted);
 }
 .trend-tab.active {
     background: var(--accent-purple, var(--accent));
@@ -230,7 +230,7 @@
     opacity: 1;
     color: var(--accent-purple, var(--accent));
     border-color: var(--accent-purple, var(--accent));
-    background: var(--amethyst-muted);
+    background: var(--accent-muted);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -275,7 +275,7 @@
 }
 .severity-pill:hover {
     color: var(--text);
-    background: var(--amethyst-muted);
+    background: var(--accent-muted);
 }
 .severity-pill:active { opacity: 0.8; }
 .severity-pill:focus-visible { outline: 2px solid var(--amethyst); outline-offset: 2px; }
@@ -734,7 +734,7 @@
     transition: all 0.2s var(--ease-out-expo);
 }
 .chart-export-btn:hover {
-    background: var(--amethyst-muted);
+    background: var(--accent-muted);
     border-color: var(--accent);
     color: var(--text);
 }
