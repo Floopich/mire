@@ -84,3 +84,21 @@ en y déposant au minimum le profil de seuils VOO.
 seule ligne, à un instant donné, sur une ligne en bon état. Elle ne couvre donc
 aucun cas dégradé. Une capture prise pendant un incident chez un abonné aurait
 une vraie valeur de non-régression.
+
+---
+
+## Pilote non verifie hors firmware VOO
+
+**Statut : connu, assume.**
+
+Le pilote `voo_cga4233` n'a ete valide que contre un CGA4233 sur firmware
+VOO en bridge (2026-08-30). L'assistant propose desormais hey! et Orange,
+qui distribuent le meme materiel sur le reseau VOO, avec l'identifiant
+`admin` au lieu de `voo`. Cet identifiant est annonce, pas confirme par
+un login reel, et rien ne garantit que les endpoints `/api/v1/modem/*`
+ni la sequence PBKDF2 soient identiques sur ces firmwares.
+
+A faire : au premier site hey! ou Orange visite par le collecteur,
+confirmer l'identifiant et capturer une fixture, comme cela a ete fait
+pour VOO dans `tests/drivers/fixtures/cga4233_voo_bridge.json`.
+
