@@ -87,10 +87,10 @@ templates, collectors, and derived storages remain isolated.
 │  │      │          │          │          │          │          │          ││  │
 │  │      ▼          ▼          ▼          ▼          ▼          ▼          ││  │
 │  │ ┌──────────┐┌──────────┐┌──────────┐┌──────────┐┌──────────┐┌──────────┐│  │
-│  │ │  Modem   ││   Demo   ││ Speedtest││   BQM    ││  BNetzA  ││  Backup  ││  │
-│  │ │ Collect. ││ Collect. ││ Collect. ││ Collect. ││ Watcher  ││ Collect. ││  │
+│  │ │  Modem   ││Speedtest ││ Conn.Mon ││ Weather  ││  Backup  ││          ││  │
+│  │ │ Collect. ││ Collect. ││ Collect. ││ Collect. ││ Collect. ││          ││  │
 │  │ │          ││          ││          ││          ││          ││          ││  │
-│  │ │Poll:900s ││Poll:900s ││Poll: 300s││Poll: 24h ││Poll: 300s││Poll: 24h ││  │
+│  │ │Poll:900s ││Poll: 300s││Poll:  60s││Poll: 30m ││Poll: 24h ││          ││  │
 │  │ └────┬─────┘└────┬─────┘└────┬─────┘└────┬─────┘└────┬─────┘└────┬─────┘│  │
 │  │      │           │           │           │           │           │      │  │
 │  │      └───────────┴───────────┼───────────┴───────────┴───────────┘      │  │
@@ -307,7 +307,7 @@ Driver.get_docsis_data()
 
 **Output:** `CollectorResult` with channel health assessment
 
-### SpeedtestCollector (`app/collectors/speedtest.py`)
+### SpeedtestCollector (`app/modules/speedtest/collector.py`)
 
 **Purpose:** Fetch speed test results from Speedtest Tracker  
 **Poll Interval:** 300s (5 minutes)  
@@ -318,84 +318,7 @@ Driver.get_docsis_data()
 - Local SQLite caching for performance
 - Correlation with DOCSIS signal snapshots
 
-### DemoCollector (`app/collectors/demo.py`)
-
-**Purpose:** Generate realistic DOCSIS data for testing without a real modem
-**Poll Interval:** Configurable (default 900s)
-**Data Source:** `app/fixtures/demo_channels.json` with per-poll random variation
-**Activation:** `DEMO_MODE=true` environment variable, or the fresh first-run action backed by `POST /api/demo/start`
-
-**Pipeline:**
-```
-_generate_data() (base channels + variation)
-  → analyzer.analyze() (real analysis!)
-    → event_detector.check()
-      → storage.save_snapshot()
-        → mqtt_pub.publish_data()
-          → runtime.update_state()
-```
-
-**Features:**
-- 25 DS channels (24× DOCSIS 3.0 + 1× DOCSIS 3.1) and 4 US channels
-- Per-poll variation: ±0.3 dBmV power, ±0.5 dB SNR, slowly accumulating errors
-- Seeds 9 months (270 days) of historical snapshots retroactive from current date
-- Pre-populated event log, journal entries (12), incident groups (3), speedtest results (270 days), BQM graphs (30 days), and BNetzA measurement campaigns (9 monthly)
-- Time-based patterns: diurnal cycles, seasonal drift, periodic "bad periods"
-- All demo rows marked with `is_demo=1` flag for clean separation from user data
-- Purge-before-seed on container rebuild prevents duplicate data
-- Device info: "Mire Demo Router", Connection: 250/40 Mbit/s Cable
-- Demo discovery selects only `DemoCollector`; optional module collectors are not started while Demo Mode is active
-
-**Live Migration:**
-Users can switch from demo to live mode via Settings UI or `POST /api/demo/migrate`. This purges all `is_demo=1` rows while preserving user-created entries, disables demo mode, and restarts polling for real modem data.
-
-### BQMCollector (`app/collectors/bqm.py`)
-
-**Purpose:** Download and store ThinkBroadband BQM evidence for the BQM view
-**Poll Interval:** 86400s (24 hours), gated by `bqm_collect_time` plus spread offset
-**Data Source:** ThinkBroadband BQM service
-
-**Primary Output:** CSV Yesterday data parsed into `bqm_data` for interactive uPlot charts
-**Legacy Output:** PNG graph image saved to `bqm_graphs` when a PNG share URL is configured
-
-**Collection behavior:**
-- Settings save with a new ThinkBroadband CSV share URL triggers an immediate authenticated initial fetch through `POST /api/bqm/fetch-now` / `run_bqm_initial_fetch()`.
-- Daily polling uses the CSV Yesterday share link and records collection metadata in `bqm_meta` (`last_success_target_date`, mode, rows, timestamp).
-- Legacy PNG collection also stores the previous day as the target date so restart skip logic stays consistent with daily BQM evidence.
-- A fresh collector instance checks persisted metadata before fetching so restarts after a successful collection do not duplicate the same target date.
-- Mire does not silently invent multi-day backfill from the daily collector. Longer gaps should be filled with the BQM CSV bulk import.
-- The UI labels cached PNG fallback separately from live refresh so cached evidence is not presented as live freshness.
-
-### BnetzWatcherCollector (`app/collectors/bnetz_watcher.py`)
-
-**Purpose:** Auto-import BNetzA measurement protocols from a watched directory
-**Poll Interval:** 300s (5 minutes)
-**Data Source:** Local filesystem (PDF and CSV files)
-**Activation:** `BNETZ_WATCH_ENABLED=true` + `BNETZ_WATCH_DIR=/data/bnetz`
-
-**Pipeline:**
-```
-Scan watch_dir for new .pdf/.csv files (not in .imported marker)
-  -> PDF: parse_bnetz_pdf(bytes) -> storage.save_bnetz_measurement(parsed, pdf_bytes, source="watcher")
-  -> CSV: parse_bnetz_csv(content) -> storage.save_bnetz_measurement(parsed, None, source="csv_import")
-    -> Move processed files to processed/ subdirectory
-      -> Append filenames to .imported marker
-```
-
-**Features:**
-- Watches for `.pdf` and `.csv` files in configured directory
-- Tracks already-imported files via `.imported` marker (set of filenames)
-- Moves processed files to `processed/` subdirectory
-- PDF parsing: reuses `app/bnetz_parser.py` (official BNetzA Messprotokoll format)
-- CSV parsing: `app/bnetz_csv_parser.py` (semicolon-separated, German locale numbers)
-- Partial failure handling: continues importing remaining files on individual errors
-- `get_status()` includes `watch_dir` and `last_import_count` for UI banner
-
-**Related files:**
-- `app/bnetz_parser.py` - PDF parser for official BNetzA Messprotokolle
-- `app/bnetz_csv_parser.py` - CSV parser for BNetzA Desktop App exports
-
-### BackupCollector (`app/collectors/backup.py`)
+### BackupCollector (`app/modules/backup/collector.py`)
 
 **Purpose:** Automatically create scheduled backups of all Mire data
 **Poll Interval:** Configurable via `backup_interval_hours` (default: 24h)
@@ -406,7 +329,6 @@ Scan watch_dir for new .pdf/.csv files (not in .imported marker)
 ```
 create_backup_to_file(data_dir, dest_dir)
   -> VACUUM INTO for atomic, consistent DB copy
-    -> Strip demo data (is_demo=1) from copy
       -> Pack into .tar.gz with backup_meta.json
         -> cleanup_old_backups(dest_dir, keep=retention)
 ```
@@ -420,7 +342,7 @@ create_backup_to_file(data_dir, dest_dir)
 - Restore from setup wizard on fresh instances
 
 **Related files:**
-- `app/backup.py` - Core backup/restore logic (no Flask dependency)
+- `app/modules/backup/backup.py` - Core backup/restore logic (no Flask dependency)
 - `app/templates/setup.html` - Restore option in setup wizard
 
 ### Notifier (`app/notifier.py`)
@@ -461,8 +383,6 @@ Public driver methods unwrap the result and retain the established
 `DocsisData`/channel-list contracts.
 
 `app/drivers/format_compat.py` is a finite compatibility boundary for legacy
-warning messages. `app/drivers/arris_html.py` remains an import-compatible shim
-for the established bonded 8/7-column parser. Existing private parser seams
 that are covered by integrations remain one-statement delegations; format
 grammar is not implemented in concrete drivers.
 
@@ -488,32 +408,13 @@ class ModemDriver(ABC):
 ### Exact driver-to-profile matrix
 
 Every registered concrete class exposes a non-empty immutable
-`FORMAT_FAMILIES` tuple. Registry aliases appear together in the first column;
-there are 22 keys, 21 concrete classes, and 23 explicit profiles.
+`FORMAT_FAMILIES` tuple. Mire ne conserve que les pilotes utiles au reseau
+cable belge : deux cles, deux classes concretes, deux profils explicites.
 
-| Registry key(s) | Concrete class | Format profile(s) | Cohesive module / entrypoint |
+| Registry key | Concrete class | Format profile | Cohesive module / entrypoint |
 |---|---|---|---|
-| `cgm4981` | `CGM4981Driver` | `cgm4981_columnar_html` | `html_columnar.parse_cgm4981_columnar_html` |
-| `ch7465`, `ch7465_play` | `CH7465Driver` | `ch7465_xml` | `xml_payloads.parse_ch7465_xml` |
-| `cm1000` | `CM1000Driver` | `cm1000_html_table`, `cm1000_javascript` | `html_rows.parse_cm1000_html_table`; `javascript.parse_cm1000_javascript` |
-| `cm3000` | `CM3000Driver` | `cm3000_javascript` | `javascript.parse_cm3000_javascript` |
-| `cm3500` | `CM3500Driver` | `cm3500_html` | `html_rows.parse_cm3500_html` |
-| `cm8200` | `CM8200Driver` | `arris_html` | `html_rows.parse_arris_html` |
-| `f3896lg` | `F3896LGDriver` | `f3896lg_rest_json` | `sagemcom.parse_f3896lg_rest_json` |
-| `fritzbox` | `FritzBoxDriver` | `fritzbox_data_lua` | `fritzbox.parse_fritzbox_data_lua` |
+| `voo_cga4233` | `VooCGA4233Driver` | `voo_cga4233_json` | `voo.parse_voo_cga4233_json` |
 | `generic` | `GenericDriver` | `generic_no_docsis` | `boundaries.parse_generic_no_docsis` |
-| `hitron` | `HitronDriver` | `hitron_coda56_json` | `hitron.parse_hitron_coda56_json` |
-| `hitron_coda_4680` | `HitronCoda4680Driver` | `hitron_coda4680_json` | `hitron.parse_hitron_coda4680_json` |
-| `sagemcom` | `SagemcomDriver` | `sagemcom_xmo_json` | `sagemcom.parse_sagemcom_xmo_json` |
-| `sb6141` | `SB6141Driver` | `sb6141_transposed_html` | `html_transposed.parse_sb6141_transposed_html` |
-| `sb6183` | `SB6183Driver` | `sb6183_html` | `html_rows.parse_sb6183_html` |
-| `sb6190` | `SB6190Driver` | `sb6190_html` | `html_rows.parse_sb6190_html` |
-| `sb8200_cbn` | `SB8200CBNDriver` | `sb8200_cbn_xml` | `xml_payloads.parse_sb8200_cbn_xml` |
-| `sercom_dm1000` | `SercomDM1000Driver` | `sercom_dm1000_json` | `sercom.parse_sercom_dm1000_json` |
-| `surfboard` | `SurfboardDriver` | `arris_html`, `surfboard_hnap` | `html_rows.parse_arris_html`; `surfboard.parse_surfboard_hnap` |
-| `tc4400` | `TC4400Driver` | `tc4400_html` | `html_rows.parse_tc4400_html` |
-| `ultrahub7` | `UltraHub7Driver` | `ultrahub7_json` | `vodafone.parse_ultrahub7_json` |
-| `vodafone_station` | `VodafoneStationDriver` | `vodafone_station_cga_json`, `vodafone_station_tg_embedded_json` | `vodafone.parse_vodafone_station_cga_json`; `vodafone.parse_vodafone_station_tg_embedded_json` |
 
 ### Driver Registry (`app/drivers/registry.py`)
 
@@ -548,16 +449,8 @@ Settings receives the active module-secret and saved-secret key sets from the se
 
 Built-in manifests may separately mark declared config keys with the built-in-only `configPrivate` field. Those values are encrypted at rest but remain displayable and editable private metadata, so `configPrivate` is not a password/secret mechanism and its semantics are unchanged.
 
-Threshold profiles are mutually exclusive. The bundled VF/KD profile is registered from the static analyzer profile registry in `app/threshold_profiles.py`; installed community threshold profiles still use the module manifest `thresholds` contribution. The UI renders threshold profiles as a single radio group, and the batch API validates the invariant server-side so exactly one threshold profile remains active after save.
+Threshold profiles are mutually exclusive. Le profil `mire.thresholds_voo` fourni est enregistre depuis le registre statique de `app/threshold_profiles.py`; installed community threshold profiles still use the module manifest `thresholds` contribution. The UI renders threshold profiles as a single radio group, and the batch API validates the invariant server-side so exactly one threshold profile remains active after save.
 
-### Vodafone Station Auto-Detection
-
-The Vodafone Station driver supports two hardware variants with different auth flows:
-
-- **CGA** (CGA6444VF / CGA4322DE): Double PBKDF2-SHA256 + JSON REST API
-- **TG** (TG3442DE): AES-CCM encrypted credentials + HTML/AJAX endpoints
-
-Variant is auto-detected on first login: CGA is tried first, then TG on failure.
 
 ---
 
@@ -649,8 +542,8 @@ preserving duplicate multiplicity.
 Report PDFs, incident reports, complaint text, before/after comparison, and the
 evidence checklist share this contract. Storage queries remain in their route
 adapters. The evidence checklist loads snapshots once and requests its remaining
-timeline sources without modem data; BQM and Connection Monitor remain explicit
-external evidence adapters.
+timeline sources without modem data; Connection Monitor reste l adaptateur
+de preuve externe explicite.
 
 Threshold resolution remains analyzer-owned. The analyzer exposes copied plain
 threshold data and pure resolution functions; the aggregation layer may call
@@ -676,8 +569,7 @@ CREATE TABLE snapshots (
     timestamp TEXT NOT NULL,  -- UTC with Z-suffix
     summary_json TEXT,
     ds_channels_json TEXT,
-    us_channels_json TEXT,
-    is_demo INTEGER NOT NULL DEFAULT 0
+    us_channels_json TEXT
 );
 
 -- Speed test results (cached from Speedtest Tracker)
@@ -687,8 +579,7 @@ CREATE TABLE speedtest_results (
     download_mbps REAL,
     upload_mbps REAL,
     ping_ms REAL,
-    ...,
-    is_demo INTEGER NOT NULL DEFAULT 0
+    ...
 );
 
 -- Event log (anomaly detection)
@@ -698,8 +589,7 @@ CREATE TABLE events (
     severity TEXT,  -- info|warning|critical
     event_type TEXT,  -- health_change, power_shift, snr_drop, etc.
     message TEXT,
-    acknowledged INTEGER,
-    is_demo INTEGER NOT NULL DEFAULT 0
+    acknowledged INTEGER
 );
 
 -- Incident containers (groups)
@@ -712,8 +602,7 @@ CREATE TABLE incidents (
     end_date TEXT,
     icon TEXT,
     created_at TEXT,
-    updated_at TEXT,
-    is_demo INTEGER NOT NULL DEFAULT 0
+    updated_at TEXT
 );
 
 -- Journal entries (formerly "incidents")
@@ -725,8 +614,7 @@ CREATE TABLE journal_entries (
     icon TEXT,
     incident_id INTEGER,  -- FK to incidents.id, nullable
     created_at TEXT,
-    updated_at TEXT,
-    is_demo INTEGER NOT NULL DEFAULT 0
+    updated_at TEXT
 );
 
 -- Journal attachments
@@ -739,37 +627,7 @@ CREATE TABLE journal_attachments (
     created_at TEXT
 );
 
--- BQM graphs
-CREATE TABLE bqm_graphs (
-    id INTEGER PRIMARY KEY,
-    date TEXT UNIQUE,
-    timestamp TEXT,
-    image_blob BLOB,
-    is_demo INTEGER NOT NULL DEFAULT 0
-);
 
--- BNetzA broadband measurements
-CREATE TABLE bnetz_measurements (
-    id INTEGER PRIMARY KEY,
-    date TEXT NOT NULL,
-    timestamp TEXT NOT NULL,
-    provider TEXT,
-    tariff TEXT,
-    download_max_tariff REAL,
-    download_normal_tariff REAL,
-    download_min_tariff REAL,
-    upload_max_tariff REAL,
-    upload_normal_tariff REAL,
-    upload_min_tariff REAL,
-    download_measured_avg REAL,
-    upload_measured_avg REAL,
-    measurement_count INTEGER,
-    verdict_download TEXT,
-    verdict_upload TEXT,
-    measurements_json TEXT,
-    pdf_blob BLOB,               -- NULL for CSV imports
-    source TEXT DEFAULT 'upload'  -- 'upload', 'watcher', 'csv_import'
-);
 ```
 
 **Retention:** Configurable via `history_days` setting (default: 7 days)
@@ -811,11 +669,6 @@ CREATE TABLE bnetz_measurements (
 | `/api/export` | GET | AI/LLM-oriented markdown export; browser UI applies local preview, scope, and redaction controls |
 | `/api/report` | GET | PDF evidence package from stored snapshots; accepts rolling `days` or an exact timezone-aware `from`/`to` window (maximum 90 days) |
 | `/api/complaint` | GET | Localized complaint text from the same stored-snapshot window; returns the normalized UTC window with the generated text |
-| `/api/bnetz/upload` | POST | Upload BNetzA measurement (PDF or CSV) |
-| `/api/bnetz/measurements` | GET | List BNetzA measurements |
-| `/api/bnetz/pdf/<id>` | GET | Download original measurement PDF |
-| `/api/bnetz/<id>` | DELETE | Delete a BNetzA measurement |
-| `/api/demo/migrate` | POST | Switch from demo to live mode (purges demo data, preserves user data) |
 | `/api/backup` | POST | Create and download backup (.tar.gz) |
 | `/api/backup/scheduled` | POST | Create backup in configured backup path |
 | `/api/backup/list` | GET | List existing backups in backup path |
@@ -864,9 +717,9 @@ GET /api/collectors/status
 **Key Settings:**
 ```json
 {
-  "modem_type": "fritzbox",
-  "modem_url": "http://192.168.178.1",
-  "modem_user": "user",
+  "modem_type": "voo_cga4233",
+  "modem_url": "http://192.168.100.1",
+  "modem_user": "voo",
   "modem_password": "<encrypted>",
   "poll_interval": 900,
   "history_days": 7,
@@ -879,7 +732,6 @@ GET /api/collectors/status
 
 **Override:** Environment variables take precedence over config.json
 
-**Demo Mode:** Set `DEMO_MODE=true` to run without a real modem. The DemoCollector replaces the ModemCollector and generates 9 months of realistic simulated data. No modem password required, setup page is bypassed. All demo-seeded rows are tagged with `is_demo=1` so they can be cleanly purged when switching to live mode via `POST /api/demo/migrate`.
 
 ---
 
@@ -1007,10 +859,7 @@ python -m pytest tests/ -v
 - Web: API endpoints and auth
 - Event detection: Anomaly detection
 - Config: Configuration management
-- BNetzA: PDF/CSV parsing and file watcher
-- Demo mode: is_demo marking, purge, migration, idempotency
 - Backup: create, validate, restore, cleanup, directory browser
-- CM3500: HTML parsing, service flow parsing, HTTPS enforcement
 - Notifier: webhook delivery, severity filtering, cooldown
 - i18n: Translation completeness
 
