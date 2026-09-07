@@ -512,7 +512,7 @@ def generate_report(
 
     # --- Connection Info ---
     pdf._section_title(s["section_connection_info"])
-    isp = config.get("isp_name", "Unknown ISP")
+    isp = config.get("isp_name") or "Fournisseur non precise"
     pdf._key_value(s["isp"], isp)
     ds_mbps = connection_info.get("max_downstream_kbps", 0) // 1000 if connection_info.get("max_downstream_kbps") else "N/A"
     us_mbps = connection_info.get("max_upstream_kbps", 0) // 1000 if connection_info.get("max_upstream_kbps") else "N/A"
@@ -787,7 +787,7 @@ def generate_incident_report(incident, entries, snapshots, speedtests,
     # Connection info
     pdf.ln(3)
     pdf._section_title(s["section_connection_info"])
-    isp = config.get("isp_name", "Unknown ISP")
+    isp = config.get("isp_name") or "Fournisseur non precise"
     pdf._key_value(s["isp"], isp)
     ds_mbps = connection_info.get("max_downstream_kbps", 0) // 1000 if connection_info.get("max_downstream_kbps") else "N/A"
     us_mbps = connection_info.get("max_upstream_kbps", 0) // 1000 if connection_info.get("max_upstream_kbps") else "N/A"
@@ -999,7 +999,7 @@ def generate_complaint_text(snapshots, config=None, connection_info=None, lang="
     """
     config = config or {}
     s = _get_report_strings(lang)
-    isp = config.get("isp_name", "Unknown ISP")
+    isp = config.get("isp_name") or "Fournisseur non precise"
     period_aggregate, report_start, report_end = _aggregate_report_period(
         snapshots, report_start, report_end
     )

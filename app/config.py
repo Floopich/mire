@@ -71,7 +71,7 @@ DEFAULTS = {
     "font_family": "outfit",
     "language": "fr",
     "temperature_unit": "celsius",
-    "isp_name": "VOO",
+    "isp_name": "",  # choisi dans l'assistant : aucun operateur presume
     "admin_password": "",
     "metrics_require_token": False,
     "dismissed_notice_ids": [],

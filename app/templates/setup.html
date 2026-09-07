@@ -285,7 +285,7 @@
         <div class="form-grid">
             <div class="form-field">
                 <label class="form-label" for="isp_select">{{ t.isp_name }}</label>
-                <select class="form-select" id="isp_select" name="isp_name" onchange="onSetupIspChange()">
+                <select class="form-select" id="isp_select" name="isp_name" onchange="onSetupIspChange()" required>
                     <option value="">{{ t.get('isp_select', 'Choisir') }}</option>
                     {% for isp in t.isp_options %}
                     <option value="{{ isp }}" {% if config.isp_name == isp %}selected{% endif %}>{{ isp }}</option>
