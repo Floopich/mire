@@ -49,7 +49,7 @@ For a containerized dev environment:
 docker compose -f docker-compose.dev.yml up -d --build
 ```
 
-Cette pile ecoute sur le port **8767** (`http://localhost:8767`). La production utilise `docker-compose.yml`.
+Cette pile ecoute sur le port **8767** (`http://localhost:8767`). La production utilise `compose.yaml`.
 
 ## Running Tests
 
@@ -130,7 +130,7 @@ app/
   static/            - Static assets (icons, etc.)
   templates/         - Jinja2 HTML templates
 tests/               - pytest test suite
-docker-compose.yml     - Production Docker setup
+compose.yaml     - Production Docker setup
 docker-compose.dev.yml - Development Docker setup
 ```
 
