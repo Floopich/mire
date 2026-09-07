@@ -465,12 +465,11 @@
 .btn-accent {
     background: var(--grad-primary);
     color: var(--text-on-accent);
-    /* Shadow color manually synced with --amethyst (#7c3aed = rgb(124,58,237)) */
-    box-shadow: 0 2px 8px rgba(124,58,237,0.3);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 .btn-accent:hover {
     transform: translateY(-1px);
-    box-shadow: 0 8px 24px -4px rgba(124,58,237,0.4);
+    box-shadow: 0 8px 24px -4px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 .btn-accent:active {
     transform: translateY(0);
