@@ -49,7 +49,6 @@ function mireRangeHours(range) {
     if (range === null || range === undefined) return 24;
     if (typeof range === 'number' && isFinite(range)) return range;
     var raw = String(range || '1d').toLowerCase();
-    if (raw === 'bqm') return 24;
     if (raw === 'all') return 24 * 90;
     var secondsMatch = raw.match(/^(\d+)s$/);
     if (secondsMatch) return parseInt(secondsMatch[1], 10) / 3600;
@@ -75,7 +74,6 @@ function mireFormatXAxisLabel(ts, range) {
     var d = mireTimestampDate(ts);
     if (isNaN(d.getTime())) return '';
     var hhmm = pad(d.getHours()) + ':' + pad(d.getMinutes());
-    if (String(range || '').toLowerCase() === 'bqm') return hhmm;
     var mmdd = pad(d.getMonth() + 1) + '-' + pad(d.getDate());
     var hours = mireRangeHours(range);
     if (hours <= 24) return hhmm;

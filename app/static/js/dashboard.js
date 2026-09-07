@@ -75,7 +75,6 @@ var CORRELATION_CM_AVAILABLE = dashboardBootstrap.connectionMonitorAvailable;
     /* currentView is global — defined in chart-engine.js */
     /* charts registry is global — defined in chart-engine.js */
     /* _trendRange → trends.js */
-    /* BQM state variables → bqm.js */
     /* todayStr, pad, formatDateDE → chart-engine.js */
 
     /* ── Sortable Tables ── */
@@ -288,15 +287,10 @@ var CORRELATION_CM_AVAILABLE = dashboardBootstrap.connectionMonitorAvailable;
         if (target) target.classList.add('active');
 
         stopAutoRefresh();
-        if (typeof stopBqmLiveRefresh === 'function') stopBqmLiveRefresh();
 
         // View-specific init callbacks
         if (view === 'live') {
             startAutoRefresh();
-        } else if (view === 'bqm') {
-            if (typeof initBqmView === 'function') initBqmView();
-        } else if (view === 'smokeping') {
-            if (typeof loadSmokepingGraphs === 'function') loadSmokepingGraphs();
         } else if (view === 'speedtest') {
             loadSpeedtestHistory();
         } else if (view === 'journal') {
@@ -353,7 +347,6 @@ var CORRELATION_CM_AVAILABLE = dashboardBootstrap.connectionMonitorAvailable;
     });
 
 
-    /* BQM Calendar, Live → bqm.js */
 
     /* ── Auto Refresh with Countdown ── */
     var refreshTimer = null;
@@ -537,9 +530,7 @@ var CORRELATION_CM_AVAILABLE = dashboardBootstrap.connectionMonitorAvailable;
 
     /* Trend Charts, expand buttons, zoom shortcuts → trends.js */
 
-    /* BQM keyboard shortcuts → bqm.js */
 
-    /* BQM Graph + Import → bqm.js */
 
 
     /* ── Init ── */

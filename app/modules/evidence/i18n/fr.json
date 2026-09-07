@@ -24,7 +24,6 @@
   "status.unavailable": "Indisponible",
   "action.correlation": "Voir la corrélation",
   "action.speedtest": "Ouvrir les tests de débit",
-  "action.bqm": "Ouvrir les preuves de latence",
   "action.events": "Ouvrir les événements",
   "action.journal": "Ouvrir le journal",
   "action.reports": "Générer un rapport",
@@ -62,8 +61,6 @@
   "item.comparison.optional": "Comparez cette fenêtre à une autre période lorsqu'une visite de technicien, un changement chez l'opérateur ou un motif récurrent demande du contexte.",
   "action.connection-monitor": "Ouvrir la surveillance de connexion",
   "source.connection_monitor": "Surveillance de connexion",
-  "source.bqm": "ThinkBroadband BQM",
   "item.latency.present_both": "Des relevés de latence sont disponibles pour cette fenêtre.",
-  "item.latency.present_cm_only": "Des relevés de la surveillance de connexion sont disponibles.",
-  "item.latency.present_bqm_only": "Des relevés de latence externes sont disponibles."
+  "item.latency.present_cm_only": "Des relevés de la surveillance de connexion sont disponibles."
 }

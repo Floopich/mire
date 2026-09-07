@@ -439,7 +439,6 @@ function copySetupSnippet(sourceId, statusId) {
 function validateSetupGuidance(statusId, integration) {
     var messages = {
         speedtest: T.speedtest_setup_validation_path || 'Speedtest can be tested in Speedtest settings after the base URL and API token are saved. Mire uses the saved credentials for the live connection test.',
-        smokeping: T.smokeping_setup_validation_path || 'SmokePing validation depends on the saved base URL and target in SmokePing settings. Save those values first, then refresh this view to confirm live data.'
     };
     setSetupStatus(statusId, messages[integration] || (T.setup_guidance_ready || 'Open Settings, save the integration details, then use the settings test or refresh this view to confirm live data.'), 'progress');
 }
