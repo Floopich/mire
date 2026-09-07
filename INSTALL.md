@@ -32,7 +32,7 @@ docker run -d \
   --restart unless-stopped \
   -p 8765:8765 \
   -v mire_data:/data \
-  ghcr.io/itsdnns/mire:latest
+  ghcr.io/floopich/mire:latest
 ```
 
 Open `http://localhost:8765` and follow the setup wizard.

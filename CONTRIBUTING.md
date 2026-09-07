@@ -49,7 +49,7 @@ For a containerized dev environment:
 docker compose -f docker-compose.dev.yml up -d --build
 ```
 
-This runs on port **8767** (`http://localhost:8767`) in demo mode. Production uses `docker-compose.yml` on port 8765.
+Cette pile ecoute sur le port **8767** (`http://localhost:8767`). La production utilise `docker-compose.yml`.
 
 ## Running Tests
 
@@ -117,15 +117,15 @@ app/
   event_detector.py  - Signal anomaly detection (thread-safe)
   config.py          - Configuration management (env + config.json)
   storage/           - SQLite storage (base + mixins), WAL mode, thread-safe
-  collectors/        - Collector implementations (modem, demo, speedtest, bqm)
+  collectors/        - Collector implementations (modem, speedtest)
     base.py          - Abstract Collector with fail-safe and locking
     __init__.py      - Registry and discover_collectors()
   drivers/           - Modem driver implementations for the supported hardware families
     base.py          - Abstract ModemDriver interface
     registry.py      - Driver registry (auto-detection + manual selection)
-  modules/           - Built-in modules (backup, bnetz, bqm, journal, mqtt, ...)
+  modules/           - Built-in modules (backup, journal, mqtt, reports, ...)
   blueprints/        - Flask blueprints (config, polling, data, analysis, ...)
-  i18n/              - Translation files (EN/DE/FR/ES JSON)
+  i18n/              - Translation files (DE/EN/FR/NL JSON)
   fonts/             - Bundled DejaVu fonts for PDF generation
   static/            - Static assets (icons, etc.)
   templates/         - Jinja2 HTML templates

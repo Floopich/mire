@@ -1038,7 +1038,7 @@ python -m pytest tests/ -v
 ```yaml
 services:
   mire:
-    image: ghcr.io/itsdnns/mire:latest
+    image: ghcr.io/floopich/mire:latest
     container_name: mire
     restart: unless-stopped
     ports:
