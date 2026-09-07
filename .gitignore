@@ -69,3 +69,6 @@ tests/e2e/screenshots/
 
 # Campagnes de mesure
 sites/
+
+# Artefacts de tests (locaux)
+test-results/
