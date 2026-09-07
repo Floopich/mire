@@ -211,25 +211,11 @@ rattrape une exécution manquée si la machine était éteinte.
 systemctl list-timers mire-update.timer
 ```
 
-## Maintenance du fork
-
-Mire dérive de DOCSight. `scripts/mire-fork.sh` réapplique le delta après un merge de
-l'amont : réduction des drivers à `voo_cga4233` et `generic`, valeurs par défaut,
-suppression des composants sans objet ici.
-
-```bash
-git fetch upstream && git merge upstream/main
-./scripts/mire-fork.sh
-```
-
-Le script s'arrête si un motif de patch ne correspond plus, s'il reste une référence
-orpheline, ou si un fichier Python ne parse plus.
-
 ## Licence et marque
 
 Fork MIT de DOCSight, Copyright (c) 2026 Dennis Braun — voir [LICENSE](LICENSE).
 
 Mire est **basé sur DOCSight** sans en être une version officielle. Le nom et le logo
 DOCSight relèvent de la politique de marque du projet amont
-([TRADEMARKS.md](https://github.com/itsDNNS/docsight/blob/main/TRADEMARKS.md)) et ne sont
+([politique amont](https://github.com/itsDNNS/docsight/blob/main/TRADEMARKS.md), resumee dans [TRADEMARKS.md](TRADEMARKS.md)) et ne sont
 pas repris ici.
