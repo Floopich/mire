@@ -268,7 +268,7 @@ var T_setup = {
 function _showResultLoading(resultDiv, text) {
     resultDiv.className = 'test-result';
     resultDiv.style.display = 'block';
-    resultDiv.style.background = 'var(--amethyst-muted)';
+    resultDiv.style.background = 'var(--accent-muted)';
     resultDiv.style.border = '1px solid ' + getComputedStyle(document.documentElement).getPropertyValue('--accent-muted').trim();
     resultDiv.style.color = 'var(--text-secondary)';
     // Build DOM nodes instead of innerHTML
