@@ -12,7 +12,7 @@ from typing import Any
 
 from .base_path import normalize_base_path, parse_trusted_prefix_hops
 
-_DEFAULT_WEB_PORT = "8765"
+_DEFAULT_WEB_PORT = "1340"
 _SYNTHETIC_PROBE_PREFIX = "/container-health-probe"
 _MAX_RESPONSE_BYTES = 64 * 1024
 _PORT_RE = re.compile(r"[0-9]+\Z")

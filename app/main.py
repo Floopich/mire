@@ -547,7 +547,7 @@ def main(server_lifecycle: ServerLifecycleController | None = None):
     runtime = get_runtime(application)
 
     # Start Flask
-    web_port = config_mgr.get("web_port", 8765)
+    web_port = config_mgr.get("web_port", 1340)
     web_host = get_web_host()
     lifecycle = server_lifecycle or ServerLifecycleController()
     web_thread = threading.Thread(

@@ -68,10 +68,10 @@ def test_run_web_defaults_to_public_bind(monkeypatch):
     )
     lifecycle = ServerLifecycleController()
 
-    app_main.run_web(object(), 8765, lifecycle)
+    app_main.run_web(object(), 1340, lifecycle)
     lifecycle.close()
 
-    assert calls == [{"host": "0.0.0.0", "port": 8765, "threads": 4}]
+    assert calls == [{"host": "0.0.0.0", "port": 1340, "threads": 4}]
     assert server_calls == ["run", "close", ("shutdown", True, 1.0)]
 
 

@@ -22,7 +22,7 @@ def _sanitize_topic(topic):
 class MQTTPublisher:
     def __init__(self, host, port=1883, user=None, password=None,
                  topic_prefix="fritzbox/docsis", ha_prefix="homeassistant",
-                 tls_insecure=False, web_port=8765, public_url=""):
+                 tls_insecure=False, web_port=1340, public_url=""):
         self.host = host
         self.port = port
         self.topic_prefix = _sanitize_topic(topic_prefix)
