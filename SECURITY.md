@@ -174,6 +174,28 @@ Modem credentials and other secrets are encrypted at rest using **Fernet** (AES-
 - Encryption key stored in `data/.config_key` (auto-generated on first run, file permissions set to `600`)
 - The admin password is **hashed** (not encrypted) via Werkzeug and stored separately
 
+### Privileged Helpers
+
+ICMP probing and traceroute need raw sockets, which the application user
+does not have. Two small C helpers carry that privilege, and nothing else
+in the image does:
+
+- `/usr/local/bin/mire-icmp-helper` and `/usr/local/bin/mire-traceroute-helper`
+  are installed setuid root (`4755`), built from `tools/*.c`
+- Each opens its raw sockets first, then drops privileges permanently with
+  `setresuid()` -- saved-uid included, so no re-elevation is possible
+- The drop happens **before** any name resolution: NSS and DNS code never
+  runs with an effective uid of 0
+- The application itself runs as the unprivileged `appuser` (uid 1000);
+  the helpers are invoked as subprocesses with a fixed argument list and no
+  shell, and their host argument comes from the operator's own configuration
+- Without `NET_RAW` in the container the helpers simply fail, and probing
+  falls back to TCP -- see `cap_add` in the compose file
+
+Replacing the setuid bit with `setcap cap_net_raw+ep` would narrow the
+privilege further; it is not used today because file capabilities are set
+under QEMU during the cross-architecture image build.
+
 ### Audit Logging
 
 Security-relevant events are logged to the `docsis.audit` logger:

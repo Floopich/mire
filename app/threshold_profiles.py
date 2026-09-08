@@ -45,8 +45,10 @@ BUILTIN_THRESHOLD_PROFILES: tuple[dict[str, object], ...] = (
                 "4096QAM": {"good_min": 40.0, "warning_min": 38.0, "critical_min": 36.0},
                 "ofdm": {"good_min": 27.0, "warning_min": 25.5, "critical_min": 24.5},
             },
-            # TODO(1) : ces bornes visent le SC-QAM. Un canal OFDMA en 16QAM
-            # ressort critique alors que c est un fonctionnement normal. Voir TODO.md.
+            # critical/warning_max_qam visent le SC-QAM ; l'OFDMA a son
+            # propre bareme sous "ofdma". Un segment configure en basse
+            # modulation depuis l'installation se declare via le reglage
+            # ofdma_low_qam_expected, qui bascule 16QAM de critique a tolere.
             "upstream_modulation": {
                 "critical_max_qam": 4,
                 "warning_max_qam": 16,

@@ -5,28 +5,19 @@ vérifié, ce qui ne l'est pas, et ce qu'il faudrait pour trancher.
 
 ---
 
-## 1. OFDMA en 16QAM classé critique
+## 1. OFDMA en 16QAM -- resolu
 
-**Statut : connu, laissé en erreur.**
+L'OFDMA dispose de son propre bareme dans `upstream_modulation.ofdma`
+(critical 32, warning 64, tolerated 128), distinct de celui du SC-QAM.
 
-Sur la capture réelle du 2026-08-30 (CGA4233, VOO, bridge), le canal OFDMA
-montant utilise une modulation 16QAM. Le profil `mire.thresholds_voo` fixe
-`upstream_modulation.warning_max_qam: 16` et `critical_max_qam: 4`. Le canal
-ressort donc `critical`, et fait basculer toute la ligne en critique alors que
-les 21 autres canaux sont bons.
+Pour une ligne dont la porteuse OFDMA montante est en basse modulation
+depuis l'installation, le reglage `ofdma_low_qam_expected` (Parametres >
+Connexion, ou la variable `OFDMA_LOW_QAM_EXPECTED`) abaisse les bornes a
+8 : un canal en 16QAM ressort alors `tolerated` au lieu de `critical`, et
+la ligne ne bascule plus en critique en permanence.
 
-Ces bornes ont vraisemblablement été écrites pour du SC-QAM, où descendre à
-16QAM signale une voie retour dégradée. Pour un canal OFDMA, 16QAM est la
-modulation par sous-porteuse et non un repli — mais **cette affirmation n'est
-pas sourcée**.
-
-Conséquence si on n'y touche pas : chez un abonné dont le modem utilise OFDMA
-en 16QAM, Mire annonce une ligne critique en permanence. Le courrier de plainte
-perd en crédibilité et les notifications de campagne restent en alerte.
-
-À faire : relever les niveaux réels sur plusieurs lignes VOO, puis décider
-d'exclure l'OFDMA de la règle `upstream_modulation` ou de lui donner ses
-propres bornes.
+Reste utile : relever les modulations reelles sur plusieurs lignes VOO
+pour verifier que les bornes par defaut de l'OFDMA sont les bonnes.
 
 ---
 
