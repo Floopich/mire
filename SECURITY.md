@@ -198,8 +198,8 @@ Security-relevant events are logged to the `docsis.audit` logger:
 - Data volume isolates database
 
 **Network Exposure:**
-- By default, Mire listens on `0.0.0.0:8765`
-- For single-user setups, bind to localhost only: `-p 127.0.0.1:8765:8765`
+- By default, Mire listens on `0.0.0.0:1340`
+- For single-user setups, bind to localhost only: `-p 127.0.0.1:1340:1340`
 - For LAN or remote access, use a [reverse proxy](docs/reverse-proxy.md) with HTTPS
 
 **Modem Credentials:**

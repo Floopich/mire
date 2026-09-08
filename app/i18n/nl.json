@@ -668,6 +668,7 @@
   "review_settings_desc": "Controleer uw configuratie en voltooi de installatie",
   "poll_interval_desc": "Hoe vaak DOCSIS-gegevens moeten worden opgehaald",
   "minutes": "Minuten",
+  "seconds": "Seconden",
   "saving": "Opslaan...",
   "setup_failed": "Installatie mislukt. Probeer het opnieuw.",
   "connection_successful": "Verbinding succesvol!",

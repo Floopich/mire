@@ -13,7 +13,7 @@ services:
     container_name: mire
     restart: unless-stopped
     ports:
-      - "8765:8765"
+      - "1340:1340"
     volumes:
       - mire_data:/data
     cap_add:

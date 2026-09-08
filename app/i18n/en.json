@@ -668,6 +668,7 @@
   "review_settings_desc": "Review your configuration and complete setup",
   "poll_interval_desc": "How often to fetch DOCSIS data",
   "minutes": "Minutes",
+  "seconds": "Seconds",
   "saving": "Saving...",
   "setup_failed": "Setup failed. Please try again.",
   "connection_successful": "Connection successful!",

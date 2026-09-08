@@ -98,7 +98,7 @@ TZ=UTC python -m pytest -q tests/e2e --tb=short
 python -m app.main
 ```
 
-Open `http://localhost:8765` to access the setup wizard.
+Open `http://localhost:1340` to access the setup wizard.
 
 ## Project Structure
 

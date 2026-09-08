@@ -57,7 +57,7 @@ location = /mire {
 location /mire/ {
     proxy_set_header X-Forwarded-Prefix "";
     proxy_set_header Host $host;
-    proxy_pass http://127.0.0.1:8765/;
+    proxy_pass http://127.0.0.1:1340/;
 }
 ```
 
@@ -74,7 +74,7 @@ location = /mire {
 location /mire/ {
     proxy_set_header X-Forwarded-Prefix /mire;
     proxy_set_header Host $host;
-    proxy_pass http://127.0.0.1:8765/;
+    proxy_pass http://127.0.0.1:1340/;
 }
 ```
 
@@ -87,7 +87,7 @@ mount.
 ## Container healthcheck
 
 The image healthcheck always requests the local upstream URL
-`http://localhost:${WEB_PORT:-8765}/health`; it never adds the external mount to
+`http://localhost:${WEB_PORT:-1340}/health`; it never adds the external mount to
 that URL because the production proxy strips the mount before forwarding.
 
 - Root mode and explicit `BASE_PATH` mode need no prefix header.

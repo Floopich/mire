@@ -668,6 +668,7 @@
   "review_settings_desc": "Vérifiez votre configuration et terminez l'installation",
   "poll_interval_desc": "Fréquence d'interrogation des données DOCSIS",
   "minutes": "Minutes",
+  "seconds": "Secondes",
   "saving": "Enregistrement...",
   "setup_failed": "Échec de l'installation. Veuillez réessayer.",
   "connection_successful": "Connexion réussie !",
