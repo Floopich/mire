@@ -15,7 +15,6 @@ from urllib.parse import urlencode
 
 from cryptography.hazmat.primitives import hashes, hmac
 from flask import current_app, render_template, request, jsonify, redirect, session, send_from_directory, url_for
-from markupsafe import Markup
 from werkzeug.security import check_password_hash
 from zoneinfo import available_timezones
 
@@ -220,44 +219,6 @@ def _valid_date(date_str):
         return True
     except ValueError:
         return False
-_STRIP_TAGS_RE = re.compile(r"<(?!/?(?:b|a|strong|em|br)\b)[^>]+>", re.IGNORECASE)
-_CLOSE_TAG_RE = re.compile(r"</(a|b|strong|em|br)\s[^>]*>", re.IGNORECASE)
-_OPEN_TAG_RE = re.compile(r"<(a|b|strong|em|br)([\s/][^>]*)?>", re.IGNORECASE)
-_HREF_VAL_RE = re.compile(r'href\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|(\S+))', re.IGNORECASE)
-_SAFE_HREF_RE = re.compile(r'^(?:https?://|#|/(?!/))[\x20-\x7E]*$', re.IGNORECASE)
-
-
-def _clean_tag(match: re.Match) -> str:
-    """Strip all attributes from allowed tags, except safe href on <a>."""
-    tag_name = match.group(1).lower()
-    attrs = match.group(2) or ""
-
-    if tag_name != "a" or not attrs.strip():
-        return f"<{tag_name}>"
-
-    # Extract and validate href
-    href_match = _HREF_VAL_RE.search(attrs)
-    if not href_match:
-        return "<a>"
-
-    href_val = href_match.group(1) or href_match.group(2) or href_match.group(3) or ""
-    # Strip control characters and HTML entities that could hide javascript:
-    stripped = re.sub(r'[\x00-\x1f]|&#?\w+;', '', href_val)
-    if _SAFE_HREF_RE.match(stripped):
-        return f'<a href="{stripped}">'
-    return '<a href="#">'
-
-
-def safe_html_filter(value):
-    """Allow only <b>, <a>, <strong>, <em>, <br> tags — strip everything else.
-
-    On allowed tags, all attributes are removed except href on <a>.
-    href values must match an allowlist (https://, http://, #, /).
-    """
-    cleaned = _STRIP_TAGS_RE.sub("", str(value))
-    cleaned = _CLOSE_TAG_RE.sub(lambda m: f"</{m.group(1)}>", cleaned)
-    cleaned = _OPEN_TAG_RE.sub(_clean_tag, cleaned)
-    return Markup(cleaned)
 
 
 def format_k(value):
@@ -1635,7 +1596,6 @@ CORE_ROUTES = (
     RouteSpec("/static/manifest.json", "web_app_manifest", web_app_manifest, ("GET",)),
 )
 CORE_TEMPLATE_FILTERS = {
-    "safe_html": safe_html_filter,
     "fmt_k": format_k,
     "fmt_speed_value": format_speed_value,
     "fmt_speed_unit": format_speed_unit,

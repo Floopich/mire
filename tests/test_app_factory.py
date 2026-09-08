@@ -35,7 +35,7 @@ def test_factory_preserves_core_endpoints_filters_and_manifest(tmp_path):
     for endpoint, expected in CORE_ENDPOINTS.items():
         assert rules[endpoint] == expected
     assert {
-        "safe_html", "fmt_k", "fmt_speed_value", "fmt_speed_unit", "fmt_uptime",
+        "fmt_k", "fmt_speed_value", "fmt_speed_unit", "fmt_uptime",
         "localtime", "localiso",
     }.issubset(app.jinja_env.filters)
     response = app.test_client().get("/static/manifest.json")

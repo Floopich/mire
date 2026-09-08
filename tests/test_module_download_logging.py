@@ -56,11 +56,11 @@ def test_download_logs_redacted_untrusted_nested_urls(caplog, monkeypatch, tmp_p
         def __exit__(self, exc_type, exc, tb):
             return False
 
-        def read(self):
+        def read(self, *_args):
             import json
             return json.dumps(entries).encode("utf-8")
 
-    monkeypatch.setattr(module_download.urllib.request, "urlopen", lambda *args, **kwargs: FakeResponse())
+    monkeypatch.setattr(module_download._OPENER, "open", lambda *args, **kwargs: FakeResponse())
 
     with caplog.at_level(logging.WARNING, logger="docsis.module_download"):
         assert module_download.download_github_directory("https://api.github.com/repos/example/repo/contents", str(tmp_path)) is True

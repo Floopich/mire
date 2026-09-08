@@ -174,8 +174,16 @@ class ProbeEngine:
                     )
                 sock.settimeout(remaining)
                 data, _ = sock.recvfrom(1024)
-                # Skip IP header (20 bytes), check ICMP type=0 (echo reply)
-                icmp_header = data[20:28]
+                # L'en-tete IP porte ses propres options : lire IHL plutot
+                # que supposer 20 octets. Un datagramme trop court est ignore
+                # -- struct.error n'est pas une OSError et ne serait pas
+                # rattrape par le except ci-dessous.
+                if len(data) < 20:
+                    continue
+                ip_header_len = (data[0] & 0x0F) * 4
+                if ip_header_len < 20 or len(data) < ip_header_len + 8:
+                    continue
+                icmp_header = data[ip_header_len:ip_header_len + 8]
                 icmp_type, _, _, pkt_id, pkt_seq = struct.unpack(
                     "!BBHHH", icmp_header
                 )
@@ -186,7 +194,7 @@ class ProbeEngine:
                         timeout=False,
                         method="icmp",
                     )
-        except (socket.timeout, OSError):
+        except (socket.timeout, OSError, struct.error):
             return ProbeResult(latency_ms=None, timeout=True, method="icmp")
         finally:
             sock.close()
@@ -231,7 +239,7 @@ class ProbeEngine:
                         timeout=False,
                         method="icmp",
                     )
-        except (socket.timeout, OSError):
+        except (socket.timeout, OSError, struct.error):
             return ProbeResult(latency_ms=None, timeout=True, method="icmp")
         finally:
             sock.close()

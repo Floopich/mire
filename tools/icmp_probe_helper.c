@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
@@ -30,6 +32,22 @@ static unsigned short icmp_checksum(const void *buf, int len) {
     sum = (sum >> 16) + (sum & 0xFFFF);
     sum += (sum >> 16);
     return (unsigned short)(~sum);
+}
+
+/* Largage definitif des privileges : setresuid ecrase aussi le saved-uid,
+ * donc aucune re-elevation n'est possible ensuite (contrairement a seteuid).
+ * Doit tourner avant toute resolution NSS/DNS. */
+static int drop_privileges(void) {
+    uid_t real = getuid();
+    if (setresuid(real, real, real) != 0) {
+        perror("setresuid");
+        return -1;
+    }
+    if (geteuid() != real || getuid() != real) {
+        fprintf(stderr, "privilege drop verification failed\n");
+        return -1;
+    }
+    return 0;
 }
 
 static int open_icmp_socket(int family) {
@@ -119,6 +137,15 @@ static int run_check(void) {
         perror("socket");
         return 2;
     }
+    if (drop_privileges() != 0) {
+        if (sock4 >= 0) {
+            close(sock4);
+        }
+        if (sock6 >= 0) {
+            close(sock6);
+        }
+        return 2;
+    }
     if (sock4 >= 0) {
         close(sock4);
     }
@@ -136,19 +163,14 @@ static int run_check(void) {
  * The wait is bounded by min(per_address_budget_ms, total_budget_ms - elapsed):
  * a silent first address must not consume the full overall budget, or later
  * addresses in the addrinfo list would never be probed. */
-static int probe_address(const struct addrinfo *ai,
+static int probe_address(int sock,
+                         const struct addrinfo *ai,
                          unsigned short ident,
                          unsigned short seq,
                          long attempt_budget_ms,
                          long total_budget_ms,
                          const struct timeval *overall_start,
                          double *latency_out) {
-    int sock = open_icmp_socket(ai->ai_family);
-    if (sock < 0) {
-        perror("socket");
-        return -1;
-    }
-
     unsigned char packet[sizeof(struct icmp6_hdr) + PAYLOAD_SIZE];
     int packet_len = (ai->ai_family == AF_INET6)
         ? build_icmp6_echo(packet, ident, seq)
@@ -157,14 +179,12 @@ static int probe_address(const struct addrinfo *ai,
     struct timeval attempt_start;
     if (gettimeofday(&attempt_start, NULL) != 0) {
         perror("gettimeofday");
-        close(sock);
         return -1;
     }
 
     if (sendto(sock, packet, (size_t)packet_len, 0,
                ai->ai_addr, ai->ai_addrlen) < 0) {
         perror("sendto");
-        close(sock);
         return -1;
     }
 
@@ -172,24 +192,20 @@ static int probe_address(const struct addrinfo *ai,
         long elapsed_overall = elapsed_ms_since(overall_start);
         if (elapsed_overall < 0) {
             perror("gettimeofday");
-            close(sock);
             return 1;
         }
         long remaining_overall = total_budget_ms - elapsed_overall;
         if (remaining_overall <= 0) {
-            close(sock);
             return 1;
         }
 
         long elapsed_attempt = elapsed_ms_since(&attempt_start);
         if (elapsed_attempt < 0) {
             perror("gettimeofday");
-            close(sock);
             return 1;
         }
         long remaining_attempt = attempt_budget_ms - elapsed_attempt;
         if (remaining_attempt <= 0) {
-            close(sock);
             return 1;
         }
 
@@ -210,11 +226,9 @@ static int probe_address(const struct addrinfo *ai,
                 continue;
             }
             perror("select");
-            close(sock);
             return 1;
         }
         if (ready == 0) {
-            close(sock);
             return 1;
         }
 
@@ -225,7 +239,6 @@ static int probe_address(const struct addrinfo *ai,
                 continue;
             }
             perror("recvfrom");
-            close(sock);
             return 1;
         }
 
@@ -239,12 +252,10 @@ static int probe_address(const struct addrinfo *ai,
         struct timeval end;
         if (gettimeofday(&end, NULL) != 0) {
             perror("gettimeofday");
-            close(sock);
             return 1;
         }
         *latency_out = (double)(end.tv_sec - attempt_start.tv_sec) * 1000.0
             + (double)(end.tv_usec - attempt_start.tv_usec) / 1000.0;
-        close(sock);
         return 0;
     }
 }
@@ -277,6 +288,9 @@ int main(int argc, char **argv) {
     }
 
     if (argc == 4 && strcmp(argv[1], "--plan") == 0) {
+        if (drop_privileges() != 0) {
+            return 2;
+        }
         return run_plan(atol(argv[2]), atoi(argv[3]));
     }
 
@@ -295,6 +309,24 @@ int main(int argc, char **argv) {
         }
     }
 
+    /* Les sockets raw sont ouvertes AVANT la resolution de noms : le modele
+     * de helper setuid interdit d'executer du code NSS/DNS avec euid root,
+     * donc le privilege eleve doit etre consomme d'abord. Les deux familles
+     * sont ouvertes car celle que le resolveur choisira n'est pas connue
+     * avant que drop_privileges() ait tourne. Idem traceroute_helper.c. */
+    int sock4 = open_icmp_socket(AF_INET);
+    int sock6 = open_icmp_socket(AF_INET6);
+    if (sock4 < 0 && sock6 < 0) {
+        perror("socket");
+        return 2;
+    }
+
+    if (drop_privileges() != 0) {
+        if (sock4 >= 0) close(sock4);
+        if (sock6 >= 0) close(sock6);
+        return 2;
+    }
+
     struct addrinfo hints;
     struct addrinfo *result = NULL;
     memset(&hints, 0, sizeof(hints));
@@ -305,6 +337,8 @@ int main(int argc, char **argv) {
     int rc = getaddrinfo(host, NULL, &hints, &result);
     if (rc != 0) {
         fprintf(stderr, "%s\n", gai_strerror(rc));
+        if (sock4 >= 0) close(sock4);
+        if (sock6 >= 0) close(sock6);
         return 2;
     }
 
@@ -312,6 +346,8 @@ int main(int argc, char **argv) {
     if (gettimeofday(&overall_start, NULL) != 0) {
         perror("gettimeofday");
         freeaddrinfo(result);
+        if (sock4 >= 0) close(sock4);
+        if (sock6 >= 0) close(sock6);
         return 2;
     }
 
@@ -338,10 +374,17 @@ int main(int argc, char **argv) {
         }
         any_usable_family = 1;
 
+        int sock = (ai->ai_family == AF_INET6) ? sock6 : sock4;
+        if (sock < 0) {
+            continue;
+        }
+
         long elapsed = elapsed_ms_since(&overall_start);
         if (elapsed < 0) {
             perror("gettimeofday");
             freeaddrinfo(result);
+            if (sock4 >= 0) close(sock4);
+            if (sock6 >= 0) close(sock6);
             return 2;
         }
         long remaining_overall = timeout_ms - elapsed;
@@ -358,11 +401,13 @@ int main(int argc, char **argv) {
 
         seq++;
         double latency_ms = 0.0;
-        int probe_rc = probe_address(ai, ident, seq, per_addr_budget,
+        int probe_rc = probe_address(sock, ai, ident, seq, per_addr_budget,
                                      timeout_ms, &overall_start, &latency_ms);
         if (probe_rc == 0) {
             printf("%.2f\n", latency_ms);
             freeaddrinfo(result);
+            if (sock4 >= 0) close(sock4);
+            if (sock6 >= 0) close(sock6);
             return 0;
         }
         if (probe_rc == 1) {
@@ -372,6 +417,8 @@ int main(int argc, char **argv) {
     }
 
     freeaddrinfo(result);
+    if (sock4 >= 0) close(sock4);
+    if (sock6 >= 0) close(sock6);
 
     if (any_sent) {
         puts("TIMEOUT");

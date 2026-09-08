@@ -17,6 +17,44 @@ TRUSTED_HOSTS = {
     "github.com",
 }
 
+# Plafonds : le collecteur itinerant tourne sur un Raspberry Pi 3B+ (1 Go).
+MAX_REGISTRY_BYTES = 1 * 1024 * 1024
+MAX_FILE_BYTES = 5 * 1024 * 1024
+MAX_TOTAL_BYTES = 25 * 1024 * 1024
+MAX_DIR_DEPTH = 8
+
+
+class _TrustedRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Revalide l'allowlist a chaque saut.
+
+    is_trusted_url() ne verifie que l'URL initiale ; urlopen suit les
+    redirections par defaut, donc un hote de confiance pouvait renvoyer
+    vers n'importe quel autre hote.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not is_trusted_url(newurl):
+            raise urllib.error.HTTPError(
+                newurl, code, "redirect to untrusted host", headers, fp
+            )
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_OPENER = urllib.request.build_opener(_TrustedRedirectHandler)
+
+
+def _read_capped(url: str, timeout: int, limit: int) -> bytes:
+    """Telecharge en refusant tout depassement du plafond.
+
+    Lit limit + 1 octets : Content-Length est declaratif et ne peut pas
+    servir de garde a lui seul.
+    """
+    with _OPENER.open(url, timeout=timeout) as resp:
+        payload = resp.read(limit + 1)
+    if len(payload) > limit:
+        raise ValueError(f"payload exceeds {limit} bytes")
+    return payload
+
 
 def safe_url_label(url: str | None) -> str:
     """Return a log-safe source label without user-controlled URL detail."""
@@ -66,8 +104,7 @@ def fetch_registry(registry_url: str, key: str = "modules", timeout: int = 10) -
         log.error("Refusing registry fetch: untrusted endpoint %s", safe_url_label(registry_url))
         return []
     try:
-        with urllib.request.urlopen(registry_url, timeout=timeout) as resp:
-            data = json.loads(resp.read())
+        data = json.loads(_read_capped(registry_url, timeout, MAX_REGISTRY_BYTES))
         entries = data.get(key, [])
         return [e for e in entries if validate_registry_entry(e)]
     except Exception as e:
@@ -75,7 +112,13 @@ def fetch_registry(registry_url: str, key: str = "modules", timeout: int = 10) -
         return []
 
 
-def download_github_directory(download_url: str, target_dir: str, timeout: int = 30) -> bool:
+def download_github_directory(
+    download_url: str,
+    target_dir: str,
+    timeout: int = 30,
+    _depth: int = 0,
+    _budget: list[int] | None = None,
+) -> bool:
     """Download a directory recursively from the GitHub Contents API.
 
     Fully recursive traversal of any directory structure. All URLs are
@@ -93,11 +136,16 @@ def download_github_directory(download_url: str, target_dir: str, timeout: int =
         log.error("Refusing download: untrusted endpoint %s", safe_url_label(download_url))
         return False
 
+    if _depth > MAX_DIR_DEPTH:
+        log.error("Refusing download: directory nesting exceeds %d levels", MAX_DIR_DEPTH)
+        return False
+
+    budget = [MAX_TOTAL_BYTES] if _budget is None else _budget
+
     try:
         os.makedirs(target_dir, exist_ok=True)
 
-        with urllib.request.urlopen(download_url, timeout=timeout) as resp:
-            entries = json.loads(resp.read())
+        entries = json.loads(_read_capped(download_url, timeout, MAX_REGISTRY_BYTES))
 
         for entry in entries:
             name = os.path.basename(entry.get("name", ""))
@@ -117,16 +165,21 @@ def download_github_directory(download_url: str, target_dir: str, timeout: int =
                 if not file_url or not is_trusted_url(file_url):
                     log.warning("Skipping untrusted file endpoint: %s", safe_url_label(file_url))
                     continue
-                with urllib.request.urlopen(file_url, timeout=timeout) as resp:
-                    with open(candidate, "wb") as f:
-                        f.write(resp.read())
+                payload = _read_capped(
+                    file_url, timeout, min(MAX_FILE_BYTES, budget[0])
+                )
+                budget[0] -= len(payload)
+                with open(candidate, "wb") as f:
+                    f.write(payload)
 
             elif entry_type == "dir":
                 subdir_url = entry.get("url", "")
                 if not is_trusted_url(subdir_url):
                     log.warning("Skipping untrusted dir endpoint: %s", safe_url_label(subdir_url))
                     continue
-                if not download_github_directory(subdir_url, candidate, timeout):
+                if not download_github_directory(
+                    subdir_url, candidate, timeout, _depth + 1, budget
+                ):
                     shutil.rmtree(target_dir, ignore_errors=True)
                     return False
 

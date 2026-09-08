@@ -167,11 +167,17 @@ static int classify_reply4(const unsigned char *buf, ssize_t n,
     }
 
     if (outer->type == ICMP_TIME_EXCEEDED && outer->code == ICMP_EXC_TTL) {
-        size_t need = ip_hlen + sizeof(struct icmphdr)
-                    + sizeof(struct ip) + sizeof(struct icmphdr);
-        if ((size_t)n < need) return 0;
+        /* L'en-tete IP embarque porte ses propres options : lire son ip_hl
+         * plutot que supposer 20 octets, sinon le pointeur tombe a cote. */
+        size_t inner_off = ip_hlen + sizeof(struct icmphdr);
+        if ((size_t)n < inner_off + sizeof(struct ip)) return 0;
+        const struct ip *inner_ip = (const struct ip *)(buf + inner_off);
+        size_t inner_hlen = (size_t)inner_ip->ip_hl * 4;
+        if (inner_hlen < sizeof(struct ip)) return 0;
+        if (inner_ip->ip_p != IPPROTO_ICMP) return 0;
+        if ((size_t)n < inner_off + inner_hlen + sizeof(struct icmphdr)) return 0;
         const struct icmphdr *inner = (const struct icmphdr *)
-            (buf + ip_hlen + sizeof(struct icmphdr) + sizeof(struct ip));
+            (buf + inner_off + inner_hlen);
         if (inner->un.echo.id == htons(ident)
             && inner->un.echo.sequence == htons(seq)) {
             return 1;

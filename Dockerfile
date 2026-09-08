@@ -31,7 +31,9 @@ COPY --from=builder /install /usr/local
 COPY --from=builder /build/out/mire-icmp-helper /usr/local/bin/mire-icmp-helper
 COPY --from=builder /build/out/mire-traceroute-helper /usr/local/bin/mire-traceroute-helper
 
-# Keep elevated privileges scoped to the dedicated ICMP helper.
+# Les deux helpers sont setuid root : ils ouvrent leur socket raw puis
+# larguent definitivement leurs privileges (setresuid) avant toute
+# resolution de noms. Voir tools/*.c.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gosu \
     libjpeg62-turbo \

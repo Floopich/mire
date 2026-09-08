@@ -36,7 +36,7 @@ class TestFetchRegistrySSRF:
         result = fetch_registry("https://evil.com/registry.json")
         assert result == []
 
-    @patch("app.module_download.urllib.request.urlopen")
+    @patch("app.module_download._OPENER.open")
     def test_allows_trusted_github_url(self, mock_urlopen):
         registry_data = {"modules": [
             {"id": "test", "name": "Test", "version": "1.0",
@@ -54,7 +54,7 @@ class TestFetchRegistrySSRF:
         assert len(result) == 1
         assert result[0]["id"] == "test"
 
-    @patch("app.module_download.urllib.request.urlopen")
+    @patch("app.module_download._OPENER.open")
     def test_allows_github_api_url(self, mock_urlopen):
         registry_data = {"themes": [
             {"id": "t1", "name": "Theme", "version": "1.0",
@@ -191,145 +191,3 @@ class TestRestoreRateLimit:
                         assert resp.status_code != 429, f"Rate-limited on attempt {i+1}"
 
 
-# ── Finding 3: XSS in safe_html filter ──
-
-
-class TestSafeHtmlXSS:
-    """safe_html filter must strip javascript: hrefs and event handlers."""
-
-    @pytest.fixture
-    def filter_fn(self):
-        from app.web import safe_html_filter
-        return safe_html_filter
-
-    def test_strips_javascript_href(self, filter_fn):
-        result = str(filter_fn('<a href="javascript:alert(1)">click</a>'))
-        assert "javascript:" not in result.lower()
-        # The tag itself should remain but href neutralized
-        assert "<a" in result
-
-    def test_strips_javascript_href_mixed_case(self, filter_fn):
-        result = str(filter_fn('<a href="JavaScript:alert(1)">click</a>'))
-        assert "javascript:" not in result.lower()
-
-    def test_strips_javascript_href_spaces(self, filter_fn):
-        result = str(filter_fn('<a href=" javascript:void(0)">click</a>'))
-        assert "javascript:" not in result.lower()
-
-    def test_strips_onclick(self, filter_fn):
-        result = str(filter_fn('<a href="#" onclick="alert(1)">click</a>'))
-        assert "onclick" not in result.lower()
-
-    def test_strips_unquoted_onclick(self, filter_fn):
-        result = str(filter_fn('<a onclick=alert(1) href="#">click</a>'))
-        assert "onclick" not in result.lower()
-        assert "alert" not in result.lower()
-
-    def test_strips_unquoted_onmouseover(self, filter_fn):
-        result = str(filter_fn('<b onmouseover=alert(1)>bold</b>'))
-        assert "onmouseover" not in result.lower()
-
-    def test_javascript_href_replaced_with_hash(self, filter_fn):
-        result = str(filter_fn('<a href="javascript:alert(1)">click</a>'))
-        assert 'href="#"' in result
-        assert "javascript:" not in result.lower()
-
-    def test_unquoted_javascript_href(self, filter_fn):
-        result = str(filter_fn('<a href=javascript:alert(1)>click</a>'))
-        assert "javascript:" not in result.lower()
-
-    def test_html_entity_javascript_bypass(self, filter_fn):
-        """Tab entity inside javascript: scheme must be caught."""
-        result = str(filter_fn('<a href="java&#9;script:alert(1)">click</a>'))
-        assert 'href="#"' in result
-
-    def test_newline_javascript_bypass(self, filter_fn):
-        """Newline inside javascript: scheme must be caught."""
-        result = str(filter_fn('<a href="java\nscript:alert(1)">click</a>'))
-        assert 'href="#"' in result
-
-    def test_slash_separated_onclick(self, filter_fn):
-        """Slash-separated event handler must be stripped."""
-        result = str(filter_fn('<a/onclick=alert(1) href="#">click</a>'))
-        assert "onclick" not in result.lower()
-
-    def test_data_uri_blocked(self, filter_fn):
-        result = str(filter_fn('<a href="data:text/html,<script>alert(1)</script>">x</a>'))
-        assert 'href="#"' in result
-
-    def test_vbscript_blocked(self, filter_fn):
-        result = str(filter_fn('<a href="vbscript:msgbox(1)">x</a>'))
-        assert 'href="#"' in result
-
-    def test_relative_path_allowed(self, filter_fn):
-        result = str(filter_fn('<a href="/docs/help">help</a>'))
-        assert 'href="/docs/help"' in result
-
-    def test_hash_link_allowed(self, filter_fn):
-        result = str(filter_fn('<a href="#section">jump</a>'))
-        assert 'href="#section"' in result
-
-    def test_no_space_before_onclick(self, filter_fn):
-        """onclick directly after closing quote must be stripped."""
-        result = str(filter_fn('<a href="/page"onclick="alert(1)">click</a>'))
-        assert "onclick" not in result.lower()
-        assert "alert" not in result.lower()
-
-    def test_closing_tag_attrs_stripped(self, filter_fn):
-        """Closing tags with injected attributes must be sanitized."""
-        result = str(filter_fn('</a onmouseover="alert(1)">'))
-        assert "onmouseover" not in result.lower()
-        assert "</a>" in result
-
-    def test_control_char_in_href_stripped(self, filter_fn):
-        """Control chars in href must be stripped from output."""
-        result = str(filter_fn('<a href="https://x.com\x01foo">link</a>'))
-        assert "\x01" not in result
-        assert "https://x.com" in result
-
-    def test_strips_onmouseover(self, filter_fn):
-        result = str(filter_fn('<b onmouseover="alert(1)">bold</b>'))
-        assert "onmouseover" not in result.lower()
-        assert "<b" in result
-
-    def test_strips_onerror(self, filter_fn):
-        result = str(filter_fn('<em onerror="fetch(\'evil\')">text</em>'))
-        assert "onerror" not in result.lower()
-
-    def test_strips_formaction(self, filter_fn):
-        result = str(filter_fn('<a formaction="https://evil.com">click</a>'))
-        assert "formaction" not in result.lower()
-
-    def test_allows_safe_href(self, filter_fn):
-        result = str(filter_fn('<a href="https://example.com">link</a>'))
-        assert 'href="https://example.com"' in result
-
-    def test_allows_safe_tags(self, filter_fn):
-        result = str(filter_fn("<b>bold</b> <em>italic</em> <br> <strong>s</strong>"))
-        assert "<b>" in result
-        assert "<em>" in result
-        assert "<br>" in result
-        assert "<strong>" in result
-
-    def test_strips_script_tag(self, filter_fn):
-        result = str(filter_fn("<script>alert(1)</script>"))
-        assert "<script" not in result
-
-    def test_strips_img_tag(self, filter_fn):
-        result = str(filter_fn('<img src="x" onerror="alert(1)">'))
-        assert "<img" not in result
-
-    def test_combined_attack(self, filter_fn):
-        """Multiple attack vectors in one string."""
-        html = (
-            '<a href="javascript:alert(1)" onclick="steal()">click</a>'
-            '<script>document.cookie</script>'
-            '<b onmouseover="fetch(\'evil\')">bold</b>'
-        )
-        result = str(filter_fn(html))
-        assert "javascript:" not in result.lower()
-        assert "onclick" not in result.lower()
-        assert "<script" not in result.lower()
-        assert "onmouseover" not in result.lower()
-        assert "<a" in result  # tag preserved
-        assert "<b" in result  # tag preserved

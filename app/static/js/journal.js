@@ -185,19 +185,22 @@ function escapeHtmlAttribute(value) {
 
 function highlightText(text, query) {
     if (!query || !text) return escapeHtml(text);
-    var escaped = escapeHtml(text);
-    var lowerEscaped = escaped.toLowerCase();
-    var lowerQuery = query.toLowerCase();
+    // La recherche porte sur le texte brut, l'echappement est applique
+    // segment par segment : chercher dans la chaine deja echappee coupait
+    // les entites HTML (une requete "amp" scindait &amp;).
+    var raw = String(text);
+    var lowerRaw = raw.toLowerCase();
+    var lowerQuery = String(query).toLowerCase();
     var result = '';
     var lastIdx = 0;
-    var idx = lowerEscaped.indexOf(lowerQuery);
+    var idx = lowerRaw.indexOf(lowerQuery);
     while (idx !== -1) {
-        result += escaped.substring(lastIdx, idx);
-        result += '<mark class="search-highlight">' + escaped.substring(idx, idx + lowerQuery.length) + '</mark>';
+        result += escapeHtml(raw.substring(lastIdx, idx));
+        result += '<mark class="search-highlight">' + escapeHtml(raw.substring(idx, idx + lowerQuery.length)) + '</mark>';
         lastIdx = idx + lowerQuery.length;
-        idx = lowerEscaped.indexOf(lowerQuery, lastIdx);
+        idx = lowerRaw.indexOf(lowerQuery, lastIdx);
     }
-    result += escaped.substring(lastIdx);
+    result += escapeHtml(raw.substring(lastIdx));
     return result;
 }
 

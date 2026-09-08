@@ -35,6 +35,33 @@ def find_i18n_dirs():
     return dirs
 
 
+def report_missing_languages():
+    """Signale les modules qui ne couvrent pas le jeu de langues du coeur.
+
+    La validation principale ne compare que les langues *presentes* face a
+    en.json : un module sans nl.json passait donc inapercu et retombait en
+    anglais a l'execution. Averti sans faire echouer, le temps que les
+    traductions soient ecrites.
+    """
+    core = ROOT / "app" / "i18n"
+    expected = {p.stem for p in core.glob("*.json")} - {"template"}
+    gaps = []
+    modules_dir = ROOT / "app" / "modules"
+    if modules_dir.is_dir():
+        for mod in sorted(modules_dir.iterdir()):
+            i18n_dir = mod / "i18n"
+            if not i18n_dir.is_dir() or not (i18n_dir / "en.json").exists():
+                continue
+            missing = sorted(expected - {p.stem for p in i18n_dir.glob("*.json")})
+            if missing:
+                gaps.append((mod.name, missing))
+    if gaps:
+        print("\nLangues manquantes (repli sur l'anglais a l'execution) :")
+        for name, missing in gaps:
+            print(f"  module/{name}: {', '.join(missing)}")
+    return gaps
+
+
 def load_json(path):
     """Load and return a JSON file as a dict."""
     try:
@@ -146,6 +173,8 @@ def cmd_validate():
 
         print(f"\nSummary: {total_missing} missing key(s), {total_extra} extra key(s) "
               f"across {len(problems)} file(s)  ({files_checked} checked).")
+
+    report_missing_languages()
 
     # Always exit 0 -- this is warning-only, does not block CI
     return 0
