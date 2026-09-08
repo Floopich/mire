@@ -29,12 +29,12 @@ Optional alert fan-out through an Apprise sidecar is covered in [docs/notificati
 docker run -d \
   --name mire \
   --restart unless-stopped \
-  -p 8765:8765 \
+  -p 1340:1340 \
   -v mire_data:/data \
   ghcr.io/floopich/mire:latest
 ```
 
-Open `http://localhost:8765` and follow the setup wizard.
+Open `http://localhost:1340` and follow the setup wizard.
 
 ## Bare-Metal / systemd
 

@@ -148,9 +148,29 @@
             </div>
         </div>
 
+        {% if net_ctx %}
+        <div class="setup-info">
+            <div>
+                <label class="form-label">{{ t.net_context_title }}</label>
+                {% if net_ctx.link %}
+                <span class="form-hint">{{ t.link_speed_label }} : <strong>{{ net_ctx.link.interface }} — {{ net_ctx.link.speed }} Mbit/s{% if net_ctx.link.duplex %} ({{ net_ctx.link.duplex }}){% endif %}</strong></span>
+                {% endif %}
+                {% if net_ctx.local_ip %}
+                <span class="form-hint">{{ t.net_context_collector }} : <strong>{{ net_ctx.local_ip }}</strong>{% if net_ctx.prefix %} ({{ net_ctx.prefix }}){% endif %}</span>
+                {% endif %}
+                {% if net_ctx.gateway %}
+                <span class="form-hint">{{ t.router_ip }} : <strong>{{ net_ctx.gateway }}</strong></span>
+                {% endif %}
+                {% if net_ctx.bridge_likely is not none %}
+                <span class="form-hint">{{ t.net_context_mode }} : <strong>{{ t.net_context_bridge if net_ctx.bridge_likely else t.net_context_router }}</strong></span>
+                {% endif %}
+                <span class="form-hint">{{ t.link_speed_hint }}</span>
+            </div>
+        </div>
+        {% endif %}
         <div class="form-grid">
             <div class="form-field">
-                <button type="button" class="btn btn-ghost" onclick="detectModem()" id="detect-modem-btn">
+                <button type="button" class="btn btn-primary" onclick="detectModem()" id="detect-modem-btn">
                     <i data-lucide="radio" class="setup-icon-sm"></i>
                     {{ t.detect_modem }}
                 </button>
@@ -169,7 +189,7 @@
             </div>
         </div>
 
-        <div id="modem-credentials-group" class="form-grid" style="margin-top:var(--space-md);">
+        <div id="modem-credentials-group" class="form-grid">
             <div class="form-field">
                 <label class="form-label" for="modem_url">{{ t.url }}</label>
                 <input class="form-input" type="text" id="modem_url" name="modem_url"
@@ -191,6 +211,9 @@
                        placeholder="••••••••">
             </div>
 
+        </div>
+        <div class="form-grid">
+            <div class="form-field">
             <div>
                 <button type="button" class="btn btn-ghost" onclick="testConnection()" id="test-conn-btn">
                     <i data-lucide="wifi" class="setup-icon-sm"></i>
@@ -198,27 +221,8 @@
                 </button>
                 <div class="test-result" id="test-result"></div>
             </div>
-        </div>
-        {% if net_ctx %}
-        <div class="form-grid">
-            <div class="form-field">
-                <label class="form-label">{{ t.net_context_title }}</label>
-                {% if net_ctx.link %}
-                <span class="form-hint">{{ t.link_speed_label }} : <strong>{{ net_ctx.link.interface }} — {{ net_ctx.link.speed }} Mbit/s{% if net_ctx.link.duplex %} ({{ net_ctx.link.duplex }}){% endif %}</strong></span>
-                {% endif %}
-                {% if net_ctx.local_ip %}
-                <span class="form-hint">{{ t.net_context_collector }} : <strong>{{ net_ctx.local_ip }}</strong>{% if net_ctx.prefix %} ({{ net_ctx.prefix }}){% endif %}</span>
-                {% endif %}
-                {% if net_ctx.gateway %}
-                <span class="form-hint">{{ t.router_ip }} : <strong>{{ net_ctx.gateway }}</strong></span>
-                {% endif %}
-                {% if net_ctx.bridge_likely is not none %}
-                <span class="form-hint">{{ t.net_context_mode }} : <strong>{{ t.net_context_bridge if net_ctx.bridge_likely else t.net_context_router }}</strong></span>
-                {% endif %}
-                <span class="form-hint">{{ t.link_speed_hint }}</span>
             </div>
         </div>
-        {% endif %}
         <div class="form-grid">
             <div class="form-field">
                 <label class="form-label" for="modem_bridge_mode">{{ t.modem_bridge_mode }}</label>
@@ -239,15 +243,15 @@
             </div>
         </div>
 
+    </div>
+</div>
+
         <div class="setup-actions">
             <button type="button" class="btn btn-primary" onclick="nextStep(2)">
                 {{ t.next }}
                 <i data-lucide="arrow-right" class="setup-icon-sm"></i>
             </button>
         </div>
-    </div>
-</div>
-
 <!-- Step 2: Settings -->
 <div class="step-content" data-step="2">
     <div class="settings-card glass">
@@ -265,10 +269,10 @@
 
         <div class="form-grid">
             <div class="form-field">
-                <label class="form-label" for="poll_interval">{{ t.poll_interval }} ({{ t.minutes }})</label>
+                <label class="form-label" for="poll_interval">{{ t.poll_interval }} ({{ t.seconds }})</label>
                 <input class="form-input" type="number" id="poll_interval" name="poll_interval"
                        min="{{ poll_min }}" max="{{ poll_max }}"
-                       value="{{ config.poll_interval or 5 }}" required>
+                       value="{{ config.poll_interval or 900 }}" required>
                 <span class="form-hint">{{ t.poll_interval_desc }} (min: {{ poll_min }}, max: {{ poll_max }})</span>
             </div>
 
@@ -365,7 +369,7 @@
         <div class="setup-info">
             <strong>{{ t.modem_connection }}:</strong><br>
             <span id="review-modem-type"></span> @ <span id="review-modem-url"></span><br><br>
-            <strong>{{ t.poll_interval }}:</strong> <span id="review-poll"></span> {{ t.minutes }}<br>
+            <strong>{{ t.poll_interval }}:</strong> <span id="review-poll"></span> {{ t.seconds }}<br>
             <strong>{{ t.timezone }}:</strong> <span id="review-tz"></span><br>
             <strong>{{ t.booked_download }} / {{ t.booked_upload }}:</strong> <span id="review-booked"></span>
         </div>

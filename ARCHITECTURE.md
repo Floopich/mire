@@ -637,7 +637,7 @@ CREATE TABLE journal_attachments (
 ## Web Layer
 
 **Framework:** Flask  
-**Port:** 8765 (configurable)  
+**Port:** 1340 (configurable)  
 **Auth:** Optional password protection (bcrypt hashing) + API token authentication (Bearer tokens)
 
 ### API Endpoints
@@ -890,7 +890,7 @@ services:
     container_name: mire
     restart: unless-stopped
     ports:
-      - "8765:8765"
+      - "1340:1340"
     volumes:
       - mire_data:/data
       - mire_backup:/backup  # Optional: for scheduled backups
@@ -910,7 +910,7 @@ volumes:
 
 **Check collector status:**
 ```bash
-curl http://localhost:8765/api/collectors/status | jq .
+curl http://localhost:1340/api/collectors/status | jq .
 ```
 
 **Check logs:**
