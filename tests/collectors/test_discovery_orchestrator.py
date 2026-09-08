@@ -164,7 +164,7 @@ class TestPollingLoopOrchestrator:
             "mqtt_topic_prefix": "mire",
             "mqtt_discovery_prefix": "homeassistant",
             "mqtt_tls_insecure": "",
-            "web_port": 8765,
+            "web_port": 1340,
         }
         mgr.is_mqtt_configured.return_value = False
         mgr.is_speedtest_configured.return_value = False

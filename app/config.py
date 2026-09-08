@@ -63,7 +63,7 @@ DEFAULTS = {
     "modem_user": "",
     "modem_password": "",
     "poll_interval": 900,
-    "web_port": 8765,
+    "web_port": 1340,
     "public_url": "",
     "history_days": 0,
     "snapshot_time": "06:00",

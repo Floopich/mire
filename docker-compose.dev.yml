@@ -6,7 +6,7 @@ services:
     container_name: mire-v2-dev
     restart: unless-stopped
     ports:
-      - "8767:8765"
+      - "8767:1340"
     volumes:
       - mire_v2_dev_data:/data
       - mire_v2_dev_backup:/backup

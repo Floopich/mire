@@ -68,7 +68,7 @@ def test_probe_builds_runtime_compatible_request(environ, expected_header):
     assert healthcheck.main(environ, open_url) == 0
 
     request = captured["request"]
-    assert request.full_url == "http://localhost:8765/health"
+    assert request.full_url == "http://localhost:1340/health"
     assert request.method == "GET"
     assert _forwarded_prefix(request) == expected_header
     assert captured["timeout"] == 4
