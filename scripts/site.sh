@@ -30,24 +30,16 @@ case "$action" in
   start)
     [ -n "$site" ] || usage
     mkdir -p "sites/$site/data"
-    # Le tag est repris du .env existant s'il n'est pas passe en variable :
-    # l'epinglage sur un sha-<commit> ne doit pas retomber silencieusement
-    # sur latest au prochain start.
-    tag="${MIRE_TAG:-}"
-    if [ -z "$tag" ] && [ -f .env ] && grep -q '^MIRE_TAG=..*' .env; then
-      tag="$(sed -n 's/^MIRE_TAG=//p' .env | head -1)"
-    fi
-    if [ -z "$tag" ]; then
-      tag="latest"
-      echo "MIRE_TAG non defini : deploiement sur 'latest' (non immuable)." >&2
-      echo "  Epingler avec : MIRE_TAG=sha-<commit> $0 start $site" >&2
-    fi
+    # Suivi du tag mobile latest par defaut. MIRE_TAG=sha-<commit> reste
+    # possible ponctuellement pour revenir sur une image precise.
+    tag="${MIRE_TAG:-latest}"
     printf 'GH_OWNER=%s\nSITE=%s\nTZ=%s\nBOOKED_DOWNLOAD=%s\nBOOKED_UPLOAD=%s\nMIRE_TAG=%s\n' \
       "$(owner)" "$site" "${TZ:-Europe/Brussels}" \
       "${BOOKED_DOWNLOAD:-}" "${BOOKED_UPLOAD:-}" "$tag" > .env
     if [ -z "${BOOKED_DOWNLOAD:-}" ] || [ -z "${BOOKED_UPLOAD:-}" ]; then
       echo "Debits souscrits non renseignes : le rapport affichera N/A." >&2
     fi
+    docker compose pull
     docker compose up -d
     ip="$(hostname -I | awk '{print $1}')"
     echo "Campagne demarree pour $site"
