@@ -1,0 +1,9 @@
+{
+  "weather_title": "Weer",
+  "weather_optional": "optioneel — de signaalkwaliteit correleren met de buitentemperatuur",
+  "weather_enable": "Weergegevens verzamelen inschakelen",
+  "weather_enable_hint": "Haalt de buitentemperatuur per uur op bij Open-Meteo (gratis, zonder API-sleutel). De geschiedenis wordt automatisch aangevuld.",
+  "weather_latitude": "Breedtegraad",
+  "weather_longitude": "Lengtegraad",
+  "weather_coord_hint": "De coördinaten van uw locatie (bijvoorbeeld 50.63 / 5.57 voor Luik). Op te zoeken via latlong.net"
+}
