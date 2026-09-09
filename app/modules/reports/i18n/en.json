@@ -157,7 +157,7 @@
   "report_builder_preview_title": "What Mire will include",
   "report_builder_section_signal": "Signal summary",
   "report_builder_section_incidents": "Incident timeline and journal notes",
-  "report_builder_section_measurements": "BQM, SmokePing, and Speedtest evidence when available",
+  "report_builder_section_measurements": "Speedtest evidence when available",
   "report_builder_section_letter": "Editable complaint letter text plus a PDF package",
   "report_builder_privacy_title": "Generated locally",
   "report_builder_privacy_note": "Mire builds the report from local monitoring data and does not send it to your ISP automatically.",

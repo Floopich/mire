@@ -61,6 +61,5 @@
   "item.comparison.optional": "Vergelijk dit venster met een andere periode wanneer een technicusbezoek, een wijziging bij de operator of een terugkerend patroon context vraagt.",
   "action.connection-monitor": "Verbindingsbewaking openen",
   "source.connection_monitor": "Verbindingsbewaking",
-  "item.latency.present_both": "Er zijn latentiemetingen beschikbaar voor dit venster.",
   "item.latency.present_cm_only": "Er zijn metingen van de verbindingsbewaking beschikbaar."
 }

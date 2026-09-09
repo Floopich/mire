@@ -61,6 +61,5 @@
   "item.comparison.optional": "Comparez cette fenêtre à une autre période lorsqu'une visite de technicien, un changement chez l'opérateur ou un motif récurrent demande du contexte.",
   "action.connection-monitor": "Ouvrir la surveillance de connexion",
   "source.connection_monitor": "Surveillance de connexion",
-  "item.latency.present_both": "Des relevés de latence sont disponibles pour cette fenêtre.",
   "item.latency.present_cm_only": "Des relevés de la surveillance de connexion sont disponibles."
 }

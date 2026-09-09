@@ -18,11 +18,11 @@ Typical locations and contents:
 |---|---|---|
 | Configuration | `${DATA_DIR:-/data}/config.json` | Contains selected modem type, polling settings, enabled modules, integration settings, and local preferences. |
 | Secrets | `config.json` plus local key files such as `.config_key` and `.session_key` | Secret values are encrypted or hashed where supported. Do not share config files unless secrets are removed. |
-| DOCSIS and signal history | `/data/docsis_history.db` | SQLite database with snapshots, event history, incident journal data, Speedtest/BQM/Smokeping-derived records, imports, and report-related state. |
+| DOCSIS and signal history | `/data/docsis_history.db` | SQLite database with snapshots, event history, incident journal data, Speedtest-derived records, imports, and report-related state. |
 | Connection Monitor samples | `/data/connection_monitor.db` | SQLite database with latency probes, outage evidence, traceroute-related state, and raw or aggregated ping evidence. |
 | Backups | User-configured backup path or generated backup archives | Backups can contain databases, configuration, encrypted secrets, session keys, and metadata. Treat them as private. |
 | Incident journal | Stored in Mire data databases | User-entered descriptions, notes, timestamps, reviewed events, imported evidence, and incident groupings. |
-| Attachments | User-selected files or imported evidence where enabled | May include screenshots, CSV/PDF imports, BQM images, or other support evidence. Redact before sharing. |
+| Attachments | User-selected files or imported evidence where enabled | May include screenshots, CSV/PDF imports, or other support evidence. Redact before sharing. |
 | API tokens | Token metadata and hashes in local storage | Plaintext tokens are shown once at creation and are not stored as reusable plaintext. |
 
 ## System-owned files
@@ -34,7 +34,7 @@ Examples:
 - `app/` application code, templates, static assets, collectors, modules, and translations.
 - `tests/` and `.github/` validation and CI definitions.
 - Root documentation such as `README.md`, `SECURITY.md`, `ARCHITECTURE.md`, and this `DATA_CONTRACT.md`.
-- Built-in demo fixtures, built-in module manifests, bundled maintainer notices, and static product assets.
+- Built-in module manifests, bundled maintainer notices, and static product assets.
 - Container image layers outside the mounted data directory.
 
 Built-in system files differ from user-installed extension files. Community modules and themes installed into `MODULES_DIR`, usually `/data/modules` in the Docker image, are local installation files chosen by the user. Their code and assets are not overwritten by Mire core updates unless the user installs, updates, removes, or replaces them.
@@ -51,7 +51,7 @@ Examples:
 - AI/LLM export markdown.
 - CSV, JSON, Markdown, and raw ping log exports.
 - Backup archives and restore validation output.
-- Downloaded BNetzA, Speedtest, BQM, Smokeping, event, or journal exports.
+- Downloaded Speedtest, event, or journal exports.
 - Screenshots or support snippets created by the user.
 
 Generated artifacts should be reviewed before sharing. They may include provider names, timestamps, public or private IP addresses, MAC addresses, serial numbers, modem model and firmware details, incident notes, customer details, ticket numbers, webhook destination hints, or other account-specific information.
@@ -60,7 +60,7 @@ Generated artifacts should be reviewed before sharing. They may include provider
 
 Mire stores local configuration under the configured data directory. Secret-bearing settings include router/modem credentials, MQTT credentials, webhook and Apprise settings, PWA Web Push VAPID private key material, declared community module secrets, admin password material, and API token hashes.
 
-Report customer defaults are private configuration metadata encrypted at rest. Unlike password-style secrets, they remain displayable and editable in normal local Settings and report forms, and are hidden in demo mode.
+Report customer defaults are private configuration metadata encrypted at rest. Unlike password-style secrets, they remain displayable and editable in normal local Settings and report forms.
 
 Rules:
 
@@ -104,7 +104,7 @@ They may contain:
 - names, addresses, phone numbers, customer IDs, ticket IDs, or contract references
 - precise outage times and home-usage patterns
 - provider names and support interactions
-- screenshots, PDFs, CSV files, BQM images, or imported measurements
+- screenshots, PDFs, CSV files, or imported measurements
 - local device names, modem models, serial numbers, MAC addresses, IP addresses, and firmware versions
 
 Mire may help organize and export this evidence, but the user chooses what to send to an ISP, regulator, community thread, or maintainer.
@@ -158,13 +158,10 @@ Diagnostic/support output must redact or omit:
 Optional integrations are user-configured boundaries. They do not change the core local ownership model, but they may send selected payloads to configured destinations.
 
 - **Speedtest**: pulls or records speed, ping, jitter, and related test metadata from a configured Speedtest Tracker source. Treat endpoint URLs, credentials, and enriched response details as private.
-- **BQM**: imports ThinkBroadband BQM CSV or image data from user-provided sources. Treat share URLs, image URLs, timing patterns, and imported files as private unless deliberately published.
-- **Smokeping**: imports latency and packet-loss evidence from a configured source. Treat source URLs and local correlation output as private.
 - **Home Assistant and MQTT**: publishes selected status and discovery payloads to the user's broker. MQTT credentials are secret; payloads may reveal current line health and device state to that broker.
 - **Direct webhooks and Discord**: send alert payloads to configured endpoints. Webhook URLs and headers are secrets; payloads should stay concise and redacted.
 - **Apprise**: sends alert payloads through a user-configured Apprise API sidecar. Apprise URL, key, token, tags, and provider-specific targets are private.
 - **PWA Web Push**: sends minimal alert payloads to browser push endpoints for browsers or apps that subscribed to this Mire instance. Browser push providers may see delivery metadata according to the browser or vendor push service. Subscriptions and private keys are local secrets.
-- **BNetzA imports**: imported measurement PDFs and CSV files can contain measurement details and report context. Treat source files and generated report text as private.
 - **Module and theme registries**: Settings can fetch configured module and theme registry JSON and install selected packages from user-approved download URLs. Registry URLs, installed IDs, and downloaded community module or theme files are part of the local installation boundary.
 
 A disabled or unconfigured optional integration must not be required for Mire's local monitoring and evidence workflow to keep working.
@@ -183,13 +180,9 @@ Rules:
 - Built-in-only `configPrivate` values are encrypted but remain displayable private metadata. They are not write-only secrets and community manifests cannot use `configPrivate`.
 - Module manifests, default settings, and system module code are system-owned files. Saved module configuration is user-owned local data.
 
-## Demo mode and real monitored data
-
-Demo mode uses synthetic fixtures and generated demo history so users can evaluate Mire without connecting real hardware. Demo data and public proof-pack screenshots are safe only because they are synthetic.
+## Real monitored data
 
 Real monitored data comes from the user's modem, router, configured integrations, imported files, and notes. It can reveal line quality, provider context, outage windows, local network identifiers, account details, and personal support history. Treat real monitored data as private unless the user intentionally exports and reviews it.
-
-Switching from Demo mode to live mode should preserve user-created journal entries and incidents where the product promises that behavior, while allowing demo-seeded monitoring rows to be removed cleanly.
 
 ## Optional remote behavior
 
@@ -218,4 +211,4 @@ Before sharing any Mire output publicly or with support, check for:
 - provider account pages, modem HTML with hidden fields, HAR captures, raw logs, stack traces, or backup archives
 - real ISP names in public marketing screenshots unless the page is specifically about that provider and the use is intentional
 
-When in doubt, share a redacted excerpt, a synthetic demo asset, or a short description first.
+When in doubt, share a redacted excerpt or a short description first.

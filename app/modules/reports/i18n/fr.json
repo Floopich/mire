@@ -157,7 +157,7 @@
   "report_builder_preview_title": "Ce que Mire inclura",
   "report_builder_section_signal": "Résumé du signal",
   "report_builder_section_incidents": "Chronologie des incidents et notes du journal",
-  "report_builder_section_measurements": "Preuves BQM, SmokePing et Speedtest si disponibles",
+  "report_builder_section_measurements": "Preuves Speedtest si disponibles",
   "report_builder_section_letter": "Texte de réclamation modifiable plus un dossier PDF",
   "report_builder_privacy_title": "Généré localement",
   "report_builder_privacy_note": "Mire crée le rapport à partir des données de surveillance locales et ne l’envoie pas automatiquement à votre FAI.",

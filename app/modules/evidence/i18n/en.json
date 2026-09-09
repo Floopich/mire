@@ -41,8 +41,8 @@
   "item.latency.label": "Latency evidence",
   "item.latency.present": "Latency samples are available for this window.",
   "item.latency.stale": "Latency evidence exists, but it may not cover the end of this window.",
-  "item.latency.missing": "No Connection Monitor or BQM latency sample was found in this window.",
-  "item.latency.optional": "Connection Monitor and ThinkBroadband BQM are not configured; latency evidence is optional.",
+  "item.latency.missing": "No Connection Monitor latency sample was found in this window.",
+  "item.latency.optional": "Connection Monitor is not configured; latency evidence is optional.",
   "item.events.label": "Mire events",
   "item.events.present": "Mire detected events in this window.",
   "item.events.missing": "No Mire events were detected in this window.",
@@ -61,6 +61,5 @@
   "item.comparison.optional": "Compare this window with another period when a technician visit, ISP change, or recurring pattern needs context.",
   "action.connection-monitor": "Open Connection Monitor",
   "source.connection_monitor": "Connection Monitor",
-  "item.latency.present_both": "Connection Monitor and ThinkBroadband BQM latency samples are available for this window.",
-  "item.latency.present_cm_only": "Connection Monitor latency samples are available. Add BQM when you need external validation."
+  "item.latency.present_cm_only": "Connection Monitor latency samples are available."
 }
