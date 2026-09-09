@@ -13,6 +13,7 @@ from dataclasses import dataclass
 BUILTIN_MODULE_DIRS: tuple[str, ...] = (
     "backup",
     "be_compensation",
+    "be_mediation",
     "comparison",
     "connection_monitor",
     "evidence",

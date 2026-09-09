@@ -1,0 +1,19 @@
+{
+  "id": "mire.be_mediation",
+  "name": "Plainte et mediation (Belgique)",
+  "description": "Parcours de plainte vers l'operateur puis le Service de mediation pour les telecommunications",
+  "version": "1.0.0",
+  "author": "floopich",
+  "minAppVersion": "2026.2",
+  "type": "analysis",
+  "contributes": {
+    "routes": "routes.py",
+    "tab": "templates/be_mediation_tab.html",
+    "i18n": "i18n/"
+  },
+  "menu": {
+    "label_key": "mire.be_mediation.title",
+    "icon": "clipboard-check",
+    "order": 19
+  }
+}

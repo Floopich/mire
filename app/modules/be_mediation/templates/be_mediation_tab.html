@@ -1,0 +1,43 @@
+<div class="view-content">
+    <div class="view-page-header">
+        <div class="view-page-header-left">
+            <h2 class="view-page-title">{{ t.get('mire.be_mediation.title', 'Complaint and mediation (Belgium)') }}</h2>
+            <p class="view-page-subtitle">{{ t.get('mire.be_mediation.subtitle', '') }}</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <p>{{ t.get('mire.be_mediation.intro', '') }} {{ t.get('mire.be_mediation.free', '') }}</p>
+        <p>{{ t.get('mire.be_mediation.scope_note', '') }}</p>
+    </div>
+
+    <div class="card">
+        <h3>{{ t.get('mire.be_mediation.steps_title', 'Steps') }}</h3>
+        <ol id="bem-steps">
+            <li>{{ t.get('mire.be_mediation.step.contact_operator', '') }}</li>
+            <li>{{ t.get('mire.be_mediation.step.keep_written_trace', '') }}</li>
+            <li>{{ t.get('mire.be_mediation.step.wait_operator_answer', '') }}</li>
+            <li>{{ t.get('mire.be_mediation.step.file_written_complaint', '') }}</li>
+            <li>{{ t.get('mire.be_mediation.step.annex_prior_request', '') }}</li>
+            <li>{{ t.get('mire.be_mediation.step.await_outcome', '') }}</li>
+        </ol>
+    </div>
+
+    <div class="card">
+        <h3>{{ t.get('mire.be_mediation.blockers_title', 'Inadmissible') }}</h3>
+        <label><input type="checkbox" id="bem-no-contact"> {{ t.get('mire.be_mediation.blocker.no_prior_contact', '') }}</label>
+        <label><input type="checkbox" id="bem-older"> {{ t.get('mire.be_mediation.blocker.older_than_one_year', '') }}</label>
+        <label><input type="checkbox" id="bem-court"> {{ t.get('mire.be_mediation.blocker.court_case_pending', '') }}</label>
+        <label><input type="checkbox" id="bem-written" checked> {{ t.get('mire.be_mediation.step.file_written_complaint', '') }}</label>
+        <div id="bem-result"></div>
+    </div>
+
+    <div class="card">
+        <p>{{ t.get('mire.be_mediation.evidence_note', '') }}</p>
+        <h3>{{ t.get('mire.be_mediation.contact_title', 'Contact') }}</h3>
+        <p>{{ t.get('mire.be_mediation.contact_body', '') }}
+           <a href="https://www.mediateurtelecom.be/" target="_blank" rel="noopener">mediateurtelecom.be</a></p>
+    </div>
+
+    <p class="hint">{{ t.get('mire.be_mediation.verify', '') }}</p>
+</div>

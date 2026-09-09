@@ -628,7 +628,7 @@ def test_builtin_module_i18n_catalogs_keep_only_runtime_sources() -> None:
     """Built-in module catalogs are intentional: reports and modulation ship locales."""
     offenders = []
     allowed_locale_modules = {
-        "backup", "be_compensation", "comparison", "connection_monitor",
+        "backup", "be_compensation", "be_mediation", "comparison", "connection_monitor",
         "evidence", "journal", "modulation", "mqtt", "reports",
         "speedtest", "weather",
     }
@@ -700,7 +700,7 @@ def test_european_language_pack_preserves_catalog_contracts() -> None:
                 offenders.append(f"{path_label}: placeholder mismatch")
 
     allowed_locale_modules = {
-        "backup", "be_compensation", "comparison", "connection_monitor",
+        "backup", "be_compensation", "be_mediation", "comparison", "connection_monitor",
         "evidence", "journal", "modulation", "mqtt", "reports",
         "speedtest", "weather",
     }
