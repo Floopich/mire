@@ -1,0 +1,19 @@
+{
+  "id": "mire.be_compensation",
+  "name": "Compensation legale (Belgique)",
+  "description": "Calcule l'indemnite due pour une interruption totale de 8 heures ou plus",
+  "version": "1.0.0",
+  "author": "floopich",
+  "minAppVersion": "2026.2",
+  "type": "analysis",
+  "contributes": {
+    "routes": "routes.py",
+    "tab": "templates/be_compensation_tab.html",
+    "i18n": "i18n/"
+  },
+  "menu": {
+    "label_key": "mire.be_compensation.title",
+    "icon": "file-text",
+    "order": 18
+  }
+}

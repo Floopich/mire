@@ -1,0 +1,41 @@
+<div class="view-content">
+    <div class="view-page-header">
+        <div class="view-page-header-left">
+            <h2 class="view-page-title">{{ t.get('mire.be_compensation.title', 'Legal compensation (Belgium)') }}</h2>
+            <p class="view-page-subtitle">{{ t.get('mire.be_compensation.subtitle', '') }}</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <p>{{ t.get('mire.be_compensation.legal_basis', '') }}
+           <a href="https://www.ibpt.be/consommateurs/telephonie-internet-tv/protection-des-consommateurs/compensation-pour-interruption-de-service"
+              target="_blank" rel="noopener">{{ t.get('mire.be_compensation.source', 'BIPT') }}</a></p>
+        <p><strong>{{ t.get('mire.be_compensation.scope_total_only', '') }}</strong></p>
+        <p>{{ t.get('mire.be_compensation.scope_speed_pointer', '') }}</p>
+        <p>{{ t.get('mire.be_compensation.clock_note', '') }}</p>
+    </div>
+
+    <div class="card">
+        <h3>{{ t.get('mire.be_compensation.candidates', 'Detected interruptions') }}</h3>
+        <label>{{ t.get('mire.be_compensation.window', 'Window (days)') }}
+            <input type="number" id="bec-window" value="90" min="1" max="400">
+        </label>
+        <p class="hint">{{ t.get('mire.be_compensation.not_qualified', '') }}</p>
+        <div id="bec-candidates"></div>
+    </div>
+
+    <div class="card">
+        <h3>{{ t.get('mire.be_compensation.manual_title', 'Compute what is owed') }}</h3>
+        <label>{{ t.get('mire.be_compensation.counted_hours', 'Legal duration (hours)') }}
+            <input type="number" id="bec-hours" value="8" min="0" step="0.25">
+        </label>
+        <label>
+            <input type="checkbox" id="bec-force-majeure">
+            {{ t.get('mire.be_compensation.force_majeure', 'Force majeure') }}
+        </label>
+        <button id="bec-compute" class="btn">{{ t.get('mire.be_compensation.compute', 'Compute') }}</button>
+        <div id="bec-result"></div>
+    </div>
+
+    <p class="hint">{{ t.get('mire.be_compensation.verify', '') }}</p>
+</div>
