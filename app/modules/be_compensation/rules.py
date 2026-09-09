@@ -16,16 +16,38 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 # Seuil d'ouverture du droit : interruption TOTALE et continue.
+# L'IBPT a mis en consultation une revision de l'article 113/2 portant ce
+# seuil a 12 heures, sur le modele neerlandais. Proposition, pas droit
+# positif : le seuil applicable reste 8 heures.
 THRESHOLD_SECONDS = 8 * 3600
 
-# Bareme : 1 EUR a 8 h, 1 EUR de plus a 24 h, puis 0,50 EUR par jour entame
-# supplementaire.
+# Bareme d'entree en vigueur au 1er novembre 2024 : 1 EUR a 8 h, 1 EUR de
+# plus a 24 h, puis 0,50 EUR par jour entame supplementaire.
+#
+# ATTENTION : ces montants sont indexes chaque annee sur l'indice des prix a
+# la consommation. Les valeurs ci-dessous sont celles de 2024 et constituent
+# donc un PLANCHER, pas le montant du. L'IBPT ne publie pas les valeurs
+# indexees sous une forme exploitable : l'utilisateur renseigne le
+# coefficient, faute de quoi le resultat est marque comme non indexe.
+SCALE_REFERENCE_YEAR = 2024
 BASE_EUR = 1.00
 FIRST_DAY_EUR = 2.00
 PER_EXTRA_DAY_EUR = 0.50
 
 # Plancher : un trentieme de la redevance mensuelle, si superieur au bareme.
 MONTHLY_FRACTION = 30
+
+# Causes excluant toute compensation. force_majeure et le fait du client
+# figurent dans la loi ; les deux autres sont les motifs que les operateurs
+# opposent en pratique. customer_equipment vise ce qui n'appartient pas au
+# reseau public : modem, decodeur, carte SIM, repeteurs -- l'exclusion la
+# plus probable pour un outil branche sur le modem de l'abonne.
+EXCLUSION_REASONS = (
+    "force_majeure",
+    "customer_action",
+    "customer_equipment",
+    "alternative_accepted",
+)
 
 SECONDS_PER_DAY = 86400
 
@@ -40,6 +62,9 @@ class Compensation:
     floor_applied: bool
     counted_seconds: float
     reason: str
+    indexed: bool = False
+    index_factor: float | None = None
+    reference_year: int = SCALE_REFERENCE_YEAR
 
     def as_dict(self) -> dict:
         return {
@@ -49,6 +74,9 @@ class Compensation:
             "floor_applied": self.floor_applied,
             "counted_seconds": round(self.counted_seconds, 1),
             "reason": self.reason,
+            "indexed": self.indexed,
+            "index_factor": self.index_factor,
+            "reference_year": self.reference_year,
         }
 
 
@@ -66,6 +94,8 @@ def compute(
     counted_seconds: float,
     monthly_fee_eur: float | None = None,
     force_majeure: bool = False,
+    exclusion: str | None = None,
+    index_factor: float | None = None,
 ) -> Compensation:
     """Calcule l'indemnite due pour une interruption deja qualifiee.
 
@@ -73,12 +103,21 @@ def compute(
     l'operateur a connaissance de l'interruption -- pas de l'instant ou la
     ligne est tombee. L'appelant doit fournir la duree corrigee.
     """
-    if force_majeure:
-        return Compensation(False, 0.0, 0.0, False, counted_seconds, "force_majeure")
+    if force_majeure and exclusion is None:
+        exclusion = "force_majeure"
+    if exclusion is not None:
+        if exclusion not in EXCLUSION_REASONS:
+            raise ValueError(f"unknown exclusion: {exclusion}")
+        return Compensation(False, 0.0, 0.0, False, counted_seconds, exclusion)
     if counted_seconds < THRESHOLD_SECONDS:
         return Compensation(False, 0.0, 0.0, False, counted_seconds, "below_threshold")
 
+    # L'indexation ne porte que sur le bareme. Le plancher se calcule sur la
+    # redevance reelle, qui est deja au tarif courant.
     scale = scale_amount(counted_seconds)
+    indexed = index_factor is not None and index_factor > 0
+    if indexed:
+        scale = scale * index_factor
     floor = 0.0
     if monthly_fee_eur and monthly_fee_eur > 0:
         floor = monthly_fee_eur / MONTHLY_FRACTION
@@ -90,6 +129,8 @@ def compute(
         floor_applied=floor > scale,
         counted_seconds=counted_seconds,
         reason="eligible",
+        indexed=indexed,
+        index_factor=index_factor if indexed else None,
     )
 
 

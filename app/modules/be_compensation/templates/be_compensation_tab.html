@@ -13,6 +13,7 @@
         <p><strong>{{ t.get('mire.be_compensation.scope_total_only', '') }}</strong></p>
         <p>{{ t.get('mire.be_compensation.scope_speed_pointer', '') }}</p>
         <p>{{ t.get('mire.be_compensation.clock_note', '') }}</p>
+        <p>{{ t.get('mire.be_compensation.threshold_note', '') }}</p>
     </div>
 
     <div class="card">
@@ -29,12 +30,22 @@
         <label>{{ t.get('mire.be_compensation.counted_hours', 'Legal duration (hours)') }}
             <input type="number" id="bec-hours" value="8" min="0" step="0.25">
         </label>
-        <label>
-            <input type="checkbox" id="bec-force-majeure">
-            {{ t.get('mire.be_compensation.force_majeure', 'Force majeure') }}
-        </label>
+        <label for="bec-exclusion">{{ t.get('mire.be_compensation.exclusion_title', 'Exclusion') }}</label>
+        <select id="bec-exclusion">
+            <option value="">{{ t.get('mire.be_compensation.exclusion.none', 'None') }}</option>
+            <option value="force_majeure">{{ t.get('mire.be_compensation.exclusion.force_majeure', '') }}</option>
+            <option value="customer_action">{{ t.get('mire.be_compensation.exclusion.customer_action', '') }}</option>
+            <option value="customer_equipment">{{ t.get('mire.be_compensation.exclusion.customer_equipment', '') }}</option>
+            <option value="alternative_accepted">{{ t.get('mire.be_compensation.exclusion.alternative_accepted', '') }}</option>
+        </select>
         <button id="bec-compute" class="btn">{{ t.get('mire.be_compensation.compute', 'Compute') }}</button>
         <div id="bec-result"></div>
+    </div>
+
+    <div class="card">
+        <h3>{{ t.get('mire.be_compensation.index_title', 'Indexation') }}</h3>
+        <p>{{ t.get('mire.be_compensation.index_hint', '') }}</p>
+        <p class="hint">{{ t.get('mire.be_compensation.index_factor', '') }}</p>
     </div>
 
     <p class="hint">{{ t.get('mire.be_compensation.verify', '') }}</p>

@@ -43,6 +43,44 @@ def test_force_majeure_blocks_even_a_long_outage():
     assert result.reason == "force_majeure"
 
 
+@pytest.mark.parametrize("cause", rules.EXCLUSION_REASONS)
+def test_every_exclusion_blocks_compensation(cause):
+    result = rules.compute(10 * 24 * H, monthly_fee_eur=60, exclusion=cause)
+    assert result.eligible is False
+    assert result.amount_eur == 0.0
+    assert result.reason == cause
+
+
+def test_unknown_exclusion_is_rejected():
+    with pytest.raises(ValueError):
+        rules.compute(10 * 24 * H, exclusion="pas-un-motif")
+
+
+def test_amounts_are_flagged_as_not_indexed_by_default():
+    """Le bareme legal est indexe chaque annee : sans coefficient, les
+    montants de 2024 sont un plancher et l'interface doit le dire."""
+    result = rules.compute(48 * H)
+    assert result.indexed is False
+    assert result.index_factor is None
+    assert result.reference_year == rules.SCALE_REFERENCE_YEAR
+    assert result.amount_eur == pytest.approx(2.50)
+
+
+def test_index_factor_scales_the_published_amounts():
+    result = rules.compute(48 * H, index_factor=1.08)
+    assert result.indexed is True
+    assert result.index_factor == pytest.approx(1.08)
+    assert result.amount_eur == pytest.approx(2.70)
+
+
+def test_index_factor_does_not_touch_the_monthly_floor():
+    """La redevance saisie est deja au tarif courant : l'indexer serait
+    l'appliquer deux fois."""
+    result = rules.compute(8 * H, monthly_fee_eur=60, index_factor=1.08)
+    assert result.floor_applied is True
+    assert result.amount_eur == pytest.approx(2.00)
+
+
 def test_monthly_floor_beats_the_scale_when_higher():
     result = rules.compute(8 * H, monthly_fee_eur=60)
     assert result.scale_amount_eur == pytest.approx(1.0)
