@@ -1,0 +1,9 @@
+{
+  "weather_title": "Wetter",
+  "weather_optional": "optional — Signalqualität mit der Außentemperatur korrelieren",
+  "weather_enable": "Erfassung der Wetterdaten aktivieren",
+  "weather_enable_hint": "Ruft die stündliche Außentemperatur von Open-Meteo ab (kostenlos, ohne API-Schlüssel). Der Verlauf wird automatisch ergänzt.",
+  "weather_latitude": "Breitengrad",
+  "weather_longitude": "Längengrad",
+  "weather_coord_hint": "Die Koordinaten Ihres Standorts (z. B. 50.63 / 5.57 für Lüttich). Zu finden auf latlong.net"
+}

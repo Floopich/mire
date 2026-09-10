@@ -445,8 +445,10 @@ class TestModuleDiscovery:
         en = get_translations("en")
         assert en.get("mire.comparison.title") == "Before/After Comparison"
 
+        # Le module fournit desormais un catalogue allemand : on verifie qu'il
+        # est charge, la ou ce test constatait auparavant le repli sur l'anglais.
         de = get_translations("de")
-        assert de.get("mire.comparison.title") == "Before/After Comparison"
+        assert de.get("mire.comparison.title") == "Zeitraumvergleich"
 
     def test_comparison_manifest_valid(self):
         import json
