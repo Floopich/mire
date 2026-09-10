@@ -1,0 +1,44 @@
+name: Nettoyage des versions GHCR
+
+# Une image multi-architecture n'occupe pas une version dans GHCR mais
+# plusieurs : une par plateforme, plus l'index parent, plus les manifestes
+# d'attestation. Supprimer un parent sans ses enfants laisse des orphelins ;
+# supprimer les enfants sans le parent casse le docker pull. Cette action
+# resout la relation et refuse d'agir si un manifeste est illisible.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Simuler sans supprimer"
+        type: boolean
+        default: true
+      keep:
+        description: "Nombre de versions recentes a toujours conserver"
+        type: string
+        default: '10'
+      cut-off:
+        description: "Anciennete au-dela de laquelle supprimer (ex. 4w, 30d)"
+        type: string
+        default: '8w'
+  schedule:
+    # Le 1er de chaque mois a 4h UTC, apres la reinitialisation du quota.
+    - cron: '0 4 1 * *'
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Elaguer les anciennes versions de l'image
+        uses: snok/container-retention-policy@v3.1.0
+        with:
+          account: user
+          # PAT classique avec les portees read:packages et delete:packages.
+          # Le GITHUB_TOKEN ne peut pas supprimer un paquet personnel.
+          token: ${{ secrets.GHCR_CLEANUP_TOKEN }}
+          image-names: mire
+          tag-selection: both
+          cut-off: ${{ inputs.cut-off || '8w' }}
+          keep-n-most-recent: ${{ inputs.keep || '10' }}
+          # Lancement manuel : la case decide. Lancement programme : suppression reelle.
+          dry-run: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry-run) || 'false' }}
