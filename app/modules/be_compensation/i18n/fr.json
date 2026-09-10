@@ -37,5 +37,10 @@
   "exclusion.customer_equipment": "Équipement hors réseau public (modem, décodeur, carte SIM, répéteur)",
   "exclusion.alternative_accepted": "Une solution alternative a été proposée et acceptée",
   "result_excluded": "Aucune indemnité n'est due pour cette cause.",
-  "threshold_note": "Le seuil de 8 heures est celui en vigueur. L'IBPT a mis en consultation une révision à 12 heures ; c'est une proposition, pas le droit actuel."
+  "threshold_note": "Le seuil de 8 heures est celui en vigueur. L'IBPT a mis en consultation une révision à 12 heures ; c'est une proposition, pas le droit actuel.",
+  "settings_desc": "Redevance mensuelle et indexation utilisées pour calculer ce qui est dû.",
+  "monthly_fee": "Abonnement mensuel (EUR)",
+  "monthly_fee_hint": "La redevance que vous payez réellement pour le service interrompu, ou pour le pack entier s'il en fait partie. Elle pilote le plancher, qui détermine le montant dans la plupart des cas.",
+  "floor_note": "Le barème et le plancher coexistent : c'est le plus élevé qui s'applique. Sur un abonnement à 60 EUR, le plancher vaut 2 EUR, que le barème ne dépasse qu'au-delà de quatre jours d'interruption. Le plancher se calcule sur la redevance saisie, il est donc toujours à jour — l'indexation ne touche que le barème.",
+  "automatic_note": "Sur un abonnement post-payé, l'indemnisation est due d'office : l'opérateur doit la verser sans que vous la réclamiez. Seules les cartes prépayées exigent une demande. Signaler la panne reste dans votre intérêt, puisque c'est ce qui démarre le compteur légal."
 }

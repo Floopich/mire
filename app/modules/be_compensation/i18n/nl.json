@@ -37,5 +37,10 @@
   "exclusion.customer_equipment": "Apparatuur buiten het openbare netwerk (modem, decoder, simkaart, versterker)",
   "exclusion.alternative_accepted": "Een alternatieve oplossing werd aangeboden en aanvaard",
   "result_excluded": "Voor deze oorzaak is geen vergoeding verschuldigd.",
-  "threshold_note": "De drempel van 8 uur is de geldende. Het BIPT heeft een herziening naar 12 uur ter consultatie voorgelegd; dat is een voorstel, niet het huidige recht."
+  "threshold_note": "De drempel van 8 uur is de geldende. Het BIPT heeft een herziening naar 12 uur ter consultatie voorgelegd; dat is een voorstel, niet het huidige recht.",
+  "settings_desc": "Maandbedrag en indexering voor de berekening van wat verschuldigd is.",
+  "monthly_fee": "Maandabonnement (EUR)",
+  "monthly_fee_hint": "Het bedrag dat u werkelijk betaalt voor de onderbroken dienst, of voor het hele pakket als ze er deel van uitmaakt. Het bepaalt de ondergrens, die in de meeste gevallen het bedrag vastlegt.",
+  "floor_note": "De schaal en de ondergrens bestaan naast elkaar: de hoogste van beide geldt. Bij een abonnement van 60 EUR bedraagt de ondergrens 2 EUR, wat de schaal pas na vier dagen onderbreking overtreft. De ondergrens wordt op het ingevoerde bedrag berekend en is dus altijd actueel — de indexering raakt enkel de schaal.",
+  "automatic_note": "Bij een postpaid-abonnement is de vergoeding van rechtswege verschuldigd: de operator moet ze uitbetalen zonder dat u erom vraagt. Enkel voor prepaidkaarten is een aanvraag nodig. De storing melden blijft in uw belang, want dat start de wettelijke teller."
 }

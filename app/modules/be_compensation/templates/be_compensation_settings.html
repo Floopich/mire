@@ -1,0 +1,30 @@
+<!-- ═══ Panel: Compensation legale (Belgique) ═══ -->
+<div class="settings-panel" id="panel-mod-mire_be_compensation">
+    <div class="settings-card glass">
+        <div class="card-header">
+            <div class="card-title-group">
+                <div class="card-icon blue">
+                    <i data-lucide="file-text"></i>
+                </div>
+                <div>
+                    <div class="card-title">{{ t['mire.be_compensation.title'] or 'Legal compensation (Belgium)' }}</div>
+                    <div class="card-subtitle">{{ t['mire.be_compensation.settings_desc'] or '' }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="form-grid cols-2">
+            <div class="form-field">
+                <label class="form-label" for="monthly_fee_eur">{{ t['mire.be_compensation.monthly_fee'] or 'Monthly subscription (EUR)' }}</label>
+                <input class="form-input" type="number" step="0.01" min="0" id="monthly_fee_eur" name="monthly_fee_eur" value="{{ config.monthly_fee_eur }}">
+                <div class="form-hint">{{ t['mire.be_compensation.monthly_fee_hint'] or '' }}</div>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="be_compensation_index_factor">{{ t['mire.be_compensation.index_factor'] or 'Indexation factor' }}</label>
+                <input class="form-input" type="number" step="0.001" min="0" id="be_compensation_index_factor" name="be_compensation_index_factor" value="{{ config.be_compensation_index_factor }}">
+                <div class="form-hint">{{ t['mire.be_compensation.index_hint'] or '' }}</div>
+            </div>
+        </div>
+        <div class="form-hint">{{ t['mire.be_compensation.floor_note'] or '' }}</div>
+        <div class="form-hint">{{ t['mire.be_compensation.automatic_note'] or '' }}</div>
+    </div>
+</div>

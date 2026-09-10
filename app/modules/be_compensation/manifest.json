@@ -9,11 +9,16 @@
   "contributes": {
     "routes": "routes.py",
     "tab": "templates/be_compensation_tab.html",
-    "i18n": "i18n/"
+    "i18n": "i18n/",
+    "settings": "templates/be_compensation_settings.html"
   },
   "menu": {
     "label_key": "mire.be_compensation.title",
     "icon": "file-text",
     "order": 18
+  },
+  "config": {
+    "monthly_fee_eur": 0,
+    "be_compensation_index_factor": 0
   }
 }
