@@ -4,6 +4,19 @@ on:
   push:
     branches: [main]
     tags: ['v*']
+    # L'image ne contient que app/, entrypoint.sh, requirements.txt et les
+    # helpers C. Un commit qui ne touche que la doc, les tests ou les
+    # scripts hote ne change pas l'image : inutile de reconstruire trois
+    # architectures sous QEMU. Les traductions vivent sous app/ et
+    # declenchent donc bien un build. Les filtres de chemin ne sont pas
+    # evalues pour les tags : une release reconstruit toujours.
+    paths-ignore:
+      - 'docs/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+      - '*.md'
   workflow_dispatch:
 
 env:
