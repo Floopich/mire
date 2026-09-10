@@ -37,5 +37,10 @@
   "exclusion.customer_equipment": "Equipment outside the public network (modem, set-top box, SIM, repeater)",
   "exclusion.alternative_accepted": "An alternative solution was offered and accepted",
   "result_excluded": "No compensation is owed for this cause.",
-  "threshold_note": "The 8-hour threshold is the one in force. The BIPT has put a revision to 12 hours out for consultation; it is a proposal, not current law."
+  "threshold_note": "The 8-hour threshold is the one in force. The BIPT has put a revision to 12 hours out for consultation; it is a proposal, not current law.",
+  "settings_desc": "Monthly fee and indexation used to compute what is owed.",
+  "monthly_fee": "Monthly subscription (EUR)",
+  "monthly_fee_hint": "The fee you actually pay for the interrupted service, or the whole bundle if it is part of one. It drives the floor, which decides the amount in most cases.",
+  "floor_note": "The scale and the floor coexist: whichever is higher applies. On a 60 EUR subscription the floor is 2 EUR, which the scale only exceeds beyond four days of interruption. The floor is computed on the fee you enter, so it is always current -- indexation only affects the scale.",
+  "automatic_note": "On a post-paid subscription the compensation is owed automatically: the operator must pay it without you asking. Only prepaid cards require a claim. Reporting the outage remains in your interest, since it starts the legal clock."
 }

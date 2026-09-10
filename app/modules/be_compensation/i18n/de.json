@@ -37,5 +37,10 @@
   "exclusion.customer_equipment": "Geräte außerhalb des öffentlichen Netzes (Modem, Receiver, SIM-Karte, Repeater)",
   "exclusion.alternative_accepted": "Eine Alternativlösung wurde angeboten und angenommen",
   "result_excluded": "Aus diesem Grund ist keine Entschädigung geschuldet.",
-  "threshold_note": "Die Schwelle von 8 Stunden ist die geltende. Das BIPT hat eine Revision auf 12 Stunden zur Konsultation gestellt; das ist ein Vorschlag, nicht das geltende Recht."
+  "threshold_note": "Die Schwelle von 8 Stunden ist die geltende. Das BIPT hat eine Revision auf 12 Stunden zur Konsultation gestellt; das ist ein Vorschlag, nicht das geltende Recht.",
+  "settings_desc": "Monatsentgelt und Indexierung zur Berechnung des geschuldeten Betrags.",
+  "monthly_fee": "Monatsabonnement (EUR)",
+  "monthly_fee_hint": "Das Entgelt, das Sie tatsächlich für den unterbrochenen Dienst zahlen, oder für das gesamte Paket, wenn er Teil davon ist. Es bestimmt die Untergrenze, die in den meisten Fällen den Betrag festlegt.",
+  "floor_note": "Satz und Untergrenze bestehen nebeneinander: es gilt der höhere Wert. Bei einem Abonnement von 60 EUR beträgt die Untergrenze 2 EUR, was der Satz erst ab vier Tagen Unterbrechung übersteigt. Die Untergrenze wird auf das eingegebene Entgelt berechnet und ist damit stets aktuell — die Indexierung betrifft nur den Satz.",
+  "automatic_note": "Bei einem Postpaid-Abonnement ist die Entschädigung von Rechts wegen geschuldet: der Anbieter muss sie ohne Aufforderung auszahlen. Nur Prepaid-Karten erfordern einen Antrag. Die Störung zu melden bleibt in Ihrem Interesse, denn das startet die gesetzliche Frist."
 }
