@@ -36,9 +36,6 @@ case "$action" in
     printf 'GH_OWNER=%s\nSITE=%s\nTZ=%s\nBOOKED_DOWNLOAD=%s\nBOOKED_UPLOAD=%s\nMIRE_TAG=%s\n' \
       "$(owner)" "$site" "${TZ:-Europe/Brussels}" \
       "${BOOKED_DOWNLOAD:-}" "${BOOKED_UPLOAD:-}" "$tag" > .env
-    if [ -z "${BOOKED_DOWNLOAD:-}" ] || [ -z "${BOOKED_UPLOAD:-}" ]; then
-      echo "Debits souscrits non renseignes : le rapport affichera N/A." >&2
-    fi
     docker compose pull
     docker compose up -d
     ip="$(hostname -I | awk '{print $1}')"
