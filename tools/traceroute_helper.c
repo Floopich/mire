@@ -16,6 +16,8 @@
  * opaque string and the v6 textual form fits because tab is the separator.
  */
 
+#define _GNU_SOURCE
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
@@ -52,6 +54,22 @@ static unsigned short icmp_checksum(const void *buf, int len) {
     sum = (sum >> 16) + (sum & 0xFFFF);
     sum += (sum >> 16);
     return (unsigned short)(~sum);
+}
+
+/* Largage definitif des privileges : setresuid ecrase aussi le saved-uid,
+ * donc aucune re-elevation n'est possible ensuite (contrairement a seteuid).
+ * Doit tourner avant toute resolution NSS/DNS. */
+static int drop_privileges(void) {
+    uid_t real = getuid();
+    if (setresuid(real, real, real) != 0) {
+        perror("setresuid");
+        return -1;
+    }
+    if (geteuid() != real || getuid() != real) {
+        fprintf(stderr, "privilege drop verification failed\n");
+        return -1;
+    }
+    return 0;
 }
 
 static int open_icmp_socket(int family) {
@@ -316,8 +334,7 @@ static int run_check(void) {
         perror("socket");
         return 2;
     }
-    if (seteuid(getuid()) != 0) {
-        perror("seteuid");
+    if (drop_privileges() != 0) {
         if (sock4 >= 0) close(sock4);
         if (sock6 >= 0) close(sock6);
         return 2;
@@ -356,7 +373,7 @@ int main(int argc, char **argv) {
      * forbids running NSS/DNS code while euid is root, so raw-socket
      * creation must consume the elevated privilege first. We open both
      * families up front because the family the resolver will choose is
-     * not known until after seteuid(getuid()) has run. Failure is only
+     * not known until after drop_privileges() has run. Failure is only
      * reported when neither family is available. */
     int sock4 = open_icmp_socket(AF_INET);
     int sock6 = open_icmp_socket(AF_INET6);
@@ -366,8 +383,7 @@ int main(int argc, char **argv) {
     }
 
     /* Drop privileges immediately, before any name resolution runs. */
-    if (seteuid(getuid()) != 0) {
-        perror("seteuid");
+    if (drop_privileges() != 0) {
         if (sock4 >= 0) close(sock4);
         if (sock6 >= 0) close(sock6);
         return 2;
