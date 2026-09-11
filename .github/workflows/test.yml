@@ -30,14 +30,16 @@ jobs:
           pip install --require-hashes -r requirements.txt
           pip install --require-hashes -r requirements-test.txt
 
-      - name: Validate workflow YAML syntax
+      - name: Validate GitHub YAML syntax
         run: |
           python - <<'PY'
           from pathlib import Path
           import yaml
 
-          for workflow in Path(".github/workflows").glob("*.yml"):
-              yaml.compose(workflow.read_text(encoding="utf-8"))
+          # rglob sur .github et pas seulement workflows/ : le config.yml des
+          # formulaires d issue etait invalide sans que rien ne le signale.
+          for document in Path(".github").rglob("*.yml"):
+              yaml.compose(document.read_text(encoding="utf-8"))
           PY
 
       - name: Run tests

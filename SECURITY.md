@@ -2,14 +2,15 @@
 
 ## Supported Versions
 
-We release security updates for the following versions:
+Mire publishes rolling builds rather than numbered releases. Images are tagged
+`vYYYY-MM-DD.N` plus `latest`, built from `main`.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| v2.x (main) | :white_check_mark: |
-| v1.x (legacy) | :x: (no longer supported) |
+| Version | Supported |
+| ------- | --------- |
+| `latest` and newest dated tag | :white_check_mark: |
+| Older dated tags | :x: (fixes land in the next build) |
 
-**Recommendation:** Always use the latest release from the `main` branch for the newest features and security fixes.
+**Recommendation:** track `latest` so security fixes reach you on the next pull.
 
 ## Reporting a Vulnerability
 

@@ -1,14 +1,14 @@
 blank_issues_enabled: false
 contact_links:
   - name: 🙋 Q&A and troubleshooting
-    url: https://github.com/Floopich/mire/discussions/categories/q-a
-    about: Discussions du projet amont DOCSight, en anglais : installation, reverse proxy, depannage
+    url: https://github.com/floopich/mire/discussions/categories/q-a
+    about: "Installation, reverse proxy, depannage : a poser ici plutot qu'en issue"
   - name: 💡 Ideas and roadmap feedback
-    url: https://github.com/Floopich/mire/discussions/categories/ideas
-    about: Idees et feuille de route du projet amont DOCSight (anglais)
+    url: https://github.com/floopich/mire/discussions/categories/ideas
+    about: "Idees et feuille de route de Mire, avant d'ouvrir une demande formelle"
   - name: 🧰 Show and tell
     url: https://github.com/floopich/mire/discussions
-    about: Partagez votre installation, vos tableaux de bord et vos dossiers de preuve
-  - name: 📚 Docs and installation guides
-    url: https://github.com/Floopich/mire/blob/main/ARCHITECTURE.md
-    about: Wiki du projet amont DOCSight (anglais) ; voir INSTALL.md pour Mire
+    about: "Partagez votre installation, vos tableaux de bord et vos dossiers de preuve"
+  - name: 📚 Architecture et installation
+    url: https://github.com/floopich/mire/blob/main/ARCHITECTURE.md
+    about: "Fonctionnement interne de Mire ; voir INSTALL.md pour l'installation"

@@ -3,14 +3,11 @@
 Ce document couvre Docker Run, Docker Compose, Portainer, Synology NAS,
 Unraid, la mise a jour et le depannage.
 
-## Windows chooser
+## Windows
 
-| If you want to... | Start here |
-|---|---|
-| Quickly try Mire on a Windows PC without Docker | [Download the portable Desktop Preview](https://github.com/floopich/mire/releases/latest), then read the [usage notes](docs/windows-desktop-preview.md) |
-| Monitor your connection continuously on Windows | [Windows Docker Desktop quick start](docs/windows-quick-start.md) |
-
-On Windows 10/11, the normal 24/7 monitoring path is Docker Desktop. Start with the [Windows quick start](docs/windows-quick-start.md) when you want the supported Docker path. The unsigned Desktop Preview is a portable tryout build published through GitHub Releases and is not intended for always-on collection.
+On Windows 10/11, install Docker Desktop and follow the Quick Start below: it is the
+only supported path for continuous collection. A portable Desktop Preview build is
+planned but no release has been published yet.
 
 If setup or collection does not behave as expected, run the passive local doctor inside the same container before collecting manual environment details:
 
@@ -21,7 +18,7 @@ docker exec mire python -m app.doctor --json > mire-doctor.json
 
 The default doctor checks local runtime, config, storage, database, secret-file presence, and optional integration configuration without contacting third-party services.
 
-Optional alert fan-out through an Apprise sidecar is covered in [docs/notifications-apprise.md](docs/notifications-apprise.md). Optional browser/app push alerts are covered in [docs/notifications-pwa-web-push.md](docs/notifications-pwa-web-push.md).
+Optional alert fan-out through an Apprise sidecar is covered in [docs/notifications-apprise.md](docs/notifications-apprise.md).
 
 ## Quick Start
 
@@ -61,6 +58,5 @@ Without these binaries, traceroute and ICMP probes will log errors but the rest 
 ## Reverse Proxy
 
 For HTTPS, forwarded client/protocol headers, or an external path prefix such as
-`/mire`, start with the in-repository [path-prefix reverse-proxy guide](docs/reverse-proxy.md).
-The broader [reverse proxy wiki guide](docs/reverse-proxy.md)
-covers additional Caddy, Nginx, and Traefik deployment examples.
+`/mire`, see the [reverse-proxy guide](docs/reverse-proxy.md). It covers the path-prefix
+setup plus Caddy, Nginx, and Traefik examples.
