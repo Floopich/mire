@@ -97,13 +97,17 @@ pour VOO dans `tests/drivers/fixtures/cga4233_voo_bridge.json`.
 
 ## Captures d ecran a refaire
 
-**Statut : reporte, en attente de stabilisation de l interface.**
+**Statut : captures supprimees du depot, a refaire.**
 
-Les captures de `docs/screenshots/` et `app/static/screenshots/` datent du
-31 aout, avant le rebranding corail : elles montrent encore l accent violet
-de DOCSight, et pour certaines des vues supprimees depuis (BQM, segment).
-Elles pesent environ 4,4 Mo au total et sont referencees par le README et
-la page de presentation `docs/index.html`.
+Les captures de `docs/screenshots/` et `app/static/screenshots/` dataient du
+31 aout, avant le rebranding corail : elles montraient encore la marque et
+l accent violet de DOCSight, et pour certaines des vues supprimees depuis
+(BQM, segment). Elles ont ete retirees au passage du depot en public.
+
+En attendant les nouvelles : `docs/index.html` affiche le logo a la place,
+l apercu social (og:image et twitter:image) est desactive, et le manifeste
+PWA n a plus de cle screenshots. Les trois sont a retablir une fois les
+captures Mire disponibles.
 
 A refaire une fois l interface stabilisee : tableau de bord clair et sombre,
 themes, parametres, speedtest, chronologie des canaux, correlation,

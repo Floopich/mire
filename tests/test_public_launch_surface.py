@@ -88,13 +88,13 @@ def test_landing_page_has_required_canonical_and_social_metadata() -> None:
     assert parser.meta[("property", "og:title")].strip()
     assert parser.meta[("property", "og:description")].strip()
     assert parser.meta[("property", "og:url")] == parser.canonical
-    og_image = parser.meta[("property", "og:image")]
-    assert og_image.startswith(parser.canonical)
-    assert (DOCS / urlparse(og_image).path.removeprefix("/mire/")).is_file()
-    assert parser.meta[("name", "twitter:card")] == "summary_large_image"
+    # Pas d'apercu social tant que les captures ne montrent pas Mire : mieux
+    # vaut un partage sans visuel qu'un visuel emprunte au projet amont.
+    assert ("property", "og:image") not in parser.meta
+    assert ("name", "twitter:image") not in parser.meta
+    assert parser.meta[("name", "twitter:card")] == "summary"
     assert parser.meta[("name", "twitter:title")].strip()
     assert parser.meta[("name", "twitter:description")].strip()
-    assert parser.meta[("name", "twitter:image")] == og_image
 
 
 def test_landing_page_references_only_existing_local_assets() -> None:
@@ -118,20 +118,14 @@ def test_public_surface_docs_and_social_asset_exist() -> None:
         DOCS / "feature-matrix.md",
         DOCS / "proof-pack.md",
         DOCS / "samples" / "demo-complaint-report.pdf",
-        DOCS / "screenshots" / "bad-day-evidence.png",
-        DOCS / "screenshots" / "dashboard-hero.png",
-        DOCS / "screenshots" / "social-preview.png",
+        DOCS / "mire-logo.svg",
     ]
     for path in expected:
         assert path.exists(), path
         assert path.stat().st_size > 0, path
 
-    width, height = png_size(DOCS / "screenshots" / "social-preview.png")
-    assert width >= 1200
-    assert height >= 630
-    width, height = png_size(DOCS / "screenshots" / "dashboard-hero.png")
-    assert width >= 1600
-    assert height >= 900
+    # Garde-fou : aucune capture ne revient tant qu'elle ne vient pas de Mire.
+    assert list(DOCS.glob("screenshots/*.png")) == []
 
 
 def test_public_docs_reference_existing_local_assets_without_unlinked_images() -> None:
