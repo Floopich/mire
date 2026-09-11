@@ -6,9 +6,8 @@ This page collects demo-safe assets for README, launch posts, community replies,
 
 Live community threads:
 
-- [Share your Mire setup and what it helped you prove](https://github.com/floopich/mire/discussions/343)
-- [Supported modem reports](https://github.com/floopich/mire/discussions/454)
-- [ISP evidence outcomes](https://github.com/floopich/mire/discussions/455)
+- [Share your setup and what it helped you prove](https://github.com/floopich/mire/discussions)
+- [Ask a question or report a problem](https://github.com/floopich/mire/discussions/categories/q-a)
 
 ### Bad evening evidence timeline
 

@@ -19,6 +19,7 @@ UNLINKED_PUBLIC_IMAGES = [
     DOCS / "screenshots" / "smart-capture-settings.png",
     DOCS / "screenshots" / "readme-hero-evidence.png",
 ]
+RE_LINK = re.compile(r"\]\(([^)\s]+)\)")
 LOCAL_PUBLIC_ASSET_RE = re.compile(
     r"(?<![\w/-])(?:docs/)?(?:screenshots/|samples/)?[A-Za-z0-9_.-]+\.(?:png|jpg|jpeg|webp|svg|pdf)"
 )
@@ -140,6 +141,20 @@ def test_public_docs_reference_existing_local_assets_without_unlinked_images() -
 
     assert missing == []
     assert [path.relative_to(ROOT).as_posix() for path in UNLINKED_PUBLIC_IMAGES if path.exists()] == []
+
+
+def test_public_docs_have_no_dead_relative_links() -> None:
+    sources = [*sorted(ROOT.glob("*.md")), *sorted(DOCS.rglob("*.md"))]
+
+    dead = []
+    for source in sources:
+        for link in re.findall(RE_LINK, source.read_text(encoding="utf-8")):
+            if link.startswith(("http://", "https://", "mailto:", "#")):
+                continue
+            if not (source.parent / link.split("#", 1)[0]).exists():
+                dead.append(f"{source.relative_to(ROOT)} -> {link}")
+
+    assert dead == []
 
 
 def test_no_private_or_localhost_values_in_public_surface() -> None:
