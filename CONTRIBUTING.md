@@ -4,6 +4,19 @@ Thanks for your interest in contributing.
 
 If you need setup help, troubleshooting, or want to share a real-world Mire deployment, start with [SUPPORT.md](SUPPORT.md) so you end up in the right place first.
 
+## Language
+
+Two languages, on purpose, split by audience:
+
+- **French** for what a VOO subscriber reads: `README.md`, `TRADEMARKS.md`, the
+  in-app French locale. Mire exists for people in Wallonia dealing with their ISP.
+- **English** for what a contributor reads: this file, `INSTALL.md`,
+  `ARCHITECTURE.md`, `DATA_CONTRACT.md`, `SECURITY.md`, `SUPPORT.md`, the landing
+  page, code comments, commit messages and issue templates.
+
+New documents follow whichever side they belong to rather than the language of
+the document next to them.
+
 ## Before You Start
 
 **Please open an issue or start an Ideas discussion first** before working on any new feature or significant change. This lets us discuss the approach and make sure it fits the project architecture. PRs without prior discussion may be closed.

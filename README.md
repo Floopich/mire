@@ -12,6 +12,10 @@
   <sub>Basé sur <a href="https://github.com/itsDNNS/docsight">DOCSight</a> (licence MIT), adapté aux abonnés VOO en Belgique.</sub>
 </p>
 
+<p align="center">
+  <sub><i>English readers:</i> this page targets Belgian cable subscribers and stays in French. The technical documentation is in English — start with <a href="INSTALL.md">INSTALL.md</a> and <a href="ARCHITECTURE.md">ARCHITECTURE.md</a>.</sub>
+</p>
+
 ---
 
 ## Ce que fait Mire
