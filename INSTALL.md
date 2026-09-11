@@ -33,6 +33,11 @@ docker run -d \
 
 Open `http://localhost:1340` and follow the setup wizard.
 
+The `compose.yaml` at the repository root is not this quick start: it drives
+multi-site measurement campaigns through `scripts/site.sh` and expects a
+generated `.env`. Use the `docker run` above, or write your own compose file
+around the same image.
+
 ## Bare-Metal / systemd
 
 If you run Mire outside of Docker (e.g. as a systemd service), you need to compile and install the native helpers manually. These are tiny C programs that need setuid root because ICMP raw sockets require elevated privileges.
