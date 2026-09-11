@@ -47,21 +47,5 @@
       "url": "../?source=pwa#channels",
       "icons": [{"src": "icon.png", "sizes": "512x512", "type": "image/png"}]
     }
-  ],
-  "screenshots": [
-    {
-      "src": "screenshots/dashboard-narrow.png",
-      "sizes": "393x852",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Mire mobile dashboard"
-    },
-    {
-      "src": "screenshots/dashboard-wide.png",
-      "sizes": "1440x1000",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Mire desktop dashboard"
-    }
   ]
 }

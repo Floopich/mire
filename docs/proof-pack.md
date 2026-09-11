@@ -12,7 +12,6 @@ Live community threads:
 
 ### Bad evening evidence timeline
 
-![Mire bad evening evidence timeline](screenshots/bad-day-evidence.png)
 
 Use this when the story is about intermittent cable problems, cross-source correlation, or the evidence workflow.
 
@@ -47,10 +46,7 @@ What it proves:
 
 Proof assets:
 
-- `docs/screenshots/bad-day-evidence.png`
 - `docs/samples/demo-complaint-report.pdf`
-- `docs/screenshots/social-preview.png`
-- `docs/screenshots/complaint-workflow.png`
 
 Use when:
 
@@ -62,9 +58,6 @@ Use when:
 
 Proof assets:
 
-- `docs/screenshots/bad-day-evidence.png`
-- `docs/screenshots/speedtest.png`
-- `docs/screenshots/social-preview.png`
 
 Use when:
 
@@ -142,9 +135,6 @@ The public repository keeps the generated, demo-safe assets, not the one-off gen
 
 Bundled files:
 
-- `docs/screenshots/bad-day-evidence.png`
-- `docs/screenshots/dashboard-hero.png`
-- `docs/screenshots/social-preview.png`
 - `docs/samples/demo-complaint-report.pdf`
 
 Keep all updates synthetic and rerun the screenshot/report safety checklist above before publishing replacements.

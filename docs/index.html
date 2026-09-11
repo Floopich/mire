@@ -11,12 +11,10 @@
   <meta property="og:site_name" content="Mire">
   <meta property="og:title" content="Mire | Your ISP says everything is fine. Mire shows the timeline.">
   <meta property="og:description" content="Self-hosted DOCSIS evidence for bad evenings, packet loss, modem events and complaint-ready reports.">
-  <meta property="og:image" content="https://floopich.github.io/mire/screenshots/social-preview.png">
   <meta property="og:url" content="https://floopich.github.io/mire/">
-  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Mire | Self-hosted evidence for cable internet problems">
   <meta name="twitter:description" content="Build a local evidence trail from modem signal data, speed, latency, events and incident notes.">
-  <meta name="twitter:image" content="https://floopich.github.io/mire/screenshots/social-preview.png">
   <style>
     :root {
       color-scheme: dark;
@@ -119,6 +117,8 @@
     }
     .screenshot-card { position: relative; border: 1px solid var(--line); border-radius: 28px; overflow: hidden; box-shadow: var(--shadow); background: var(--card-strong); }
     .screenshot-card img { width: 100%; }
+    .logo-card { display: grid; place-items: center; padding: 72px 24px; }
+    .logo-card img { width: min(200px, 45%); }
     .caption { color: #c5d1e4; font-size: 1rem; margin-top: 12px; }
     section { padding: 70px 0; border-top: 1px solid rgba(167,190,255,0.12); }
     .section-head { max-width: 760px; margin-bottom: 28px; }
@@ -132,7 +132,7 @@
     .journey-card { border: 1px solid var(--line); border-radius: 26px; background: var(--card); overflow: hidden; box-shadow: 0 18px 50px rgba(0,0,0,0.2); }
     .journey-card .copy { padding: 18px 20px 22px; }
     .journey-card h3 { margin: 0 0 8px; font-size: 1.2rem; }
-    .proof { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr); gap: 24px; align-items: center; }
+    .proof { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: center; }
     .proof-copy { padding: 8px 0; }
     .proof-list { margin: 22px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
     .proof-list li { display: flex; gap: 10px; color: var(--muted); }
@@ -227,10 +227,10 @@
           </div>
         </div>
         <div class="hero-shot">
-          <div class="screenshot-card">
-            <img src="screenshots/dashboard-hero.png" alt="Mire product dashboard with signal health, speed, latency and connection cards">
+          <div class="screenshot-card logo-card">
+            <img src="mire-logo.svg" alt="Mire">
           </div>
-          <p class="caption">Synthetic demo data in the real product UI: signal health, speed, latency and connection context in one dashboard.</p>
+          <p class="caption">Product screenshots are being redone and will return once they show Mire itself.</p>
         </div>
       </div>
     </header>
@@ -257,19 +257,15 @@
         </div>
         <div class="journey-grid">
           <article class="journey-card">
-            <img src="screenshots/dashboard-dark.png" alt="Mire dashboard with current signal health, speed and active issue cards">
             <div class="copy"><h3>See what is happening now</h3><p>Current signal health, speed, latency and active issues sit in one view.</p></div>
           </article>
           <article class="journey-card">
-            <img src="screenshots/trends.png" alt="Mire signal trends showing long-term signal patterns">
             <div class="copy"><h3>Find the pattern</h3><p>Bad evenings stop looking random when the history is visible.</p></div>
           </article>
           <article class="journey-card">
-            <img src="screenshots/correlation.png" alt="Mire correlation view lining up signal, speed and event history">
             <div class="copy"><h3>Connect the signals</h3><p>Signal drops, packet loss, speed dips, modem events and notes line up in one timeline.</p></div>
           </article>
           <article class="journey-card">
-            <img src="screenshots/complaint-workflow.png" alt="Mire evidence package workflow for local report generation">
             <div class="copy"><h3>Bring something useful to support</h3><p>Turn the timeline into a report, checklist and support-ready evidence package.</p></div>
           </article>
         </div>
@@ -278,15 +274,11 @@
 
     <section id="proof" aria-labelledby="proof-title">
       <div class="wrap proof">
-        <div class="screenshot-card">
-          <img src="screenshots/bad-day-evidence.png" alt="Demo bad evening evidence timeline with degraded signal and event context">
-        </div>
         <div class="proof-copy">
           <div class="eyebrow">Demo-safe proof pack</div>
           <h2 id="proof-title">See the output before you connect real hardware.</h2>
           <p>The sample uses synthetic data. It shows what a bad evening can look like without exposing a real provider, IP address, MAC address, serial number or customer data.</p>
           <ul class="proof-list">
-            <li>Bad evening screenshot with signal, speed, packet loss, events and notes</li>
             <li>Sample complaint report PDF</li>
           </ul>
           <div class="hero-actions">

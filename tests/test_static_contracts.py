@@ -179,12 +179,9 @@ def test_pwa_manifest_metadata_and_declared_assets_are_valid() -> None:
         "https://mire.test/?source=pwa"
     )
     assert urljoin(manifest_url, manifest["scope"]) == "https://mire.test/"
-    assert {item["form_factor"] for item in manifest["screenshots"]} == {"narrow", "wide"}
+    assert "screenshots" not in manifest
 
     declared_assets = [urljoin(manifest_url, icon["src"]) for icon in manifest["icons"]]
-    declared_assets += [
-        urljoin(manifest_url, shot["src"]) for shot in manifest["screenshots"]
-    ]
     for shortcut in manifest["shortcuts"]:
         assert urljoin(manifest_url, shortcut["url"]).startswith(
             "https://mire.test/?source=pwa#"

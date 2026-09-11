@@ -229,10 +229,8 @@ def test_base_manifest_urls_resolve_to_the_active_mount(manifest_url, app_root):
         for shortcut in manifest["shortcuts"]
         for icon in shortcut["icons"]
     } == {f"{app_root}static/icon.png"}
-    assert {urljoin(manifest_url, shot["src"]) for shot in manifest["screenshots"]} == {
-        f"{app_root}static/screenshots/dashboard-narrow.png",
-        f"{app_root}static/screenshots/dashboard-wide.png",
-    }
+    # Captures retirees du manifeste en attendant des visuels Mire.
+    assert "screenshots" not in manifest
 
 
 @pytest.mark.parametrize(
