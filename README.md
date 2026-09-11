@@ -96,18 +96,11 @@ sudo usermod -aG docker $USER && \
 sudo timedatectl set-timezone Europe/Brussels
 ```
 
-L'image est publiée sur GHCR depuis un dépôt privé : il faut un jeton GitHub avec les
-portées `repo` et `read:packages` (Settings > Developer settings > Tokens classic).
+Le dépôt et l'image GHCR sont publics : ni jeton ni `docker login`.
 
 ```bash
-read -rsp 'Jeton GitHub : ' T; echo
-```
-
-```bash
-echo "$T" | docker login ghcr.io -u Floopich --password-stdin && \
-git clone https://Floopich:$T@github.com/Floopich/mire.git ~/mire && \
-cd ~/mire && git remote set-url origin https://github.com/Floopich/mire.git && \
-unset T && ./scripts/site.sh start maison
+git clone https://github.com/Floopich/mire.git ~/mire && \
+cd ~/mire && ./scripts/site.sh start maison
 ```
 
 L'interface écoute sur le port **1340**. Au premier démarrage, `http://<ip>:1340` ouvre

@@ -28,9 +28,14 @@ on:
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    # Le nettoyage passe par GHCR_CLEANUP_TOKEN, pas par le GITHUB_TOKEN :
+    # ce job n'a besoin d'aucune permission sur le depot.
+    permissions: {}
     steps:
       - name: Elaguer les anciennes versions de l'image
-        uses: snok/container-retention-policy@v3.1.0
+        # Seule action du depot a detenir un PAT delete:packages : elle est
+        # epinglee au SHA comme toutes les autres, un tag restant mutable.
+        uses: snok/container-retention-policy@d3bdcf5ce9b05f685154e4a16c39233b245e3d53 # v3.1.0
         with:
           account: user
           # PAT classique avec les portees read:packages et delete:packages.
