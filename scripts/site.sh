@@ -33,9 +33,19 @@ case "$action" in
     # Suivi du tag mobile latest par defaut. MIRE_TAG=sha-<commit> reste
     # possible ponctuellement pour revenir sur une image precise.
     tag="${MIRE_TAG:-latest}"
+    gh_owner="$(owner)"
+    # Les cles ajoutees a la main (WEB_PORT, MODULE_REGISTRY_URL...) survivent
+    # au redemarrage : seules les six cles gerees ici sont reecrites.
+    extra=""
+    if [ -f .env ]; then
+      extra="$(grep -vE '^(GH_OWNER|SITE|TZ|BOOKED_DOWNLOAD|BOOKED_UPLOAD|MIRE_TAG)=' .env || true)"
+    fi
     printf 'GH_OWNER=%s\nSITE=%s\nTZ=%s\nBOOKED_DOWNLOAD=%s\nBOOKED_UPLOAD=%s\nMIRE_TAG=%s\n' \
-      "$(owner)" "$site" "${TZ:-Europe/Brussels}" \
+      "$gh_owner" "$site" "${TZ:-Europe/Brussels}" \
       "${BOOKED_DOWNLOAD:-}" "${BOOKED_UPLOAD:-}" "$tag" > .env
+    if [ -n "$extra" ]; then
+      printf '%s\n' "$extra" >> .env
+    fi
     docker compose pull
     docker compose up -d
     ip="$(hostname -I | awk '{print $1}')"

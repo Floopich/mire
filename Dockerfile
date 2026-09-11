@@ -20,10 +20,10 @@ RUN mkdir -p /build/out && \
 FROM python:3.14-slim@sha256:cad9a2c871761c413caa6fdd6441c783451e740a48aaeba60ae62a8b53525ef6
 ARG VERSION=dev
 LABEL org.opencontainers.image.title="Mire" \
-      org.opencontainers.image.description="Suivi local du signal DOCSIS, derive de Mire" \
+      org.opencontainers.image.description="Suivi local du signal DOCSIS, derive de DOCSight" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.base.name="docker.io/library/python:3.13-slim"
+      org.opencontainers.image.base.name="docker.io/library/python:3.14-slim"
 WORKDIR /app
 RUN echo "${VERSION}" > /app/VERSION
 

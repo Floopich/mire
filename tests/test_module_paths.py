@@ -53,6 +53,21 @@ def test_container_prepares_community_module_storage():
     assert 'chown -R appuser:appuser "$target"' in entrypoint
 
 
+def test_dockerfile_base_label_matches_from_tag():
+    """Le libelle base.name a longtemps annonce une version de Python que
+    l image n utilisait plus."""
+    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+
+    from_tags = {
+        line.split()[1].split("@", 1)[0]
+        for line in dockerfile.splitlines()
+        if line.startswith("FROM ")
+    }
+    assert len(from_tags) == 1, from_tags
+    image = from_tags.pop()
+    assert f'org.opencontainers.image.base.name="docker.io/library/{image}"' in dockerfile
+
+
 def test_docker_healthcheck_uses_configured_web_port():
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
     healthcheck = (ROOT / "app" / "healthcheck.py").read_text(encoding="utf-8")

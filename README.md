@@ -8,6 +8,10 @@
   <strong>Ce qui se passe vraiment sur votre ligne câble, mesuré en continu.</strong>
 </p>
 
+<p align="center">
+  <sub>Basé sur <a href="https://github.com/itsDNNS/docsight">DOCSight</a> (licence MIT), adapté aux abonnés VOO en Belgique.</sub>
+</p>
+
 ---
 
 ## Ce que fait Mire

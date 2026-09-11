@@ -1,3 +1,7 @@
+# Compose des campagnes de mesure : un dossier de donnees par site, pilote par
+# ./scripts/site.sh qui genere le .env. Pour une installation normale, suivre
+# le Quick Start de INSTALL.md : ce fichier n'est pas prevu pour un premier
+# demarrage juste apres un clone.
 services:
   mire:
     image: ghcr.io/${GH_OWNER:?lancer ./scripts/site.sh start <site>, il renseigne .env}/mire:${MIRE_TAG:-latest}
