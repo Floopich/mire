@@ -31,6 +31,10 @@ docker run -d \
   ghcr.io/floopich/mire:latest
 ```
 
+On first start Mire generates an admin password for this instance and logs it
+once. Read it with `docker logs mire`, or from `.initial_password` in the data
+directory. Change it in Settings: doing so deletes that file.
+
 Open `http://localhost:1340` and follow the setup wizard.
 
 The `compose.yaml` at the repository root is not this quick start: it drives

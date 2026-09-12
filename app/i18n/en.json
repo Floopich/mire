@@ -987,5 +987,6 @@
   "detect_none": "No modem detected",
   "collection_stale_title": "Collection stopped",
   "collection_stale_body": "No sample has been recorded for a while. Check that the modem is still reachable. Last sample:",
-  "detect_modem_hint": "Finds the modem on the network and fills in the address"
+  "detect_modem_hint": "Finds the modem on the network and fills in the address",
+  "login_initial_password_hint": "First start: a password was generated. It is in the container logs and in .initial_password inside the data directory."
 }

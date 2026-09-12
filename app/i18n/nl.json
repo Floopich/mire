@@ -987,5 +987,6 @@
   "detect_none": "Geen modem gedetecteerd",
   "collection_stale_title": "Verzameling onderbroken",
   "collection_stale_body": "Er is al een tijd geen meting vastgelegd. Controleer of de modem bereikbaar blijft. Laatste meting:",
-  "detect_modem_hint": "Zoekt de modem op het netwerk en vult het adres in"
+  "detect_modem_hint": "Zoekt de modem op het netwerk en vult het adres in",
+  "login_initial_password_hint": "Eerste start: er is een wachtwoord gegenereerd. Het staat in de containerlogs en in .initial_password in de datamap."
 }

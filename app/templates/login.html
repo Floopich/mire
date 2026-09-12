@@ -112,6 +112,9 @@
         {% if error %}
         <div class="error" role="alert">{{ error }}</div>
         {% endif %}
+        {% if initial_password_pending %}
+        <p class="hint">{{ t.login_initial_password_hint }}</p>
+        {% endif %}
         <form method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="password" id="login-password" name="password" placeholder="{{ t.password }}" aria-label="{{ t.password }}" autofocus required>

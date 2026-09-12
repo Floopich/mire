@@ -18,6 +18,7 @@ from flask import current_app, render_template, request, jsonify, redirect, sess
 from werkzeug.security import check_password_hash
 from zoneinfo import available_timezones
 
+from .initial_password import initial_password_path
 from .config import DEFAULTS, MODULE_SECRET_KEYS, PASSWORD_MASK, POLL_MIN, POLL_MAX
 from .analyzer import get_thresholds
 from .base_path import normalize_base_path
@@ -609,6 +610,15 @@ def _require_session_auth(f):
     return decorated
 
 
+def _initial_password_pending():
+    """Le mot de passe genere au premier demarrage n'a pas encore ete change."""
+    _config_manager = get_config_manager()
+    data_dir = getattr(_config_manager, "data_dir", "") if _config_manager else ""
+    if not data_dir:
+        return False
+    return os.path.exists(initial_password_path(data_dir))
+
+
 def login():
     _config_manager = get_config_manager()
     _sync_auth_state()
@@ -625,12 +635,12 @@ def login():
             _record_failed_login(ip)
             audit_log.warning("Login rejected: invalid csrf token for ip=%s", ip)
             error = t.get("login_failed", "Invalid password")
-            return render_template("login.html", t=t, lang=lang, theme=theme, error=error, csrf_token=csrf_token), 400
+            return render_template("login.html", t=t, lang=lang, theme=theme, error=error, csrf_token=csrf_token, initial_password_pending=_initial_password_pending()), 400
         wait = _check_login_rate_limit(ip)
         if wait > 0:
             audit_log.warning("Login rate-limited: ip=%s (retry in %ds)", ip, int(wait))
             error = t.get("login_rate_limited", "Too many attempts. Try again later.")
-            return render_template("login.html", t=t, lang=lang, theme=theme, error=error, csrf_token=csrf_token)
+            return render_template("login.html", t=t, lang=lang, theme=theme, error=error, csrf_token=csrf_token, initial_password_pending=_initial_password_pending())
         pw = request.form.get("password", "")
         stored = _config_manager.get("admin_password", "")
         if stored.startswith(("scrypt:", "pbkdf2:")):
@@ -656,7 +666,7 @@ def login():
         _record_failed_login(ip)
         audit_log.warning("Login failed: ip=%s", ip)
         error = t.get("login_failed", "Invalid password")
-    return render_template("login.html", t=t, lang=lang, theme=theme, error=error, csrf_token=csrf_token)
+    return render_template("login.html", t=t, lang=lang, theme=theme, error=error, csrf_token=csrf_token, initial_password_pending=_initial_password_pending())
 
 
 def logout():

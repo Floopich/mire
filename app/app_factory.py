@@ -13,6 +13,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from . import web
 from .base_path import configure_base_path
+from .initial_password import ensure_admin_password
 from .module_loader import ModuleLoader
 from .registration import (
     RegistrationPlan,
@@ -123,6 +124,12 @@ def create_app(
         SESSION_REFRESH_EACH_REQUEST=True,
         TESTING=testing,
     )
+
+    # Avant toute route : une instance sans mot de passe n'authentifie rien.
+    # Hors tests, qui construisent volontairement des instances ouvertes ;
+    # la generation elle-meme est couverte dans test_initial_password.py.
+    if not testing:
+        ensure_admin_password(config_manager)
 
     auth_state = AuthStateStore(config_manager.data_dir)
     app.secret_key = auth_state.load_or_create_session_key()

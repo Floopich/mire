@@ -380,6 +380,12 @@ class ConfigManager:
             if key in data and data[key]:
                 if not (data[key].startswith("scrypt:") or data[key].startswith("pbkdf2:")):
                     data[key] = generate_password_hash(data[key])
+                    # L'utilisateur choisit son mot de passe : la trace du
+                    # mot de passe genere au premier demarrage doit partir.
+                    if key == "admin_password":
+                        from .initial_password import clear_initial_password
+
+                        clear_initial_password(self.data_dir)
 
         # Encrypt secret and private values before storing. Private values stay
         # displayable in normal Settings and report forms, unlike password-style secrets.
