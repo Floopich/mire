@@ -89,6 +89,7 @@ Modal or blocking notices are not allowed for normal release notes, feature anno
 
 Mire includes built-in authentication protecting all routes:
 
+- **First start** — when no password is configured, Mire generates a random one per instance rather than shipping a shared default, which would be readable in this public repository. It is revealed only through channels that already require host access: the container logs and `DATA_DIR/.initial_password` (mode `0600`). It is never shown in the setup wizard or on the login page, since both are reachable without authentication. Setting your own password deletes the file.
 - **Admin password** — hashed with Werkzeug (`scrypt` or `pbkdf2`). Plaintext passwords from older versions are auto-upgraded to hashes on first login.
 - **Session-based login** — browser sessions use Flask's signed cookies and are valid for a rolling 30 days by default. Operators can set `SESSION_LIFETIME_DAYS`; values are bounded to 1–365 days, and malformed values safely use the 30-day default.
 - **API tokens** — Bearer token authentication for programmatic access (see [API Token Security](#api-token-security) below).

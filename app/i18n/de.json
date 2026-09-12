@@ -987,5 +987,6 @@
   "detect_none": "Kein Modem erkannt",
   "collection_stale_title": "Erfassung unterbrochen",
   "collection_stale_body": "Seit einer Weile wurde keine Messung aufgezeichnet. Prüfen Sie, ob das Modem erreichbar ist. Letzte Messung:",
-  "detect_modem_hint": "Sucht das Modem im Netzwerk und füllt die Adresse aus"
+  "detect_modem_hint": "Sucht das Modem im Netzwerk und füllt die Adresse aus",
+  "login_initial_password_hint": "Erster Start: Ein Passwort wurde erzeugt. Es steht in den Container-Logs und in .initial_password im Datenverzeichnis."
 }
