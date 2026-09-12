@@ -8,6 +8,7 @@
   "type": "analysis",
   "contributes": {
     "routes": "routes.py",
+    "static": "static/",
     "tab": "templates/be_mediation_tab.html",
     "i18n": "i18n/"
   },
