@@ -5,218 +5,146 @@
 <h1 align="center">Mire</h1>
 
 <p align="center">
-  <strong>Ce qui se passe vraiment sur votre ligne câble, mesuré en continu.</strong>
+  <strong>Analyser sa ligne DOCSIS, en continu et chez soi.</strong>
 </p>
 
 <p align="center">
   <sub>Basé sur <a href="https://github.com/itsDNNS/docsight">DOCSight</a> (licence MIT), adapté aux abonnés VOO en Belgique.</sub>
 </p>
 
-<p align="center">
-  <sub><i>English readers:</i> this page targets Belgian cable subscribers and stays in French. The technical documentation is in English — start with <a href="INSTALL.md">INSTALL.md</a> and <a href="ARCHITECTURE.md">ARCHITECTURE.md</a>.</sub>
-</p>
-
 ---
+
+## Le problème
+
+Votre modem câble sait exactement dans quel état est votre ligne. Il mesure en
+permanence la puissance de chaque canal, le rapport signal/bruit, la modulation
+négociée, les erreurs corrigées et non corrigées. Ces valeurs s'affichent dans son
+interface, et les suivantes les remplacent quelques secondes plus tard.
+
+Il n'en garde rien. Vous voyez donc un instantané, jamais une évolution — alors
+qu'une ligne câble se dégrade presque toujours progressivement. Le bruit monte,
+quelques canaux basculent en modulation plus basse, et vous ne constatez que les
+symptômes : la visio qui se fige, la partie qui décroche, le débit qui s'effondre
+en soirée.
 
 ## Ce que fait Mire
 
-Une connexion câble se dégrade rarement d'un coup. Le signal s'affaiblit, le bruit
-monte, quelques canaux passent en modulation basse, et l'on constate surtout des
-symptômes : une visio qui saute, une partie qui décroche, un débit qui s'effondre
-le soir. Le modem, lui, sait exactement ce qui se passe — mais n'en garde aucune trace.
+Mire interroge le modem à intervalle régulier et conserve chaque relevé dans une
+base locale. Ce simple fait — garder l'historique — rend exploitables des chiffres
+qui ne l'étaient pas.
 
-Mire interroge le modem en continu et conserve l'historique : puissances descendante
-et montante, MER/SNR par canal, modulation, compteurs d'erreurs, pertes de
-synchronisation. Ces mesures s'accumulent dans une base locale et deviennent lisibles :
-graphiques, chronologies, alertes, comparaisons entre deux périodes.
+**Collecte.** Puissances descendante et montante, MER/SNR par canal, modulation,
+compteurs d'erreurs, pertes de synchronisation. Tout est horodaté et conservé.
 
-L'usage courant est la surveillance — savoir où en est la ligne, repérer une dérive
-avant qu'elle ne devienne gênante, comprendre après coup ce qui s'est passé pendant
-une coupure. Et quand un problème persiste malgré les échanges avec l'opérateur, les
-mêmes données produisent un dossier daté : rapport PDF, chronologie des incidents,
-courrier de plainte conforme à la procédure belge.
+**Analyse.** Chaque relevé est confronté à des seuils. Ceux de Mire viennent de la
+pratique VOO plutôt que de valeurs génériques, ce qui évite de signaler comme
+anormal un niveau parfaitement courant sur ce réseau.
 
-## En bref
+**Détection.** Perte de synchronisation, chute de modulation, sortie de plage : ces
+événements sont repérés et horodatés sans que vous ayez à regarder au bon moment.
 
-| | |
-|---|---|
-| Modem pris en charge | Technicolor CGA4233 (firmware VOO) |
-| Repli | Mode routeur générique, sans données DOCSIS |
-| Collecte | Interrogation continue, historique en base SQLite locale |
-| Seuils | Pratique VOO, lignes OFDM issues de CableLabs DOCSIS 3.1 PHY |
-| Modules | 10 embarqués, activables individuellement |
-| Langues | Français, néerlandais, allemand, anglais |
-| Recours documenté | Service de médiation pour les télécommunications (Belgique) |
-| Déploiement | Docker, image GHCR multi-architecture (amd64, arm64, armv7) |
-| Interface | Web, port 1340 |
+**Restitution.** Graphiques par canal, tendances sur plusieurs semaines,
+chronologies. C'est là qu'apparaissent les motifs répétitifs, comme la dégradation
+quotidienne aux heures de pointe ou la dérive lente qui suit une intervention.
 
-## Fonctionnalités
-
-**Tableau de bord.** État de santé de la ligne en un coup d'œil, avec le détail par
-canal descendant et montant. Les seuils sont ceux de la pratique VOO, pas des valeurs
-génériques : un signal à 8 dBmV n'est pas signalé en anomalie s'il ne pose pas de
-problème en pratique.
-
-**Historique et tendances.** Chaque mesure est conservée. On revient sur une soirée
-précise, on compare une semaine à la précédente, on suit l'évolution d'un canal sur un
-mois. C'est là qu'apparaissent les motifs récurrents — la dégradation quotidienne aux
-heures de pointe, la dérive lente après une intervention.
-
-**Détection d'événements.** Perte de synchronisation, chute de modulation, sortie de
-plage : Mire les repère seul et les inscrit dans un journal horodaté, sans qu'il faille
-regarder au bon moment.
-
-**Corrélation.** Signal du modem, débits mesurés et événements détectés sur une même
-chronologie. C'est ce qui relie un symptôme ressenti à une cause mesurable.
-
-**Latence continue.** Sondes ICMP/TCP vers des cibles configurables, pour documenter la
-perte de paquets et la gigue — invisibles dans un test de débit ponctuel.
-
-**Journal d'incidents.** Décrire un problème, y rattacher captures et mesures, regrouper
-plusieurs entrées en un incident unique.
-
-**Rapports et plainte.** Rapport PDF d'incident, et courrier suivant la procédure belge :
-plainte écrite à l'opérateur, puis saisine du Service de médiation si nécessaire.
-
-**Notifications.** Alertes vers Home Assistant en MQTT, ou par les canaux configurés,
-quand la santé de la ligne change.
-
-## Matériel
-
-**Modem** — 1 modem pris en charge : le Technicolor CGA4233 (firmware VOO), accessible en `192.168.100.1`. Le mode
-bridge n'est pas obligatoire, mais l'adresse et les identifiants sont à vérifier sur
-place plutôt qu'à supposer.
-
-**Collecteur** : Raspberry Pi 3B+ ou mieux, sous Pi OS Lite 64 bits avec Docker.
-N'importe quelle machine Docker convient — NAS, Proxmox, Debian.
-
-Un mode **routeur générique** existe pour les modems non pris en charge : les fonctions
-indépendantes du modem restent disponibles, sans les données DOCSIS.
-
-## Installation
-
-Prérequis, puis reconnexion obligatoire pour que le groupe `docker` prenne effet :
-
-```bash
-sudo apt update && sudo apt install -y git && \
-curl -fsSL https://get.docker.com | sh && \
-sudo usermod -aG docker $USER && \
-sudo timedatectl set-timezone Europe/Brussels
-```
-
-Le dépôt et l'image GHCR sont publics : ni jeton ni `docker login`.
-
-```bash
-git clone https://github.com/Floopich/mire.git ~/mire && \
-cd ~/mire && ./scripts/site.sh start maison
-```
-
-L'interface écoute sur le port **1340**. Au premier démarrage, `http://<ip>:1340` ouvre
-l'assistant : URL du modem, utilisateur, mot de passe.
-
-## Campagne de mesure
-
-Un dossier de données par site, pour ne pas mélanger deux lignes dans la même base.
-
-```bash
-./scripts/site.sh start dupont     # cree sites/dupont/data, ecrit .env, demarre
-./scripts/site.sh archive dupont   # arrete et produit sites/dupont-AAAAMMJJ.tar.gz
-./scripts/site.sh list
-```
-
-Le compte propriétaire de l'image est déduit du remote git et écrit dans `.env` au
-premier `start` — rien à éditer.
-
-### Durée
-
-Une à deux semaines par site. Une session courte ne capte pas les dégradations d'heure
-de pointe, qui sont l'essentiel de ce qu'on cherche à documenter.
-
-### Boîtier itinérant
-
-Trois points comptent quand le collecteur passe de ligne en ligne :
-
-- **Une horloge sauvegardée.** Un Pi sans RTC prend l'heure par NTP au démarrage. Si la
-  ligne tombe — l'événement même qu'on veut prouver — un redémarrage sans réseau repart
-  sur une heure fausse et les horodatages deviennent inopposables. Un DS3231 en I²C règle
-  le problème : `dtoverlay=i2c-rtc,ds3231` dans `/boot/firmware/config.txt`, puis purger
-  `fake-hwclock`.
-- **La carte SD s'use.** Mire écrit en continu dans SQLite. Sur une campagne longue ou
-  répétée, monter `sites/` sur un SSD USB.
-- **L'accès distant vaut accès à un réseau tiers.** Le prévenir, et délier l'appareil du
-  compte à la fin de chaque campagne.
-
-## Débits souscrits
-
-Le modem n'expose aucune information WAN en mode bridge. Le rapport se replie sur les
-réglages `booked_download` / `booked_upload` (Paramètres > Speedtest, en Mbit/s).
-
-```bash
-BOOKED_DOWNLOAD=1000 BOOKED_UPLOAD=50 ./scripts/site.sh start dupont
-```
-
-Non renseignés, la ligne tarifaire affiche « N/A » — préférable à la valeur d'un autre
-abonnement dans un document destiné à appuyer une plainte.
-
-## Seuils
-
-Le profil `mire.thresholds_voo` porte les seuils utilisés pour qualifier l'état de la
-ligne. Ils viennent de la pratique VOO, à deux exceptions près : les lignes `ofdm` de
-`downstream_power` et `snr` s'appuient sur la spec CableLabs DOCSIS 3.1 PHY. Sans elles,
-un canal OFDM serait jugé sur le `good_min` de 40 dB du 4096QAM alors que son MER agrégé
-se mesure autrement, et sortirait en critique alors qu'il va bien.
-
-Le repli codé en dur de `app/analyzer.py`, utilisé quand aucun profil n'est chargé, porte
-les mêmes valeurs : une instance fraîche analyse correctement avant même l'activation du
-profil.
-
-## Courrier de plainte
-
-Le générateur suit la procédure belge : plainte écrite au service de traitement des
-plaintes de l'opérateur, puis, à défaut de solution dans un délai raisonnable, saisine du
-**Service de médiation pour les télécommunications** — instance de recours gratuite
-instituée auprès de l'IBPT par la loi du 21 mars 1991, entité qualifiée au sens du livre
-XVI du Code de droit économique. L'IBPT ne traite pas les litiges individuels.
-
-Disponible en français, néerlandais, allemand et anglais. Le néerlandais et l'allemand
-comptent : ce sont des langues officielles belges, et la Communauté germanophone est en
-Wallonie. Une locale inconnue retombe sur l'anglais.
+Ce cœur fonctionne seul, sans rien activer. Tout le reste est modulaire.
 
 ## Modules
 
-Dix modules sont embarqués, activables individuellement dans les réglages.
+Douze modules sont embarqués et s'activent individuellement dans les réglages.
 
 | Module | Rôle |
 |---|---|
-| `journal` | Documenter les incidents, y attacher des preuves |
-| `evidence` | Guider d'une fenêtre d'incident vers un dossier exploitable |
-| `reports` | Rapports PDF et courriers de plainte |
-| `comparison` | Comparer deux périodes arbitraires |
+| `comparison` | Comparer la qualité du signal entre deux périodes au choix |
 | `modulation` | Distribution de modulation, exposition aux bas QAM |
-| `connection_monitor` | Latence continue par sondes ICMP/TCP |
-| `speedtest` | Résultats Speedtest Tracker avec classification |
-| `weather` | Corrélation signal / température extérieure (Open-Meteo) |
+| `connection_monitor` | Latence continue par sondes ICMP/TCP, perte de paquets, gigue |
+| `speedtest` | Résultats Speedtest Tracker avec classification de santé |
+| `weather` | Corréler la qualité du signal avec la température extérieure |
+| `journal` | Documenter les incidents, y joindre des preuves, les regrouper |
+| `evidence` | Guider d'une fenêtre d'incident vers un dossier exploitable |
+| `reports` | Rapports d'incident PDF et courriers de plainte |
+| `be_compensation` | Indemnité légale due pour une interruption (Belgique) |
+| `be_mediation` | Parcours de plainte vers l'opérateur puis la médiation (Belgique) |
+| `mqtt` | Publication vers Home Assistant avec auto-discovery |
 | `backup` | Sauvegardes planifiées et restauration |
-| `mqtt` | Publication vers Home Assistant (auto-discovery) |
 
-## Mise à jour
+Les deux modules belges traitent le cas où le problème persiste malgré les échanges
+avec l'opérateur : `be_compensation` calcule l'indemnité prévue par l'article 113/2
+de la loi relative aux communications électroniques, `be_mediation` guide vers le
+Service de médiation pour les télécommunications, instance de recours gratuite.
+L'IBPT, lui, ne traite pas les litiges individuels.
+
+## Matériel
+
+**Modem** — le Technicolor CGA4233 en firmware VOO, joignable sur `192.168.100.1`.
+Le mode bridge n'est pas nécessaire. L'adresse et les identifiants sont à vérifier
+sur place plutôt qu'à supposer.
+
+Pour tout autre modem, un **mode routeur générique** conserve les fonctions qui ne
+dépendent pas du modem — latence, débits, journal, rapports — sans les données
+DOCSIS.
+
+**Collecteur** — un Raspberry Pi 3B+ suffit, sous Pi OS Lite 64 bits. N'importe
+quelle machine faisant tourner Docker convient : NAS, Proxmox, Debian.
+
+## Installation
 
 ```bash
-cd ~/mire && git pull --ff-only && docker compose pull && docker compose up -d
+docker run -d --name mire --restart unless-stopped \
+  -p 1340:1340 -v mire_data:/data \
+  ghcr.io/floopich/mire:latest
 ```
 
-Un timer systemd automatise l'opération chaque dimanche à 23h — `Persistent=true`
-rattrape une exécution manquée si la machine était éteinte.
+L'interface écoute sur le port **1340**. Ouvrez `http://<ip>:1340` et suivez
+l'assistant, qui demande l'adresse du modem et ses identifiants.
 
-```bash
-systemctl list-timers mire-update.timer
-```
+[INSTALL.md](INSTALL.md) couvre le reste : installation sans Docker, reverse proxy,
+sondes ICMP, mise à jour automatique, et le mot de passe administrateur généré au
+premier démarrage.
+
+## Réglages qui méritent une explication
+
+### Seuils
+
+Le profil `mire.thresholds_voo` porte les seuils qui qualifient l'état de la ligne.
+Ils viennent de la pratique VOO, à deux exceptions près : les lignes `ofdm` de
+`downstream_power` et `snr` suivent la spécification CableLabs DOCSIS 3.1 PHY.
+Sans elles, un canal OFDM serait jugé sur le seuil de 40 dB du 4096QAM, alors que
+son MER agrégé se mesure autrement — il ressortirait en critique tout en allant
+parfaitement bien.
+
+Le repli codé en dur dans `app/analyzer.py`, utilisé tant qu'aucun profil n'est
+chargé, porte les mêmes valeurs. Une instance neuve analyse donc correctement dès
+le premier relevé.
+
+### Débits souscrits
+
+En mode bridge, le modem n'expose aucune information sur l'abonnement. Renseignez
+les débits dans Paramètres > Speedtest, en Mbit/s. Sans eux, les rapports affichent
+« N/A » — préférable à une valeur empruntée à un autre abonnement dans un document
+destiné à appuyer une réclamation.
+
+## Aller plus loin
+
+| | |
+|---|---|
+| [INSTALL.md](INSTALL.md) | Installation détaillée, reverse proxy, mise à jour |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Fonctionnement interne, écriture d'un module |
+| [DATA_CONTRACT.md](DATA_CONTRACT.md) | Format des données collectées |
+| [SECURITY.md](SECURITY.md) | Exposition réseau, signalement de vulnérabilité |
+| [SUPPORT.md](SUPPORT.md) | Où poser une question, comment signaler un problème |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribuer au projet |
+
+Interface disponible en français, néerlandais, allemand et anglais. Image Docker
+publiée sur GHCR pour amd64, arm64 et armv7.
 
 ## Licence et marque
 
-Fork MIT de DOCSight, Copyright (c) 2026 Dennis Braun — voir [LICENSE](LICENSE).
+Mire est un fork de [DOCSight](https://github.com/itsDNNS/docsight), sous licence
+MIT. Le code d'origine est Copyright (c) 2026 Dennis Braun ; les ajouts propres à
+Mire sont Copyright (c) 2026 Floopich. Voir [LICENSE](LICENSE).
 
-Mire est **basé sur DOCSight** sans en être une version officielle. Le nom et le logo
-DOCSight relèvent de la politique de marque du projet amont
-([politique amont](https://github.com/itsDNNS/docsight/blob/main/TRADEMARKS.md), resumee dans [TRADEMARKS.md](TRADEMARKS.md)) et ne sont
-pas repris ici.
+Mire est **basé sur DOCSight** sans en être une version officielle. Le nom et le
+logo DOCSight relèvent de la politique de marque du projet amont
+([politique amont](https://github.com/itsDNNS/docsight/blob/main/TRADEMARKS.md),
+résumée dans [TRADEMARKS.md](TRADEMARKS.md)) et ne sont pas repris ici.
