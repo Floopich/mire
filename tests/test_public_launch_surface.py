@@ -1,16 +1,13 @@
-"""Static contracts for the Mire public landing surface."""
+"""Static contracts for the Mire public documentation surface."""
 
 from __future__ import annotations
 
 import re
 import struct
-from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
-INDEX = DOCS / "index.html"
 README = ROOT / "README.md"
 DATA_CONTRACT = ROOT / "DATA_CONTRACT.md"
 UNLINKED_PUBLIC_IMAGES = [
@@ -25,49 +22,6 @@ LOCAL_PUBLIC_ASSET_RE = re.compile(
 )
 
 
-class LandingParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__()
-        self.title = ""
-        self._in_title = False
-        self.meta: dict[tuple[str, str], str] = {}
-        self.canonical = ""
-        self.links: list[str] = []
-        self.images: list[str] = []
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        data = {key: value or "" for key, value in attrs}
-        if tag == "title":
-            self._in_title = True
-        if tag == "meta":
-            if "name" in data and "content" in data:
-                self.meta[("name", data["name"])] = data["content"]
-            if "property" in data and "content" in data:
-                self.meta[("property", data["property"])] = data["content"]
-        if tag == "link" and data.get("rel") == "canonical":
-            self.canonical = data.get("href", "")
-        if tag == "a" and data.get("href"):
-            self.links.append(data["href"])
-        if tag == "img" and data.get("src"):
-            self.images.append(data["src"])
-        if tag == "source" and data.get("srcset"):
-            self.images.append(data["srcset"].split()[0])
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag == "title":
-            self._in_title = False
-
-    def handle_data(self, data: str) -> None:
-        if self._in_title:
-            self.title += data
-
-
-def parse_landing() -> LandingParser:
-    parser = LandingParser()
-    parser.feed(INDEX.read_text(encoding="utf-8"))
-    return parser
-
-
 def png_size(path: Path) -> tuple[int, int]:
     with path.open("rb") as fh:
         assert fh.read(8) == b"\x89PNG\r\n\x1a\n"
@@ -78,44 +32,9 @@ def png_size(path: Path) -> tuple[int, int]:
         return width, height
 
 
-def test_landing_page_has_required_canonical_and_social_metadata() -> None:
-    parser = parse_landing()
-
-    assert parser.title.strip()
-    assert parser.meta[("name", "description")]
-    assert parser.canonical == "https://floopich.github.io/mire/"
-    assert parser.meta[("property", "og:type")] == "website"
-    assert parser.meta[("property", "og:site_name")] == "Mire"
-    assert parser.meta[("property", "og:title")].strip()
-    assert parser.meta[("property", "og:description")].strip()
-    assert parser.meta[("property", "og:url")] == parser.canonical
-    # Pas d'apercu social tant que les captures ne montrent pas Mire : mieux
-    # vaut un partage sans visuel qu'un visuel emprunte au projet amont.
-    assert ("property", "og:image") not in parser.meta
-    assert ("name", "twitter:image") not in parser.meta
-    assert parser.meta[("name", "twitter:card")] == "summary"
-    assert parser.meta[("name", "twitter:title")].strip()
-    assert parser.meta[("name", "twitter:description")].strip()
-
-
-def test_landing_page_references_only_existing_local_assets() -> None:
-    parser = parse_landing()
-
-    for src in parser.images:
-        if urlparse(src).scheme:
-            continue
-        assert (DOCS / src).exists(), src
-    for href in parser.links:
-        parsed = urlparse(href)
-        if parsed.scheme or href.startswith("#") or href.startswith("mailto:"):
-            continue
-        assert (DOCS / href.split("#", 1)[0]).exists(), href
-
-
 def test_public_surface_docs_and_social_asset_exist() -> None:
     expected = [
         DATA_CONTRACT,
-        DOCS / "index.html",
         DOCS / "feature-matrix.md",
         DOCS / "proof-pack.md",
         DOCS / "samples" / "demo-complaint-report.pdf",
@@ -130,7 +49,7 @@ def test_public_surface_docs_and_social_asset_exist() -> None:
 
 
 def test_public_docs_reference_existing_local_assets_without_unlinked_images() -> None:
-    public_docs = [README, *sorted(DOCS.rglob("*.md")), *sorted(DOCS.rglob("*.html"))]
+    public_docs = [README, *sorted(DOCS.rglob("*.md"))]
 
     missing = []
     for source in public_docs:
@@ -158,7 +77,9 @@ def test_public_docs_have_no_dead_relative_links() -> None:
 
 
 def test_no_private_or_localhost_values_in_public_surface() -> None:
-    paths = [INDEX, DOCS / "feature-matrix.md"]
+    # Le README documente legitimement l'adresse standard du modem : le
+    # garde-fou vise les documents de presentation, pas la doc d'installation.
+    paths = [DOCS / "feature-matrix.md"]
     pattern = re.compile(r"(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.|Vodafone Kabel)", re.I)
     for path in paths:
         assert not pattern.search(path.read_text(encoding="utf-8")), path
@@ -168,8 +89,6 @@ def test_public_modem_family_counts_match_registry() -> None:
     from app.drivers import driver_registry
 
     families = driver_registry.get_all_type_keys() - {"generic"}
-    claim = f"{len(families)} modem {'family' if len(families) == 1 else 'families'}"
-    assert claim in INDEX.read_text(encoding="utf-8")
 
     # Le README nomme les modeles plutot qu'il n'en annonce le compte : une
     # tournure figee obligeait a ecrire "1 modem pris en charge" en toutes
