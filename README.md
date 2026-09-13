@@ -14,12 +14,16 @@
 
 ---
 
-## Le problème
+Mire vérifie l'état de votre ligne DOCSIS et en conserve l'historique. Il interroge
+votre modem à intervalle régulier, analyse chaque relevé et signale ce qui sort des
+clous — de la dérive lente à la coupure franche.
 
-Votre modem câble sait exactement dans quel état est votre ligne. Il mesure en
-permanence la puissance de chaque canal, le rapport signal/bruit, la modulation
-négociée, les erreurs corrigées et non corrigées. Ces valeurs s'affichent dans son
-interface, et les suivantes les remplacent quelques secondes plus tard.
+## Pourquoi
+
+Votre modem sait déjà tout cela. Il mesure en permanence la puissance de chaque
+canal, le rapport signal/bruit, la modulation négociée, les erreurs corrigées et non
+corrigées. Ces valeurs s'affichent dans son interface, et les suivantes les
+remplacent quelques secondes plus tard.
 
 Il n'en garde rien. Vous voyez donc un instantané, jamais une évolution — alors
 qu'une ligne câble se dégrade presque toujours progressivement. Le bruit monte,
@@ -76,9 +80,11 @@ L'IBPT, lui, ne traite pas les litiges individuels.
 
 ## Matériel
 
-**Modem** — le Technicolor CGA4233 en firmware VOO, joignable sur `192.168.100.1`.
-Le mode bridge n'est pas nécessaire. L'adresse et les identifiants sont à vérifier
-sur place plutôt qu'à supposer.
+**Modem** — Mire s'appuie sur un pilote par modèle. Un seul existe aujourd'hui, le
+**Technicolor CGA4233** en firmware VOO, joignable sur `192.168.100.1` ; d'autres
+suivront. Le mode bridge n'entre pas en ligne de compte : Mire fonctionne que le
+modem soit en bridge ou en routeur, selon votre installation. L'adresse et les
+identifiants sont à vérifier sur place plutôt qu'à supposer.
 
 Pour tout autre modem, un **mode routeur générique** conserve les fonctions qui ne
 dépendent pas du modem — latence, débits, journal, rapports — sans les données
