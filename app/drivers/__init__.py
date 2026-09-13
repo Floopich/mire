@@ -10,7 +10,7 @@ driver_registry.register_builtin(
     "Technicolor CGA4233",
     # Identifiant du firmware VOO, confirme par un login reussi contre un
     # CGA4233VOO en bridge le 2026-08-30 ("admin" est rejete : MSG_LOGIN_1).
-    hints={"default_url": "http://192.168.100.1", "default_user": "voo"},
+    hints={"default_url": "http://192.168.0.1", "default_user": "voo"},
 )
 driver_registry.register_builtin(
     "generic",

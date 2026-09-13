@@ -15,13 +15,13 @@ class TestLoadDriver:
     def test_load_voo_cga4233_driver(self):
         from app.drivers import load_driver
 
-        driver = load_driver("voo_cga4233", "http://192.168.100.1", "admin", "pass")
+        driver = load_driver("voo_cga4233", "http://192.168.0.1", "admin", "pass")
         assert isinstance(driver, VooCGA4233Driver)
 
     def test_load_generic_driver(self):
         from app.drivers import load_driver
 
-        driver = load_driver("generic", "http://192.168.100.1", "", "")
+        driver = load_driver("generic", "http://192.168.0.1", "", "")
         assert isinstance(driver, GenericDriver)
 
     def test_unknown_driver_raises(self):
@@ -60,7 +60,7 @@ class TestBuiltinDriverContract:
 
     @pytest.mark.parametrize("driver_cls", [VooCGA4233Driver, GenericDriver])
     def test_driver_implements_required_api(self, driver_cls):
-        driver = driver_cls("http://192.168.100.1", "admin", "pass")
+        driver = driver_cls("http://192.168.0.1", "admin", "pass")
 
         for method_name in (
             "login",
@@ -72,9 +72,9 @@ class TestBuiltinDriverContract:
 
     @pytest.mark.parametrize("driver_cls", [VooCGA4233Driver, GenericDriver])
     def test_driver_stores_credentials(self, driver_cls):
-        driver = driver_cls("http://192.168.100.1", "admin", "secret")
+        driver = driver_cls("http://192.168.0.1", "admin", "secret")
 
-        assert driver._url == "http://192.168.100.1"
+        assert driver._url == "http://192.168.0.1"
         assert driver._user == "admin"
         assert driver._password == "secret"
 
@@ -86,6 +86,6 @@ class TestVooDriverHints:
         from app.drivers import driver_registry
 
         hints = driver_registry.get_driver_hints()["voo_cga4233"]
-        assert hints["default_url"] == "http://192.168.100.1"
+        assert hints["default_url"] == "http://192.168.0.1"
         # Le firmware VOO rejette "admin" (MSG_LOGIN_1) ; l'utilisateur est "voo".
         assert hints["default_user"] == "voo"

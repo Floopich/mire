@@ -42,7 +42,7 @@ def _pwa_push_configured(config_mgr):
 def detect_modem():
     """Probe a short list of documented modem addresses. No credentials needed."""
     import socket
-    candidates = ["192.168.100.1", "192.168.0.1", "192.168.1.1"]
+    candidates = ["192.168.0.1", "192.168.1.1", "192.168.100.1"]
     try:
         with open("/proc/net/route", encoding="utf-8") as handle:
             for line in handle.readlines()[1:]:
@@ -100,7 +100,7 @@ def api_test_modem():
         modem_type = data.get("modem_type", "generic")
         driver = driver_registry.load_driver(
             modem_type,
-            data.get("modem_url") or "http://192.168.100.1",
+            data.get("modem_url") or "http://192.168.0.1",
             data.get("modem_user", ""),
             password,
         )
