@@ -30,15 +30,22 @@ source.
 
 ---
 
-## 3. Page de présentation publique
+## 3. Assets de démonstration hérités
 
-`docs/index.html` : les cinq promesses de fonctions supprimées ont été
-retirées (mode démo, Windows Preview, compte de modems). Restent des éléments
-hérités qui ne sont pas faux mais ne correspondent plus au public visé :
+La page de présentation `docs/index.html` a été supprimée : jamais publiée,
+bâtie sur le positionnement « dossier de preuve » du projet amont, et un
+fichier de plus à tenir cohérent avec le README. GitHub affiche le README en
+page d'accueil du dépôt, ce qui suffit.
 
-- les captures d'écran et le « proof pack » proviennent de données de
-  démonstration générées par un mode qui n'existe plus ;
-- `docs/samples/demo-complaint-report.pdf` est un exemple de plainte allemande.
+Reste `docs/samples/demo-complaint-report.pdf`, qui est un exemple de plainte
+allemande titré « DOCSight Incident Report », avec les seuils allemands. À
+régénérer depuis Mire. Contrôle avant commit :
+
+```bash
+pdftotext -layout docs/samples/demo-complaint-report.pdf - | grep -c DOCSight
+```
+
+Doit renvoyer `0`.
 
 ---
 
@@ -54,9 +61,9 @@ avec un UCG Ultra n'a pas été vérifiée. Son code est dans
 ## 5. Contrôle de mise à jour
 
 `app/runtime.py` interroge `api.github.com/repos/floopich/mire/releases/latest`.
-Désactivé par défaut (`update_check_enabled: False`). Fonctionnera une fois le
-dépôt publié **et** des releases taguées créées ; renverra 404 en silence
-sinon.
+Désactivé par défaut (`update_check_enabled: False`). Le dépôt est public et la
+release `v2026-09-13.1` est publiée : l'endpoint répond, le contrôle est donc
+opérationnel dès qu'on l'active.
 
 ---
 
@@ -104,10 +111,10 @@ Les captures de `docs/screenshots/` et `app/static/screenshots/` dataient du
 l accent violet de DOCSight, et pour certaines des vues supprimees depuis
 (BQM, segment). Elles ont ete retirees au passage du depot en public.
 
-En attendant les nouvelles : `docs/index.html` affiche le logo a la place,
-l apercu social (og:image et twitter:image) est desactive, et le manifeste
-PWA n a plus de cle screenshots. Les trois sont a retablir une fois les
-captures Mire disponibles.
+En attendant les nouvelles, le manifeste PWA n a plus de cle screenshots, et
+un garde-fou dans `tests/test_public_launch_surface.py` refuse tout PNG dans
+`docs/screenshots/`. Les deux sont a rouvrir une fois les captures Mire
+disponibles.
 
 A refaire une fois l interface stabilisee : tableau de bord clair et sombre,
 themes, parametres, speedtest, chronologie des canaux, correlation,
