@@ -167,10 +167,18 @@ def test_no_private_or_localhost_values_in_public_surface() -> None:
 def test_public_modem_family_counts_match_registry() -> None:
     from app.drivers import driver_registry
 
-    family_count = len(driver_registry.get_all_type_keys() - {"generic"})
-    plural = "family" if family_count == 1 else "families"
-    claim = f"{family_count} modem {plural}"
-    fr_plural = "modem" if family_count == 1 else "modems"
-    fr_claim = f"{family_count} {fr_plural} pris en charge"
-    assert fr_claim in README.read_text(encoding="utf-8")
+    families = driver_registry.get_all_type_keys() - {"generic"}
+    claim = f"{len(families)} modem {'family' if len(families) == 1 else 'families'}"
     assert claim in INDEX.read_text(encoding="utf-8")
+
+    # Le README nomme les modeles plutot qu'il n'en annonce le compte : une
+    # tournure figee obligeait a ecrire "1 modem pris en charge" en toutes
+    # lettres. Nommer chaque famille garde la meme garantie sans dicter la
+    # redaction, et signale aussi bien un modele ajoute qu'un modele retire.
+    readme = README.read_text(encoding="utf-8")
+    models = {
+        label for key, label in driver_registry.get_available_drivers()
+        if key in families
+    }
+    missing = sorted(model for model in models if model not in readme)
+    assert missing == [], missing
