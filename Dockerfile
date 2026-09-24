@@ -1,5 +1,5 @@
 # --- builder stage: compile native dependencies ---
-FROM python:3.14-slim@sha256:cad9a2c871761c413caa6fdd6441c783451e740a48aaeba60ae62a8b53525ef6 AS builder
+FROM python:3.14-slim@sha256:caaf356f40667c496d405780745b9ac25771c189a51dfcc42430d531ea09f8a2 AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
@@ -17,7 +17,7 @@ RUN mkdir -p /build/out && \
     gcc -O2 -Wall -o /build/out/mire-traceroute-helper /build/traceroute_helper.c
 
 # --- runtime stage: slim final image ---
-FROM python:3.14-slim@sha256:cad9a2c871761c413caa6fdd6441c783451e740a48aaeba60ae62a8b53525ef6
+FROM python:3.14-slim@sha256:caaf356f40667c496d405780745b9ac25771c189a51dfcc42430d531ea09f8a2
 ARG VERSION=dev
 LABEL org.opencontainers.image.title="Mire" \
       org.opencontainers.image.description="Suivi local du signal DOCSIS, derive de DOCSight" \
