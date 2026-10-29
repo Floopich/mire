@@ -5,7 +5,8 @@
  {{if .StepNumber}}<ol class="steps" aria-label="Étapes de l'installation">
   <li{{if eq .StepNumber 1}} aria-current="step"{{end}} class="{{if gt .StepNumber 1}}done{{end}}"><span>1</span>Mot de passe</li>
   <li{{if eq .StepNumber 2}} aria-current="step"{{end}} class="{{if gt .StepNumber 2}}done{{end}}"><span>2</span>Opérateur</li>
-  <li{{if eq .StepNumber 3}} aria-current="step"{{end}}><span>3</span>Modem</li>
+  <li{{if eq .StepNumber 3}} aria-current="step"{{end}} class="{{if gt .StepNumber 3}}done{{end}}"><span>3</span>Modem</li>
+  <li{{if eq .StepNumber 4}} aria-current="step"{{end}}><span>4</span>Options</li>
  </ol>{{end}}
  {{with .Err}}<div class="notice alerte" role="alert">{{icon "alerte"}}<p>{{.}}</p></div>{{end}}
 
@@ -45,13 +46,13 @@
   <h2 class="title-l">Modem non pris en charge</h2>
   <p class="body-m muted">La sonde Internet fonctionne. Proposez votre modem pour qu'il soit pris en charge.</p>
   <a class="btn filled large" href="/modem/proposer">Proposer mon modem</a>
-  <a class="btn text" href="/">Terminer</a>
+  <a class="btn text" href="/installation/options">Continuer</a>
  </div>
  {{else if and .Test .Test.OK}}
  <div class="card setup-form">
   <h2 class="title-l">Le modem répond</h2>
   <p class="body-m muted">Premier relevé dans un instant.</p>
-  <a class="btn filled large" href="/">Terminer</a>
+  <a class="btn filled large" href="/installation/options">Continuer</a>
  </div>
  {{else}}
  <form method="post" action="/installation/modem" class="card setup-form">
@@ -72,11 +73,25 @@
   <div class="field"><input id="identifiant" name="identifiant" type="text" value="{{.User}}" placeholder="{{or .DefaultUser " "}}"><label for="identifiant">Identifiant du modem</label></div>
   <div class="field"><input id="mot-de-passe" name="mot_de_passe" type="password" autocomplete="off" placeholder="{{if .PasswordSet}}••••••••{{else}} {{end}}"><label for="mot-de-passe">Mot de passe du modem{{if .PasswordSet}} (enregistré){{end}}</label></div>
   <button type="submit" class="btn filled large">Tester et continuer</button>
-  <a class="btn text" href="/">Configurer plus tard</a>
+  <a class="btn text" href="/installation/options">Configurer plus tard</a>
   <p class="help body-m">Modem absent de la liste ? <a href="/modem/proposer{{with .Address}}?adresse={{.}}{{end}}">Proposez-le</a>.</p>
  </form>
  {{end}}
  {{end}}{{end}}
+ {{end}}
+
+ {{if eq .Step "options"}}
+ <div class="card setup-form">
+  <h2 class="title-l">Options</h2>
+  <p class="body-m muted">Facultatives, modifiables à tout moment dans les réglages.</p>
+  <ul class="choices setup-options">
+   {{range .Options}}<li><a class="choice" href="/reglages/{{.ID}}">
+    <span><span class="title-m">{{.Title}}</span><small>{{.Help}}</small></span>
+    {{if .On}}<span class="tag">Activée</span>{{else}}{{icon "suivant"}}{{end}}
+   </a></li>{{end}}
+  </ul>
+  <a class="btn filled large" href="/">Terminer</a>
+ </div>
  {{end}}
 
  {{if eq .Step "operateur"}}

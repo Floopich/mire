@@ -81,6 +81,15 @@
    {{else}}<p class="body-m muted">Aucun modem trouvé : saisissez son adresse.</p>{{end}}
   </div>
   {{end}}
+  {{if eq .ID "journal"}}
+  <div class="service-log">
+   {{if $.NoLog}}<p class="body-m muted">Indisponible en démonstration.</p>{{else}}
+   <div class="form-actions"><a class="btn tonal" href="/reglages/journal/telecharger" download>{{icon "telecharger"}}Télécharger le journal</a></div>
+   <ol class="log-lines">
+    {{range $.Log}}<li class="{{.Class}}"><time>{{.Time}}</time><span class="lvl">{{.Level}}</span><span class="msg">{{.Message}}{{with .Attrs}} <span class="attrs">{{.}}</span>{{end}}</span></li>{{end}}
+   </ol>{{end}}
+  </div>
+  {{end}}
  </section>
  {{end}}{{else if eq .Section "securite"}}
  <section class="card settings-panel" aria-labelledby="titre-rubrique">

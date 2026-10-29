@@ -16,6 +16,7 @@ Chaque rubrique est résumée en une ligne. Un changement s'applique aussitôt, 
 | Météo | commune ou coordonnées, essai ; température pour la page Tendance |
 | Métriques | publication sur `/metrics`, jeton d'accès |
 | Home Assistant | serveur MQTT, identifiant, préfixe de découverte, bouton de redémarrage, essai |
+| Journal | niveau de détail, dernières lignes du service, téléchargement |
 | Sécurité, Sauvegarde | mot de passe de l'interface, copie de la base |
 
 ![Page Réglages](images/reglages.png)
@@ -40,6 +41,7 @@ Facultatives. Une variable définie **verrouille** le réglage dans la page. À 
 | `MIRE_SONDE` | `true` | sonde Internet active ou non |
 | `MIRE_SONDE_CIBLES` | `1.1.1.1:443 8.8.8.8:443 9.9.9.9:443` | cibles de la sonde, `hôte:port` séparés par des espaces, cinq au plus |
 | `MIRE_SONDE_INTERVALLE` | `30s` | délai entre deux tentatives, de 10 secondes à 10 minutes |
+| `MIRE_JOURNAL` | `normal` | niveau du journal : `erreurs`, `normal` ou `detaille` (une ligne par relevé) |
 
 Notifications :
 
@@ -70,7 +72,6 @@ Service, hors de la page Réglages :
 | `TZ` | celui de l'opérateur | fuseau horaire des heures affichées, par exemple `Europe/Paris` |
 | `MIRE_DONNEES` | `.` (`/data` dans l'image) | dossier de la base |
 | `MIRE_ECOUTE` | `0.0.0.0:1340` | adresse d'écoute de l'interface |
-| `MIRE_VERBEUX` | `false` | journalise chaque relevé |
 | `MIRE_DEMO` | `false` | démonstration sur une ligne fictive : base jetable, interface sans mot de passe |
 
 Chaque variable a son option en ligne de commande (`mire -h`), sauf le mot de passe du modem. Les données tiennent dans un fichier SQLite, `mire.db`.

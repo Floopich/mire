@@ -41,7 +41,7 @@ type restartNotice struct {
 var restartNotices = map[string]restartNotice{
 	"demande":      {"ok", "Le modem redémarre. Internet revient d'ici 3 à 5 minutes.", true},
 	"sans-reponse": {"info", "Demande envoyée, sans confirmation du modem : il redémarre sans doute.", true},
-	"refuse":       {"alerte", "Le modem a refusé la demande. Détail dans le journal de Mire.", false},
+	"refuse":       {"alerte", "Le modem a refusé la demande. Détail dans Réglages, Journal.", false},
 	"erreur":       {"alerte", "Modem injoignable : il n'a pas redémarré.", false},
 	"trop-tot":     {"info", "Redémarrage déjà demandé il y a moins de 10 minutes.", false},
 }

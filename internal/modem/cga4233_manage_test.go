@@ -157,6 +157,14 @@ func TestRedemarrageRefuse(t *testing.T) {
 	}
 }
 
+func TestRedemarrageAccepteMalgreUneReponseEnErreur(t *testing.T) {
+	f, m := modemGere(t)
+	f.echecParams = true
+	if err := m.Restart(context.Background()); err != nil || f.redemarrages != 1 {
+		t.Errorf("erreur %v, %d redémarrages : une réponse HTTP 200 vaut acceptation", err, f.redemarrages)
+	}
+}
+
 func TestRedemarrageSansReponseNEstPasRejoue(t *testing.T) {
 	f, m := modemGere(t)
 	f.coupe = true

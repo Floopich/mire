@@ -35,6 +35,7 @@ type fauxModem struct {
 	redemarrages  int
 	demandes      atomic.Int32 // demandes de redemarrage recues ; atomique, la connexion coupee ne synchronise rien
 	refuse        bool
+	echecParams   bool
 	coupe         bool // ferme la connexion sans repondre
 	erreur500     bool
 	formulaire    url.Values
@@ -113,7 +114,12 @@ func (f *fauxModem) handler() http.Handler {
 				conn, _, _ := w.(http.Hijacker).Hijack()
 				_ = conn.Close()
 			case f.refuse:
+				w.WriteHeader(http.StatusBadRequest)
 				_, _ = w.Write([]byte(`{"error":"error","message":"MSG_REFUS"}`))
+			case f.echecParams:
+				// Firmware 19.3B1 : redemarre, mais repond par une erreur.
+				f.redemarrages++
+				_, _ = w.Write([]byte(`{"error":"error","message":"failure parameters!"}`))
 			case f.erreur500:
 				// Le firmware VOO redemarre parfois sans finir de repondre.
 				f.redemarrages++

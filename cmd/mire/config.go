@@ -16,7 +16,6 @@ import (
 type config struct {
 	DataDir string
 	Listen  string
-	Verbose bool
 	// Demo fait tourner Mire sur une ligne fictive, dans une base jetable.
 	Demo bool
 	// Forced regroupe les reglages imposes par l'environnement ou par les
@@ -36,6 +35,7 @@ var flagSettings = []struct {
 	{"intervalle", settings.Interval, "délai entre deux relevés, par exemple 10m (MIRE_INTERVALLE)"},
 	{"retention", settings.RetentionDays, "conservation en jours, 0 pour illimitée (MIRE_RETENTION)"},
 	{"taille-max", settings.RetentionGB, "plafond de la base en Go, 0 pour illimité (MIRE_TAILLE_MAX)"},
+	{"journal", settings.LogLevel, "niveau du journal : erreurs, normal ou detaille (MIRE_JOURNAL)"},
 }
 
 // parseConfig lit l'environnement puis les options, sans argument libre.
@@ -58,11 +58,6 @@ func parseConfigArgs(name string, args []string, getenv func(string) string, out
 	}
 	c := config{Forced: settings.FromEnv(getenv)}
 
-	verbose, err := strconv.ParseBool(env("MIRE_VERBEUX", "false"))
-	if err != nil {
-		return c, nil, fmt.Errorf("MIRE_VERBEUX : valeur attendue true ou false")
-	}
-
 	demoMode, err := strconv.ParseBool(env("MIRE_DEMO", "false"))
 	if err != nil {
 		return c, nil, fmt.Errorf("MIRE_DEMO : valeur attendue true ou false")
@@ -72,7 +67,6 @@ func parseConfigArgs(name string, args []string, getenv func(string) string, out
 	fs.SetOutput(out)
 	fs.StringVar(&c.DataDir, "donnees", env("MIRE_DONNEES", "."), "dossier des données (MIRE_DONNEES)")
 	fs.StringVar(&c.Listen, "ecoute", env("MIRE_ECOUTE", "0.0.0.0:1340"), "adresse d'écoute de l'interface (MIRE_ECOUTE)")
-	fs.BoolVar(&c.Verbose, "verbeux", verbose, "journaliser chaque relevé (MIRE_VERBEUX)")
 	fs.BoolVar(&c.Demo, "demo", demoMode, "démonstration sur une ligne fictive, sans modem ni données conservées (MIRE_DEMO)")
 	overrides := map[string]*string{}
 	for _, f := range flagSettings {

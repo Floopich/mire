@@ -17,6 +17,7 @@ import (
 	"github.com/floopich/mire/internal/auth"
 	"github.com/floopich/mire/internal/docsis"
 	"github.com/floopich/mire/internal/events"
+	"github.com/floopich/mire/internal/journal"
 	"github.com/floopich/mire/internal/modem"
 	"github.com/floopich/mire/internal/operator"
 	"github.com/floopich/mire/internal/service"
@@ -47,6 +48,8 @@ type Options struct {
 	Service Service
 	// Logger recoit les erreurs internes ; slog.Default sinon.
 	Logger *slog.Logger
+	// Journal garde les dernieres lignes du service, pour les reglages.
+	Journal *journal.Journal
 	// Now est injectable pour les tests.
 	Now func() time.Time
 	// Demo ouvre l'interface sans connexion, sur la ligne fictive du mode
@@ -144,6 +147,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /installation/modem", s.requireAuth(s.handleSetupModem))
 	mux.HandleFunc("POST /installation/modem", s.requireAuth(s.handleSetupModemSave))
 	mux.HandleFunc("GET /installation/operateur", s.requireAuth(s.handleSetupOperator))
+	mux.HandleFunc("GET /installation/options", s.requireAuth(s.handleSetupOptions))
 	mux.HandleFunc("POST /installation/operateur", s.requireAuth(s.handleSetupOperatorSave))
 	mux.HandleFunc("GET /comprendre", s.requireAuth(s.handleLearn))
 	mux.HandleFunc("GET /tendance", s.requireAuth(s.handleTrend))
@@ -158,6 +162,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /reglages/{rubrique}", s.requireAuth(s.handleSection))
 	mux.HandleFunc("POST /reglages/mot-de-passe", s.requireAuth(s.handlePassword))
 	mux.HandleFunc("GET /reglages/sauvegarde/telecharger", s.requireAuth(s.handleBackup))
+	mux.HandleFunc("GET /reglages/journal/telecharger", s.requireAuth(s.handleLogDownload))
 	mux.HandleFunc("POST /reglages/{rubrique}/tester", s.requireAuth(s.handleTest))
 	mux.HandleFunc("POST /reglages/{rubrique}", s.requireAuth(s.handleSaveGroup))
 	mux.HandleFunc("GET /connexion", s.handleLoginForm)

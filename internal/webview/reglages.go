@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"sort"
@@ -95,6 +97,64 @@ type reglagesView struct {
 	Searching   *pending
 	PasswordOK  bool
 	PasswordErr string
+	// Log porte les dernieres lignes du service ; NoLog, qu'elles ne sont
+	// pas disponibles (demonstration).
+	Log   []logLine
+	NoLog bool
+}
+
+// logLine est une ligne du journal du service, telle que la page l'affiche.
+type logLine struct {
+	Time, Level, Class, Message, Attrs string
+}
+
+// logLevels nomme les niveaux de slog dans les mots de l'interface.
+func logLevel(l slog.Level) (label, class string) {
+	switch {
+	case l >= slog.LevelError:
+		return "Erreur", "critique"
+	case l >= slog.LevelWarn:
+		return "Alerte", "surveiller"
+	case l >= slog.LevelInfo:
+		return "Info", ""
+	default:
+		return "Détail", "detail"
+	}
+}
+
+// logLimit borne le nombre de lignes affichees.
+const logLimit = 200
+
+func (s *Server) logLines() []logLine {
+	entries := s.opts.Journal.Entries()
+	if len(entries) > logLimit {
+		entries = entries[:logLimit]
+	}
+	out := make([]logLine, 0, len(entries))
+	for _, e := range entries {
+		label, class := logLevel(e.Level)
+		out = append(out, logLine{Time: e.Time.Format("02/01 15:04:05"), Level: label, Class: class, Message: e.Message, Attrs: e.Attrs})
+	}
+	return out
+}
+
+// handleLogDownload rend tout le journal garde en memoire, en texte.
+func (s *Server) handleLogDownload(w http.ResponseWriter, r *http.Request) {
+	if s.opts.Journal == nil {
+		http.NotFound(w, r)
+		return
+	}
+	entries := s.opts.Journal.Entries()
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="mire-journal-`+s.opts.Now().Format("2006-01-02-1504")+`.txt"`)
+	for i := len(entries) - 1; i >= 0; i-- {
+		e := entries[i]
+		line := e.Time.Format("2006-01-02 15:04:05") + " " + e.Level.String() + " " + e.Message
+		if e.Attrs != "" {
+			line += " " + e.Attrs
+		}
+		_, _ = io.WriteString(w, line+"\n")
+	}
 }
 
 func fieldID(key string) string { return "r-" + strings.NewReplacer(".", "-", "_", "-").Replace(key) }
@@ -162,7 +222,7 @@ func buildGroup(g settings.Group, values settings.Values, input map[string]strin
 
 var sectionIcons = map[string]string{
 	"modem": "modem", "collecte": "collecte", "analyse": "analyse", "sonde": "connexion",
-	"notifications": "notifications", "metriques": "metriques", "domotique": "maison", "meteo": "meteo", "abonnement": "abonnement", "debit": "debit",
+	"notifications": "notifications", "metriques": "metriques", "domotique": "maison", "meteo": "meteo", "abonnement": "abonnement", "debit": "debit", "journal": "note",
 	sectionSecurity: "verrou", sectionBackup: "telecharger",
 }
 
@@ -285,6 +345,8 @@ func (s *Server) summary(ctx context.Context, id string, st service.State) (stri
 		default:
 			return "Connexion à " + mqttHost(v.String(settings.MQTTServer)) + " en cours", false
 		}
+	case "journal":
+		return "Niveau " + strings.ToLower(optionLabel(settings.LogLevel, v.String(settings.LogLevel))), false
 	case "abonnement":
 		if fee := v.Float(settings.MonthlyFee); fee > 0 {
 			return euros(fee) + " par mois", false
@@ -417,6 +479,13 @@ func (s *Server) reglagesView(r *http.Request, section string, explicit bool, in
 		}
 		if g.ID == "analyse" {
 			s.addObservedOFDMA(r.Context(), &gv)
+		}
+		if g.ID == "journal" {
+			if s.opts.Journal == nil {
+				v.NoLog = true
+			} else {
+				v.Log = s.logLines()
+			}
 		}
 		v.Group = &gv
 	}

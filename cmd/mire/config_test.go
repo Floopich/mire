@@ -46,7 +46,6 @@ func TestReglagesInvalidesRefuses(t *testing.T) {
 		{"MIRE_INTERVALLE": "10s"},
 		{"MIRE_RETENTION": "-1"},
 		{"MIRE_TAILLE_MAX": "x"},
-		{"MIRE_VERBEUX": "peut-etre"},
 		{"MIRE_PROFIL": "inexistant"},
 		{"MIRE_MODEM": "ftp://192.168.100.1"},
 	}

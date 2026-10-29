@@ -12,8 +12,9 @@ import (
 	"github.com/floopich/mire/internal/settings"
 )
 
-// L'assistant de premier demarrage : mot de passe, operateur, modem. Chaque
-// etape enregistre ses reglages ; un abandon laisse une instance utilisable.
+// L'assistant de premier demarrage : mot de passe, operateur, modem, puis
+// les options facultatives. Chaque etape enregistre ses reglages ; un abandon
+// laisse une instance utilisable.
 
 type setupView struct {
 	common
@@ -38,6 +39,26 @@ type setupView struct {
 	Unsupported bool
 	// DemoOffered propose d'essayer la demonstration, a l'accueil.
 	DemoOffered bool
+	// Options sont les integrations proposees a la derniere etape.
+	Options []setupOption
+}
+
+// setupOption est une integration facultative, reglee dans sa rubrique.
+type setupOption struct {
+	ID, Title, Help string
+	On              bool
+}
+
+func (s *Server) handleSetupOptions(w http.ResponseWriter, r *http.Request) {
+	v := s.setupView("options", 4)
+	vals := s.opts.Service.State().Values
+	v.Options = []setupOption{
+		{"domotique", "Home Assistant", "Capteurs et bouton de redémarrage, par MQTT.", vals.Bool(settings.MQTTOn)},
+		{"notifications", "Notifications", "Coupures et ligne dégradée, sur votre téléphone.", vals.Bool(settings.NotifyOn)},
+		{"debit", "Débit", "Mesures de Speedtest Tracker ou d'une passerelle UniFi.", vals.Bool(settings.SpeedOn)},
+		{"metriques", "Métriques", "Prometheus, Grafana.", vals.Bool(settings.MetricsOn)},
+	}
+	s.render(w, http.StatusOK, "setup", v)
 }
 
 func (s *Server) setupView(step string, number int) setupView {

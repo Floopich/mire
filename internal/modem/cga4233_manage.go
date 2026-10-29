@@ -358,19 +358,18 @@ func (m *CGA4233) Restart(ctx context.Context) error {
 		}
 		body, status, err = m.post(ctx, restartPath, restartForm(), m.token)
 	}
+	// Comme l'interface web, une reponse HTTP 200 vaut acceptation, quel
+	// qu'en soit le contenu : certains firmwares repondent « failure
+	// parameters! » et redemarrent quand meme.
 	switch {
 	case err != nil && status == 0:
 		return noAnswer(ctx, err)
-	case refused(body):
-		// Seul un refus explicite du modem est un refus.
+	case err != nil && refused(body):
 		return fmt.Errorf("%w : %s", ErrRestartRefused, describe(body, status))
 	case err != nil:
-		// Une erreur HTTP sans refus explicite : le firmware VOO redemarre
-		// parfois avant d'avoir fini de repondre. Le releve suivant dira si
-		// le modem a redemarre.
+		// Le firmware VOO redemarre parfois avant d'avoir fini de repondre.
 		return fmt.Errorf("%w : %s", ErrNoAnswer, describe(body, status))
 	default:
-		// L'interface se contente d'une reponse HTTP 200.
 		return nil
 	}
 }

@@ -48,7 +48,7 @@ volumes:
   mire-data:
 ```
 
-`docker compose up -d`, puis `http://<machine>:1340` : essayez la démo, ou configurez Mire en trois étapes (mot de passe, opérateur, modem).
+`docker compose up -d`, puis `http://<machine>:1340` : essayez la démo, ou configurez Mire : mot de passe, opérateur, modem, puis options facultatives.
 
 - **Mettre à jour** : `docker compose pull && docker compose up -d`.
 - **Démo seule** : `docker run --rm -p 1340:1340 -e MIRE_DEMO=true ghcr.io/floopich/mire:latest`.

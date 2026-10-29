@@ -531,9 +531,24 @@
   .settings-panel .notice { margin: 0; }
   .field select {
     width: 100%; height: 56px; padding: 18px 40px 0 15px; font: 400 1rem var(--police);
-    color: var(--md-sys-color-on-surface); background: transparent; appearance: none;
+    color: var(--md-sys-color-on-surface); background: var(--md-sys-color-surface-container-low); appearance: none;
     border: 1px solid var(--md-sys-color-outline); border-radius: var(--md-sys-shape-corner-extra-small);
   }
+  /* Le menu ouvert d'une liste suit le theme, y compris sous Windows. */
+  .field select option { background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface); }
+  .service-log { display: grid; gap: 12px; margin-top: 24px; }
+  .log-lines {
+    list-style: none; margin: 0; padding: 12px 16px; max-height: 60vh; overflow: auto;
+    background: var(--md-sys-color-surface-container); border-radius: var(--md-sys-shape-corner-large);
+    font: 400 .8125rem/1.4 ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  }
+  .log-lines li { display: grid; grid-template-columns: auto 4.5em 1fr; gap: 0 10px; padding: 3px 0; }
+  .log-lines li + li { border-top: 1px solid var(--md-sys-color-outline-variant); }
+  .log-lines time, .log-lines .attrs, .log-lines .detail { color: var(--md-sys-color-on-surface-variant); }
+  .log-lines .msg { overflow-wrap: anywhere; }
+  .log-lines .surveiller .lvl { color: var(--mire-avertissement); font-weight: 600; }
+  .log-lines .critique .lvl { color: var(--mire-critique); font-weight: 600; }
+  @media (max-width: 599px) { .log-lines li { grid-template-columns: auto 1fr; } .log-lines .msg { grid-column: 1 / -1; } }
   .field.select::after { content: ""; position: absolute; right: 16px; top: 50%; width: 8px; height: 8px; border-right: 2px solid var(--md-sys-color-on-surface-variant); border-bottom: 2px solid var(--md-sys-color-on-surface-variant); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
   .field select:focus { outline: none; border: 2px solid var(--md-sys-color-primary); padding-left: 14px; }
   .field select + label { top: 0; transform: translateY(-50%) scale(.75); transform-origin: left; background: var(--md-sys-color-surface-container-low); }
@@ -579,6 +594,11 @@
   .choice input { accent-color: var(--md-sys-color-primary); width: 20px; height: 20px; margin: 0; }
   .choice > span { display: grid; }
   .choice small { color: var(--md-sys-color-on-surface-variant); }
+  .setup-options { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  a.choice { color: inherit; text-decoration: none; }
+  a.choice > span { flex: 1; }
+  a.choice:hover { background: var(--md-sys-color-surface-container-high); }
+  a.choice .tag { font: 560 .75rem/1rem var(--police); padding: 2px 8px; border-radius: 8px; background: var(--mire-bon-container); color: var(--mire-on-bon-container); }
 }
 
 /* Impression : le rapport seul, a l'encre noire sur papier blanc. */

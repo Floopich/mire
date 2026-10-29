@@ -18,6 +18,7 @@ import (
 	"github.com/floopich/mire/internal/docsis"
 	"github.com/floopich/mire/internal/events"
 	"github.com/floopich/mire/internal/homeassistant"
+	"github.com/floopich/mire/internal/journal"
 	"github.com/floopich/mire/internal/modem"
 	"github.com/floopich/mire/internal/notify"
 	"github.com/floopich/mire/internal/operator"
@@ -68,6 +69,8 @@ type State struct {
 type Manager struct {
 	// Version est celle du programme, publiee vers Home Assistant.
 	Version string
+	// Journal recoit le niveau de detail choisi dans les reglages.
+	Journal *journal.Journal
 
 	db     *sql.DB
 	forced settings.Source
@@ -245,6 +248,9 @@ func (m *Manager) Reload(ctx context.Context) error {
 	st, err := Resolve(ctx, m.db, m.forced)
 	if err != nil {
 		return err
+	}
+	if m.Journal != nil {
+		m.Journal.SetLevel(st.Values.String(settings.LogLevel))
 	}
 
 	m.mu.Lock()

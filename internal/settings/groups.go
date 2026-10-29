@@ -72,6 +72,8 @@ const (
 	MQTTPassword = "mqtt.mot_de_passe"
 	MQTTPrefix   = "mqtt.prefixe"
 	MQTTRestart  = "mqtt.redemarrage"
+
+	LogLevel = "journal.niveau"
 )
 
 // Sources des mesures de debit.
@@ -295,6 +297,18 @@ func Groups() []Group {
 					Help: "homeassistant par défaut.", Check: checkTopic},
 				{Key: MQTTRestart, Env: "MIRE_MQTT_REDEMARRAGE", Kind: Bool, Default: "true", Label: "Bouton « Redémarrer le modem »",
 					Help: "Si le modèle le permet ; une demande par tranche de 10 minutes."},
+			},
+		},
+		{
+			ID:    "journal",
+			Title: "Journal",
+			Help:  "Dernières lignes du service.",
+			Defs: []Def{
+				{Key: LogLevel, Env: "MIRE_JOURNAL", Kind: Select, Default: "normal", Label: "Niveau de détail",
+					Help: "Détaillé : une ligne par relevé.",
+					Options: func() []Option {
+						return []Option{{"erreurs", "Alertes et erreurs"}, {"normal", "Normal"}, {"detaille", "Détaillé"}}
+					}},
 			},
 		},
 	}

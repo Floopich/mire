@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/floopich/mire/internal/auth"
+	"github.com/floopich/mire/internal/journal"
 	"github.com/floopich/mire/internal/modem"
 	"github.com/floopich/mire/internal/service"
 	"github.com/floopich/mire/internal/settings"
@@ -66,6 +67,8 @@ type essai struct {
 	Demo, DemoExit bool
 	// StartDemo propose la demonstration a l'accueil.
 	StartDemo func(context.Context) (http.Handler, func(), error)
+	// Journal garde les lignes du service.
+	Journal *journal.Journal
 }
 
 // monter construit l'interface sur db ; elle renvoie aussi le faux service
@@ -83,7 +86,7 @@ func monter(t *testing.T, db *sql.DB, e essai) (http.Handler, *fauxService) {
 	if e.DataDir == "" {
 		e.DataDir = t.TempDir()
 	}
-	s, err := NewServer(db, Options{DataDir: e.DataDir, Version: e.Version, Now: e.Now, Service: svc, Demo: e.Demo, DemoExit: e.DemoExit, StartDemo: e.StartDemo})
+	s, err := NewServer(db, Options{DataDir: e.DataDir, Version: e.Version, Now: e.Now, Service: svc, Demo: e.Demo, DemoExit: e.DemoExit, StartDemo: e.StartDemo, Journal: e.Journal})
 	if err != nil {
 		t.Fatalf("serveur: %v", err)
 	}

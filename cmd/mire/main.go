@@ -29,6 +29,7 @@ import (
 	"github.com/floopich/mire/internal/auth"
 	"github.com/floopich/mire/internal/cli"
 	"github.com/floopich/mire/internal/collect"
+	"github.com/floopich/mire/internal/journal"
 	"github.com/floopich/mire/internal/modem"
 	"github.com/floopich/mire/internal/service"
 	"github.com/floopich/mire/internal/settings"
@@ -117,14 +118,6 @@ func currentVersion() string {
 	return "dev"
 }
 
-func newLogger(verbose bool) *slog.Logger {
-	level := slog.LevelInfo
-	if verbose {
-		level = slog.LevelDebug
-	}
-	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
-}
-
 // open ouvre la base : prealable commun a toutes les commandes.
 func open(cfg config) (*sql.DB, error) {
 	if err := checkWritable(cfg.DataDir); err != nil {
@@ -152,7 +145,7 @@ func serve(args []string) error {
 	if err != nil {
 		return err
 	}
-	logger := newLogger(cfg.Verbose)
+	jr, logger := journal.New(os.Stderr)
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -182,6 +175,7 @@ func serve(args []string) error {
 	// L'interface demarre toujours, meme sans modem configure.
 	mgr := service.New(db, cfg.Forced, logger)
 	mgr.Version = currentVersion()
+	mgr.Journal = jr
 	if err := mgr.Start(ctx); err != nil {
 		return err
 	}
@@ -196,6 +190,7 @@ func serve(args []string) error {
 		Version: currentVersion(),
 		Service: mgr,
 		Logger:  logger,
+		Journal: jr,
 		// Avant l'installation, l'accueil propose d'essayer Mire sur une
 		// ligne fictive, a cote de l'instance, sans toucher a sa base.
 		StartDemo: func(ctx context.Context) (http.Handler, func(), error) {
