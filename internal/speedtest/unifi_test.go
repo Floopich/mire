@@ -36,7 +36,7 @@ func passerelle(t *testing.T, at *time.Time, connexions *int) *httptest.Server {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
-			// La sortie reelle d'une Cloud Gateway Ultra : un acces de secours
+			// Reponse d'une passerelle : un acces secondaire
 			// sans test, l'acces principal avec son dernier test.
 			fmt.Fprintf(w, `{"speed_test":{"is_supported":true,"data":[
 				{"download_mbps":0,"interface_name":"eth0","latency_ms":0,"upload_mbps":0,"wan_networkgroup":"WAN2"},

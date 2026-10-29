@@ -13,17 +13,9 @@ import (
 	"strings"
 )
 
-// iterations est calibre pour un Raspberry Pi 3B+, la cible du projet.
-//
-// L'OWASP recommande 600 000 pour PBKDF2-HMAC-SHA256, mais cette valeur vise
-// des processeurs de serveur : sur un Pi 3B+ elle impose trois secondes et
-// demie a chaque connexion. Le mot de passe genere porte environ 92 bits
-// d'entropie, qu'aucun compte d'iterations ne rend attaquable ; les
-// iterations ne protegent reellement qu'un mot de passe faible choisi a la
-// main, et le limiteur de tentatives couvre deja ce cas.
-//
-// Le compte est inscrit dans chaque empreinte : on pourra le relever plus
-// tard sans invalider les mots de passe deja enregistres.
+// iterations reste supportable sur un Raspberry Pi. Le compte est inscrit
+// dans chaque empreinte : il peut augmenter sans invalider les mots de passe
+// enregistres.
 const iterations = 200_000
 
 const (
@@ -48,9 +40,6 @@ func HashPassword(password string) (string, error) {
 }
 
 // VerifyPassword compare un mot de passe a son empreinte en temps constant.
-//
-// Une comparaison ordinaire s'arreterait au premier octet different, et le
-// temps de reponse revelerait combien d'octets sont justes.
 func VerifyPassword(password, encoded string) (bool, error) {
 	parts := strings.Split(encoded, "$")
 	if len(parts) != 4 || parts[0] != scheme {

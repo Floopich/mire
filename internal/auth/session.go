@@ -70,10 +70,7 @@ func (s *Sessions) Revoke(ctx context.Context, token string) error {
 	return err
 }
 
-// RevokeAll ferme toutes les sessions.
-//
-// A appeler apres un changement de mot de passe : sans cela, une session
-// ouverte par quelqu'un qui connaissait l'ancien resterait valide trente jours.
+// RevokeAll ferme toutes les sessions, apres un changement de mot de passe.
 func (s *Sessions) RevokeAll(ctx context.Context) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM sessions`)
 	return err

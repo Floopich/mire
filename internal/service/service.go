@@ -1,9 +1,5 @@
 // Package service fait tourner les taches de fond de Mire selon les reglages.
-//
-// Les reglages peuvent changer pendant que le service tourne : la page
-// Reglages appelle Reload, qui arrete les taches en cours et les relance avec
-// les nouvelles valeurs. Il n'y a ainsi qu'un seul chemin de demarrage, que la
-// configuration vienne de l'environnement ou de l'interface.
+// Reload les arrete et les relance avec les nouvelles valeurs.
 package service
 
 import (

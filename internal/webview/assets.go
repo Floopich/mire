@@ -10,13 +10,8 @@ import (
 )
 
 // Les feuilles de style sont appelees avec l'empreinte de leur contenu
-// (/static/mire.css?v=…). Une nouvelle version de Mire change donc leur
-// adresse : un navigateur ne garde jamais une feuille perimee face a une page
-// recente, et une adresse versionnee peut etre conservee un an.
-//
-// La police et les icones gardent une adresse fixe : la feuille de style et
-// le manifeste les designent ainsi. Elles changent rarement et restent en
-// cache un jour.
+// (/static/mire.css?v=…) et gardees en cache un an. La police et les
+// icones gardent une adresse fixe, en cache un jour.
 
 // versionedPaths sont les ressources appelees avec leur empreinte.
 var versionedPaths = []string{"/static/mire.css", "/reglages.css"}

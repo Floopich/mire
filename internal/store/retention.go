@@ -7,11 +7,8 @@ import (
 	"time"
 )
 
-// Retention decrit la politique de conservation.
-//
-// Deux limites independantes, la premiere atteinte l'emporte. Zero desactive
-// la limite correspondante. La taille sert de garde-fou : chez un utilisateur
-// qui ne surveille rien, une carte SD pleine est une panne, pas un reglage.
+// Retention decrit la politique de conservation : duree et taille, la
+// premiere limite atteinte l'emporte ; zero desactive une limite.
 type Retention struct {
 	Days     int   // 0 = illimite
 	MaxBytes int64 // 0 = illimite
@@ -26,10 +23,7 @@ type PurgeResult struct {
 	BySize int64
 }
 
-// Purge applique la politique de conservation.
-//
-// La purge par age precede celle par taille : inutile de supprimer des donnees
-// recentes si de plus anciennes sont deja hors periode.
+// Purge applique la politique de conservation : par age, puis par taille.
 func Purge(ctx context.Context, db *sql.DB, r Retention, now time.Time) (PurgeResult, error) {
 	var result PurgeResult
 
@@ -75,12 +69,8 @@ func Purge(ctx context.Context, db *sql.DB, r Retention, now time.Time) (PurgeRe
 	return result, nil
 }
 
-// purgeToSize retire les releves les plus anciens jusqu'a repasser sous la
-// limite, par tranches.
-//
-// On avance par paquets plutot qu'en une transaction geante : sur une carte SD,
-// une suppression de plusieurs centaines de milliers de lignes bloquerait les
-// ecritures du collecteur pendant tout ce temps.
+// purgeToSize retire les releves les plus anciens par tranches, jusqu'a
+// repasser sous la limite.
 func purgeToSize(ctx context.Context, db *sql.DB, maxBytes int64) (int64, error) {
 	const batch = 500
 	var total int64
@@ -108,12 +98,8 @@ func purgeToSize(ctx context.Context, db *sql.DB, maxBytes int64) (int64, error)
 	}
 }
 
-// DatabaseSize renvoie la place occupee par les donnees, en octets.
-//
-// Les pages liberees par un DELETE restent dans le fichier, en liste libre,
-// et seront reutilisees par les prochains releves. Les compter ferait croire
-// qu'une purge n'a rien libere : la boucle de purge par taille supprimerait
-// alors tout l'historique sans jamais repasser sous la limite.
+// DatabaseSize renvoie la place occupee par les donnees, en octets, sans les
+// pages libres.
 func DatabaseSize(ctx context.Context, db *sql.DB) (int64, error) {
 	var pageCount, freePages, pageSize int64
 	if err := db.QueryRowContext(ctx, "PRAGMA page_count").Scan(&pageCount); err != nil {
@@ -129,10 +115,6 @@ func DatabaseSize(ctx context.Context, db *sql.DB) (int64, error) {
 }
 
 // ProjectedSize estime la taille atteinte par une politique donnee.
-//
-// Sert a avertir a la saisie plutot qu'a la saturation : un utilisateur qui
-// choisit une minute et l'illimite doit l'apprendre tout de suite, pas six
-// mois plus tard.
 func ProjectedSize(intervalSeconds, days, channels int) int64 {
 	if intervalSeconds <= 0 || days <= 0 || channels <= 0 {
 		return 0

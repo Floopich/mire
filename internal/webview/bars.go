@@ -10,10 +10,8 @@ import (
 	"github.com/floopich/mire/internal/store"
 )
 
-// Les graphiques en barres regroupent les mesures en tranches de duree egale :
-// trente jours de releves toutes les dix minutes feraient plus de quatre mille
-// barres, plus fines qu'un pixel. Une tranche sans mesure reste vide, comme
-// une courbe s'interrompt sur un trou de mesure.
+// Les graphiques en barres regroupent les mesures en tranches de duree
+// egale. Une tranche sans mesure reste vide.
 
 // bar est une tranche : une barre basse et, empilee dessus, une barre haute.
 type bar struct {

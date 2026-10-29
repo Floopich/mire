@@ -1,9 +1,7 @@
 // Commande mire : collecte les releves DOCSIS et sert l'interface.
 //
-// Un seul processus, un seul port, un seul service a installer. La collecte
-// tourne en tache de fond ; l'interface reste disponible meme quand le modem
-// ne repond pas, puisque c'est precisement le moment ou l'on veut consulter
-// l'historique.
+// La collecte tourne en tache de fond ; l'interface reste disponible quand
+// le modem ne repond pas.
 package main
 
 import (
@@ -181,9 +179,7 @@ func serve(args []string) error {
 	defer func() { _ = db.Close() }()
 	applyTimeZone(ctx, db, cfg, logger)
 
-	// L'interface demarre toujours, meme sans modem configure : c'est elle
-	// qui permet de le configurer, et une ligne coupee est precisement le
-	// moment ou l'on veut consulter l'historique.
+	// L'interface demarre toujours, meme sans modem configure.
 	mgr := service.New(db, cfg.Forced, logger)
 	mgr.Version = currentVersion()
 	if err := mgr.Start(ctx); err != nil {
@@ -234,9 +230,6 @@ func serve(args []string) error {
 			}
 		}
 	}()
-	if os.Getenv("MIRE_MODEM_PASSWORD") != "" && os.Getenv("MIRE_MODEM_MOT_DE_PASSE") == "" {
-		logger.Warn("MIRE_MODEM_PASSWORD est un ancien nom, encore accepté : renommez-le MIRE_MODEM_MOT_DE_PASSE")
-	}
 	if ok, err := auth.HasPassword(ctx, db); err == nil && !ok {
 		logger.Warn("première visite : ouvrez l'interface pour choisir le mot de passe et configurer le modem",
 			"adresse", cfg.Listen)

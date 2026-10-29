@@ -1,8 +1,4 @@
-# Mire : enregistrez ce fichier dans un dossier, puis lancez
-#   docker compose up -d
-# et ouvrez http://<machine>:1340. L'assistant de premier démarrage demande
-# le mot de passe de l'interface, l'opérateur et le modem ; tout se règle
-# ensuite dans la page Réglages, et se conserve dans le volume mire-data.
+# docker compose up -d, puis http://<machine>:1340
 services:
   mire:
     image: ghcr.io/floopich/mire:latest
@@ -12,10 +8,9 @@ services:
       - "1340:1340"
     volumes:
       - mire-data:/data
-    # Facultatif : imposer un réglage plutôt que de le faire dans la page
-    # (liste dans le README, modèle dans .env.exemple).
+    # Facultatif, voir docs/configuration.md :
     # environment:
-    #   TZ: Europe/Paris
+    #   TZ: Europe/Brussels
 
 volumes:
   mire-data:

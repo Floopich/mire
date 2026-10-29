@@ -7,12 +7,8 @@ import (
 	"os/exec"
 )
 
-// disableEcho coupe l'echo du terminal via stty.
-//
-// Passer par stty plutot que par un appel termios evite une dependance et du
-// code specifique a chaque systeme, pour une invite qui sert une fois a
-// l'installation. Si stty manque, la saisie reste visible : mieux vaut un
-// mot de passe affiche qu'un demarrage impossible.
+// disableEcho coupe l'echo du terminal via stty. Sans stty, la saisie reste
+// visible.
 func disableEcho() func() {
 	if err := stty("-echo"); err != nil {
 		return func() {}

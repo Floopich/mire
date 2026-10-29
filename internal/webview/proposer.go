@@ -18,10 +18,8 @@ import (
 	"github.com/floopich/mire/internal/service"
 )
 
-// « Proposer mon modem » : Mire prepare un rapport anonymise sur le modem,
-// l'affiche pour relecture, et ouvre le formulaire du depot prerempli.
-// Rien ne part sans l'utilisateur : Mire n'a ni compte ni serveur ou
-// deposer le rapport a sa place.
+// « Proposer mon modem » : Mire prepare un rapport anonymise, l'affiche pour
+// relecture, et ouvre le formulaire du depot prerempli.
 
 const reportTimeout = 3 * time.Minute
 

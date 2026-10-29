@@ -9,12 +9,8 @@ import (
 	"github.com/floopich/mire/internal/analyze"
 )
 
-// Formes expressives, a la maniere de la bibliotheque de formes Material 3.
-//
-// Chaque niveau d'etat a sa propre silhouette en plus de sa couleur : un
-// lecteur qui distingue mal les couleurs reconnait encore un etat critique a
-// ses pointes. Les contours sont calcules ici plutot que copies, pour rester
-// nets a toutes les tailles.
+// Formes expressives, a la maniere de la bibliotheque Material 3 : chaque
+// niveau d'etat a sa silhouette en plus de sa couleur.
 type shapeSpec struct {
 	lobes int     // 0 pour un cercle
 	depth float64 // profondeur des creux, en fraction du rayon

@@ -1,8 +1,5 @@
-// Package webview rend les releves sous forme de pages lisibles.
-//
-// Les graphiques sont du SVG assemble cote serveur : aucun JavaScript, aucun
-// fichier externe. La page reste lisible sur un reseau isole, et la politique
-// de securite du contenu peut tout interdire sauf la feuille de style.
+// Package webview rend les pages de Mire. Les graphiques sont du SVG
+// assemble cote serveur, sans JavaScript.
 package webview
 
 import (
@@ -15,12 +12,8 @@ import (
 	"github.com/floopich/mire/internal/store"
 )
 
-// frame decrit le cadre d'un graphique.
-//
-// Le texte d'un SVG grandit et retrecit avec lui : un seul cadre donnerait des
-// reperes illisibles sur un telephone ou enormes sur un ecran large. Chaque
-// graphique est donc rendu en deux cadres, et la feuille de style montre celui
-// qui convient a la largeur.
+// frame decrit le cadre d'un graphique. Chaque graphique est rendu en deux
+// cadres, large et etroit ; la feuille de style montre celui qui convient.
 type frame struct {
 	width, height                        int
 	padLeft, padRight, padTop, padBottom int
@@ -61,11 +54,7 @@ type Series struct {
 	Floor *float64
 }
 
-// SVG assemble un graphique.
-//
-// Les points sans valeur interrompent le trace au lieu d'etre relies : une
-// ligne droite au-dessus d'un trou de mesure ferait croire a une continuite
-// qui n'a pas ete observee.
+// SVG assemble un graphique. Les points sans valeur interrompent le trace.
 func SVG(s Series) string {
 	return draw(s, wideFrame) + draw(s, narrowFrame)
 }
@@ -171,11 +160,7 @@ func knownValues(s Series) []float64 {
 	return out
 }
 
-// bounds choisit l'echelle verticale.
-//
-// Une marge de 10 % evite que la courbe colle aux bords, et un intervalle
-// plancher empeche qu'une ligne parfaitement stable soit rendue comme une
-// oscillation spectaculaire entre deux valeurs identiques.
+// bounds choisit l'echelle verticale : marge de 10 % et intervalle minimal.
 func bounds(values []float64) (lo, hi float64) {
 	lo, hi = values[0], values[0]
 	for _, v := range values {

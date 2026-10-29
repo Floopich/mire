@@ -1,8 +1,7 @@
 // Package analyze qualifie l'etat d'une ligne a partir des seuils du profil.
 //
-// L'analyse ne juge jamais une valeur absente : un canal sans mesure est
-// inconnu, pas defaillant. C'est la distinction qui evite qu'un modem en cours
-// de synchronisation soit rapporte comme une panne.
+// Une valeur absente n'est jamais jugee : un canal sans mesure est inconnu,
+// pas defaillant.
 package analyze
 
 import (
@@ -73,18 +72,12 @@ type Health struct {
 
 // Options porte les declarations de l'abonne sur son installation.
 type Options struct {
-	// OFDMAFloor est la modulation habituelle des canaux OFDMA du segment,
-	// declaree par l'abonne (16 pour 16QAM) ; 0 garde les seuils du profil.
-	// Certains segments fonctionnent durablement en basse modulation : sans
-	// cette declaration, l'abonne verrait une alerte permanente qu'aucune
-	// intervention ne ferait disparaitre. Les variations restent jugees par
-	// rapport a ce plancher : un cran dessous est a surveiller, deux sont
-	// critiques.
+	// OFDMAFloor est la modulation habituelle des canaux OFDMA du segment (16
+	// pour 16QAM) ; 0 garde les seuils du profil. Un cran dessous est a
+	// surveiller, deux sont critiques.
 	OFDMAFloor int
-	// Errors compte, par canal descendant, les erreurs survenues sur la
-	// fenetre du profil (ErrorLimits.Window). Sans elles, les erreurs ne sont
-	// pas jugees : les compteurs bruts du modem cumulent depuis son demarrage
-	// et ne disent rien de l'etat present.
+	// Errors compte, par canal descendant, les erreurs survenues sur la fenetre
+	// du profil (ErrorLimits.Window). Sans elles, les erreurs ne sont pas jugees.
 	Errors map[int]ErrorCount
 }
 
@@ -101,8 +94,7 @@ func Snapshot(snap docsis.Snapshot, profile operator.Profile) Health {
 
 // SnapshotWith analyse un releve.
 //
-// Un profil non calibre ne produit aucun verdict : appliquer les tolerances
-// d'un autre reseau donnerait un resultat faux avec l'apparence du serieux.
+// Un profil non calibre ne produit aucun verdict.
 func SnapshotWith(snap docsis.Snapshot, profile operator.Profile, opts Options) Health {
 	h := Health{Qualified: profile.Calibrated}
 	if !profile.Calibrated {
@@ -208,15 +200,10 @@ func snr(v float64, b operator.SNRBands) Finding {
 
 // errors qualifie les erreurs non corrigees sur la fenetre.
 //
-// Le modem ne publie pas le nombre de blocs recus : la proportion porte donc
-// sur les erreurs, pas sur les donnees transmises. Sur une ligne propre, peu
-// d'erreurs dont quelques dizaines non corrigees donnent un pourcentage
-// eleve pour une perte imperceptible. Un verdict defavorable exige donc aussi
-// un volume : au moins autant d'erreurs non corrigees sur la fenetre que le
-// profil en juge un pic entre deux releves (ErrorLimits.Spike).
-//
-// Sous un volume minimal d'erreurs, la proportion ne signifie rien non plus :
-// trois erreurs dont une non corrigee ne font pas 33 % de pertes.
+// Le modem ne publie pas le nombre de blocs recus : la proportion porte sur
+// les erreurs. Un verdict defavorable exige aussi un volume d'erreurs non
+// corrigees au moins egal a ErrorLimits.Spike, et un volume minimal
+// d'erreurs pour que la proportion compte.
 func errors(e ErrorCount, limits operator.ErrorLimits) Finding {
 	window := hours(limits.Window())
 	total := e.Corrected + e.Uncorrected
@@ -259,9 +246,6 @@ func count(n int64) string {
 }
 
 // modulation qualifie la modulation montante.
-//
-// Un canal durablement bas peut relever de la configuration du segment plutot
-// que d'une degradation : le verdict signale, il ne conclut pas.
 func modulation(m string, limits operator.ModulationLimits) (Finding, bool) {
 	qam := qamOrder(m)
 	if qam == 0 {

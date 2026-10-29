@@ -9,11 +9,8 @@ import (
 	"github.com/floopich/mire/internal/docsis"
 )
 
-// SaveSnapshot enregistre un releve et ses canaux.
-//
-// Tout passe dans une seule transaction : un releve dont la moitie des canaux
-// manquerait serait pire qu'un releve absent, parce qu'il se lirait comme une
-// ligne ou des canaux ont disparu.
+// SaveSnapshot enregistre un releve et ses canaux dans une seule
+// transaction.
 func SaveSnapshot(ctx context.Context, db *sql.DB, snap docsis.Snapshot) (int64, error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -73,10 +70,8 @@ type Point struct {
 	SNR       *float64
 }
 
-// DownstreamHistory relit l'historique d'un canal descendant.
-//
-// C'est la requete que l'index (channel_id, ts) sert : elle doit rester
-// utilisable sur dix ans de releves.
+// DownstreamHistory relit l'historique d'un canal descendant (index
+// channel_id, ts).
 func DownstreamHistory(ctx context.Context, db *sql.DB, channelID int, from, to time.Time) ([]Point, error) {
 	rows, err := db.QueryContext(ctx,
 		`SELECT ts, power_dbmv, snr_db FROM ds_channels

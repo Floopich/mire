@@ -75,12 +75,9 @@ func New(source Source, db *sql.DB, opts Options) *Collector {
 	return &Collector{source: source, db: db, opts: opts}
 }
 
-// Run boucle jusqu'a l'annulation du contexte.
-//
-// Un premier releve est pris immediatement : attendre dix minutes avant le
-// moindre signe de vie donnerait l'impression d'un demarrage rate. Le delai
-// suivant court a la fin de chaque releve : un modem lent ne fait jamais se
-// chevaucher deux lectures.
+// Run boucle jusqu'a l'annulation du contexte. Le premier releve est
+// immediat ; le delai suivant court a la fin de chaque releve, sans
+// chevauchement.
 func (c *Collector) Run(ctx context.Context) error {
 	purgeTicker := time.NewTicker(c.opts.PurgeEvery)
 	defer purgeTicker.Stop()
@@ -120,11 +117,8 @@ func (c *Collector) delay(ctx context.Context) time.Duration {
 	return c.opts.Interval
 }
 
-// collectOnce prend un releve et l'enregistre.
-//
-// Un echec est journalise sans interrompre la boucle : un modem qui redemarre
-// ou une coupure ne doivent pas arreter la collecte, ce sont precisement les
-// moments qu'on veut documenter.
+// collectOnce prend un releve et l'enregistre. Un echec est journalise sans
+// interrompre la boucle.
 func (c *Collector) collectOnce(ctx context.Context) {
 	// Le releve ne doit pas deborder sur le suivant.
 	pollCtx, cancel := context.WithTimeout(ctx, c.opts.Interval)

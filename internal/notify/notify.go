@@ -1,11 +1,8 @@
 // Package notify envoie les evenements du journal vers un service de
 // notification : ntfy, Gotify, Discord, Telegram, Slack, mail ou webhook.
 //
-// Les notifications partent du journal, pas des detecteurs : une seule source
-// de verite, et rien n'est perdu quand le service redemarre ou qu'un envoi
-// echoue. Le notificateur lit les evenements nouveaux a intervalle court,
-// retient le dernier traite, et reessaie tant que l'evenement a moins d'une
-// heure : une alerte plus ancienne n'avertirait plus de rien.
+// Le notificateur lit les evenements nouveaux a intervalle court, retient le
+// dernier traite, et reessaie tant que l'evenement a moins d'une heure.
 package notify
 
 import (

@@ -6,12 +6,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Merci ! Un pilote ne s'écrit qu'à partir de réponses réelles du modem.
-        Le plus simple : dans Mire, page Modem, « Proposer mon modem » prépare
-        un rapport anonymisé et ouvre une demande déjà remplie ; ce formulaire
-        n'est alors pas nécessaire.
-        Sinon, avant de coller une réponse, retirez les adresses MAC, le numéro
-        de série, les adresses IP publiques et tout identifiant de connexion.
+        Le plus simple : page Modem de Mire, « Proposer mon modem ».
+        Sinon, retirez de vos réponses les adresses MAC, le numéro de série,
+        les adresses IP publiques et tout identifiant.
   - type: input
     id: modele
     attributes:

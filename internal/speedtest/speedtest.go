@@ -1,9 +1,6 @@
-// Package speedtest lit des mesures de debit faites ailleurs.
-//
-// Mire ne mesure pas le debit lui-meme : un test sature la ligne pendant une
-// minute et fausserait la sonde. Il lit celles d'un Speedtest Tracker deja
-// installe, par son API v1 et un jeton en lecture seule, ou celles d'une
-// passerelle UniFi, et les garde en base pour les rapprocher de la ligne.
+// Package speedtest lit des mesures de debit faites par Speedtest Tracker
+// (API v1, jeton en lecture seule) ou par une passerelle UniFi, et les garde
+// en base.
 package speedtest
 
 import (

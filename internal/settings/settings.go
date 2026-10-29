@@ -1,13 +1,7 @@
 // Package settings decrit les reglages de Mire et leur valeur effective.
 //
-// Chaque reglage est declare une fois, ici : sa cle en base, sa variable
-// d'environnement, son type, sa valeur par defaut et son libelle. La page
-// Reglages, la ligne de commande et le demarrage du service s'appuient tous
-// sur cette liste, ce qui les garde coherents.
-//
-// Ordre de priorite : une variable d'environnement (ou une option de la ligne
-// de commande) l'emporte et verrouille le champ dans l'interface ; sinon la
-// valeur enregistree depuis la page Reglages ; sinon la valeur par defaut.
+// Priorite : variable d'environnement (ou option), qui verrouille le champ ;
+// sinon la valeur enregistree ; sinon la valeur par defaut.
 package settings
 
 import (
@@ -44,8 +38,6 @@ type Option struct {
 type Def struct {
 	Key string
 	Env string
-	// OldEnv est un ancien nom de la variable, encore accepte.
-	OldEnv string
 	// Normalize complete une saisie courante avant sa verification, par
 	// exemple une adresse sans http://.
 	Normalize func(string) string
@@ -91,9 +83,6 @@ func FromEnv(getenv func(string) string) Source {
 				continue
 			}
 			v := strings.TrimSpace(getenv(d.Env))
-			if v == "" && d.OldEnv != "" {
-				v = strings.TrimSpace(getenv(d.OldEnv))
-			}
 			if v != "" {
 				if d.Normalize != nil {
 					v = d.Normalize(v)

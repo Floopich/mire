@@ -12,10 +12,8 @@ import (
 	"github.com/floopich/mire/internal/store"
 )
 
-// Le debit vient d'un Speedtest Tracker ou d'une passerelle UniFi : Mire
-// n'en mesure pas. La page
-// Internet et le rapport en donnent la mediane, moins sensible qu'une
-// moyenne a une mesure ratee.
+// Le debit vient de Speedtest Tracker ou d'une passerelle UniFi. La page
+// Internet et le rapport en donnent la mediane.
 
 // speedView resume les mesures de debit d'une periode.
 type speedView struct {

@@ -15,11 +15,8 @@ type ChannelSummary struct {
 	LastSeen   time.Time
 }
 
-// DownstreamChannels liste les canaux descendants vus sur la periode.
-//
-// On part du dernier releve de chaque canal plutot que d'une liste figee : un
-// canal qui disparait apres une reconfiguration du segment doit cesser
-// d'apparaitre, et un canal ajoute doit apparaitre sans intervention.
+// DownstreamChannels liste les canaux descendants vus sur la periode, a
+// partir du dernier releve de chaque canal.
 func DownstreamChannels(ctx context.Context, db *sql.DB, since time.Time) ([]ChannelSummary, error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT c.channel_id, c.modulation, c.power_dbmv, c.snr_db, c.ts
@@ -80,10 +77,8 @@ func UpstreamChannels(ctx context.Context, db *sql.DB, since time.Time) ([]Chann
 	return out, rows.Err()
 }
 
-// DownstreamChannel resume le dernier etat connu d'un canal descendant.
-//
-// La modulation sert a choisir les seuils a tracer derriere les courbes : un
-// canal OFDM ne se lit pas avec les planchers d'un canal 256QAM.
+// DownstreamChannel resume le dernier etat connu d'un canal descendant ; la
+// modulation choisit les seuils a tracer.
 func DownstreamChannel(ctx context.Context, db *sql.DB, channelID int) (ChannelSummary, error) {
 	s := ChannelSummary{ChannelID: channelID}
 	var ts int64

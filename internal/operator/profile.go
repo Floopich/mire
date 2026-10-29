@@ -1,9 +1,6 @@
-// Package operator porte les profils d'operateur.
-//
-// Tout ce qui varie d'un operateur a l'autre est une donnee, pas du code :
-// l'adresse par defaut du modem, le modem fourni, et les seuils qui
-// qualifient l'etat de la ligne. Ajouter un operateur revient a ecrire un
-// fichier JSON dans profiles/, pas a toucher au programme.
+// Package operator porte les profils d'operateur : adresse et modele du
+// modem par defaut, seuils de la ligne. Un operateur est un fichier JSON
+// dans profiles/.
 package operator
 
 import (
@@ -54,13 +51,8 @@ type ModulationLimits struct {
 	Usual int `json:"-"`
 }
 
-// ErrorLimits borne les erreurs de la voie descendante.
-//
-// Les compteurs du modem cumulent depuis son demarrage : seules leurs
-// variations d'un releve a l'autre disent ce qui se passe maintenant. La
-// proportion d'erreurs non corrigees se juge donc sur une fenetre glissante,
-// et seulement au-dela d'un volume minimal, sous lequel un pourcentage ne
-// signifie rien.
+// ErrorLimits borne les erreurs de la voie descendante, jugees sur une
+// fenetre glissante et au-dela d'un volume minimal.
 type ErrorLimits struct {
 	UncorrectablePctWarning  float64 `json:"uncorrectable_pct_warning"`
 	UncorrectablePctCritical float64 `json:"uncorrectable_pct_critical"`
@@ -104,7 +96,7 @@ func (e ErrorLimits) Spike() int64 {
 //
 // Les cartes sont indexees par modulation ("256QAM", "ofdm", "sc_qam"...).
 // DefaultKey donne la modulation a utiliser quand le modem en annonce une
-// qu'on ne connait pas : mieux vaut un seuil approchant qu'aucune analyse.
+// inconnue.
 type Thresholds struct {
 	DownstreamPower    map[string]PowerBands `json:"downstream_power"`
 	DownstreamDefault  string                `json:"downstream_default"`
@@ -166,10 +158,8 @@ func lookup[T any](table map[string]T, key, fallback string) (T, bool) {
 	return zero, false
 }
 
-// normalize ramene les variantes d'ecriture du modem a une cle unique.
-//
-// Le CGA4233 ecrit "256QAM", d'autres firmwares "256 QAM" ou "qam256". On
-// tolere les trois plutot que de perdre l'analyse sur un espace.
+// normalize ramene les ecritures de modulation ("256QAM", "256 QAM",
+// "qam256") a une cle unique.
 func normalize(modulation string) string {
 	s := strings.ToLower(strings.TrimSpace(modulation))
 	s = strings.ReplaceAll(s, " ", "")

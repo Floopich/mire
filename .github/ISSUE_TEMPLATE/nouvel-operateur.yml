@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Mire juge une ligne d'après les seuils de son opérateur. Sans profil adapté, le profil « Générique » relève les mesures sans les juger. La marche à suivre est décrite dans CONTRIBUTING.md, « Ajouter un opérateur ».
+        Voir CONTRIBUTING.md, « Ajouter un opérateur ».
   - type: input
     id: operateur
     attributes:
@@ -24,12 +24,12 @@ body:
     id: seuils
     attributes:
       label: Seuils connus
-      description: Plages de puissance descendante et montante, SNR minimal, avec leur source (documentation de l'opérateur, technicien, forum). Une valeur sans source reste utile, signalez-le simplement.
+      description: Puissance descendante et montante, SNR minimal, avec leur source si possible.
     validations:
       required: true
   - type: textarea
     id: releve
     attributes:
       label: Relevé d'une ligne saine
-      description: Facultatif. La page des canaux du modem, ou « docker compose logs mire » avec MIRE_VERBEUX=true, sans mot de passe ni numéro de série.
+      description: Facultatif. Page des canaux du modem, sans mot de passe ni numéro de série.
       render: text

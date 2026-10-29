@@ -2,15 +2,10 @@
 // une interruption de service.
 //
 // Source : article 113/2 de la loi du 13 juin 2005 relative aux
-// communications electroniques, en vigueur depuis le 1er novembre 2024 ; la
-// Cour constitutionnelle a rejete le recours forme contre lui (arret
-// 166/2025). Bareme publie par l'IBPT, sans indexation.
-//
-// Seule l'interruption TOTALE et continue ouvre ce droit : une ligne lente ou
-// degradee n'y donne pas acces. Le calcul de Mire est une estimation fondee
-// sur la duree mesuree ; legalement, la duree court a partir du moment ou
-// l'operateur a connaissance de l'interruption, d'ou l'interet de la
-// signaler sans attendre.
+// communications electroniques, en vigueur depuis le 1er novembre 2024.
+// Bareme publie par l'IBPT, sans indexation. Seule l'interruption totale et
+// continue ouvre ce droit. Le calcul est une estimation fondee sur la duree
+// mesuree.
 package compensation
 
 import (

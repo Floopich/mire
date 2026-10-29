@@ -155,28 +155,10 @@ func TestValidation(t *testing.T) {
 }
 
 func TestLesVariablesDEnvironnementSontLues(t *testing.T) {
-	env := map[string]string{"MIRE_MODEM_PASSWORD": "secret", "MIRE_INTERVALLE": " 5m ", "AUTRE": "x"}
+	env := map[string]string{"MIRE_MODEM_MOT_DE_PASSE": "secret", "MIRE_INTERVALLE": " 5m ", "AUTRE": "x"}
 	s := FromEnv(func(k string) string { return env[k] })
 	if s[ModemPassword] != "secret" || s[Interval] != "5m" || len(s) != 2 {
 		t.Errorf("source inattendue : %v", s)
-	}
-}
-
-func TestLAncienNomDuMotDePasseDuModemResteAccepte(t *testing.T) {
-	ancien := FromEnv(func(k string) string {
-		if k == "MIRE_MODEM_PASSWORD" {
-			return "ancien"
-		}
-		return ""
-	})
-	if ancien[ModemPassword] != "ancien" {
-		t.Errorf("ancien nom ignoré : %v", ancien)
-	}
-	les2 := FromEnv(func(k string) string {
-		return map[string]string{"MIRE_MODEM_PASSWORD": "ancien", "MIRE_MODEM_MOT_DE_PASSE": "nouveau"}[k]
-	})
-	if les2[ModemPassword] != "nouveau" {
-		t.Errorf("le nouveau nom doit l'emporter : %v", les2)
 	}
 }
 

@@ -6,13 +6,8 @@ import (
 	"time"
 )
 
-// Le manifeste rend Mire installable comme une application : icone sur
-// l'ecran d'accueil, fenetre sans barre d'adresse. Il ne contient rien de la
-// ligne et se sert sans session, car le navigateur le lit sans cookie.
-//
-// Aucun service worker : Mire n'a pas de script, et une page hors ligne
-// n'aurait rien a montrer, puisque tout vient de l'instance. Chrome propose
-// l'installation sans lui ; Safari l'ajoute a l'ecran d'accueil.
+// Le manifeste rend Mire installable comme une application. Il se sert sans
+// session et ne contient rien de la ligne. Pas de service worker.
 
 type manifestIcon struct {
 	Src     string `json:"src"`
@@ -44,10 +39,8 @@ type manifest struct {
 	Shortcuts       []manifestShortcut `json:"shortcuts"`
 }
 
-// corail est la couleur de Mire : barre d'etat et barre de navigation de
-// l'application installee, ecran de lancement, barre d'adresse du navigateur
-// (balise theme-color de chaque page). Le systeme y pose des icones sombres,
-// lisibles en theme clair comme en theme sombre.
+// corail est la couleur de Mire : barres systeme de l'application installee,
+// ecran de lancement, theme-color de chaque page.
 const corail = "#E8817F"
 
 func appManifest() manifest {

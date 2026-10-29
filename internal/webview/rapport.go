@@ -19,10 +19,9 @@ import (
 	"github.com/floopich/mire/internal/store"
 )
 
-// Le rapport rassemble, pour une periode, ce qu'un technicien demande : l'etat
-// de la ligne dans le temps, les coupures, les canaux hors plage et le
-// journal. Il s'imprime tel quel, ou s'enregistre en PDF depuis le
-// navigateur. Une date d'intervention ajoute la comparaison avant/apres.
+// Le rapport rassemble, pour une periode, l'etat de la ligne, les coupures,
+// les canaux hors plage et le journal. Une date d'intervention ajoute la
+// comparaison avant/apres.
 
 const (
 	defaultReportDays = 30

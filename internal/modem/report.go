@@ -169,14 +169,9 @@ var (
 )
 
 // scriptCalls parcourt l'interface web du modem, en lecture seule, a partir
-// des documents deja lus (page d'accueil, menu) : scripts, puis gabarits et
-// scripts qu'ils chargent, sur un niveau de plus. Il en tire les chemins
-// appeles et ce qui entoure les mots utiles : c'est ainsi qu'on confirme,
-// sans rien essayer, comment un firmware lit ses canaux et redemarre.
-//
-// Les ecrans dont le nom parle de redemarrage (adm_reset.html…) sont rendus
-// en entier, a la suite : c'est la que se lit l'appel exact et ses
-// parametres.
+// des documents deja lus : scripts, puis gabarits et scripts qu'ils
+// chargent. Il en tire les chemins appeles et le contexte des mots utiles.
+// Les ecrans de redemarrage sont rendus en entier.
 func scriptCalls(ctx context.Context, seeds map[string][]byte, get func(context.Context, string) ([]byte, error)) []Capture {
 	const maxFiles, maxSnippets, maxScreen = 80, 40, 12000
 	c := Capture{Path: uiCallsPath}
@@ -282,11 +277,8 @@ func DetectedName(r Report) string {
 // caracteres, GitHub la refuse.
 const maxIssueURL = 7500
 
-// IssueLink prepare la demande « Rapport de modem », entierement remplie :
-// l'utilisateur n'a plus qu'a la relire et l'envoyer.
-//
-// name est le modem tel que l'abonne le nomme ; a defaut, celui que le
-// modem annonce.
+// IssueLink prepare la demande « Rapport de modem », entierement remplie.
+// name est le modem tel que l'abonne le nomme, sinon celui qu'il annonce.
 func IssueLink(r Report, name, operator string) string {
 	name = firstNonEmpty(strings.TrimSpace(name), DetectedName(r), "modem inconnu")
 	v := url.Values{}

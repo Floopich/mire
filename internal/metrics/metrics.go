@@ -1,9 +1,6 @@
-// Package metrics ecrit l'etat de la ligne au format texte de Prometheus.
-//
-// Ce format est lu tel quel par Prometheus, VictoriaMetrics et Grafana Alloy,
-// et par Telegraf pour InfluxDB : un seul point de lecture les sert tous.
-// Les noms suivent les conventions Prometheus (unites de base : secondes,
-// ratio) ; les descriptions sont en francais, comme l'interface.
+// Package metrics ecrit l'etat de la ligne au format texte de Prometheus,
+// avec les conventions de nommage Prometheus et des descriptions en
+// francais.
 package metrics
 
 import (

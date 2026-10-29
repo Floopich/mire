@@ -17,9 +17,6 @@ const KeyPasswordHash = "admin_password_hash"
 const MinPasswordLength = 8
 
 // HasPassword dit si un mot de passe d'interface a ete choisi.
-//
-// Tant qu'il n'y en a pas, l'interface ne propose que l'assistant de premier
-// demarrage, dont la premiere etape consiste justement a le choisir.
 func HasPassword(ctx context.Context, db *sql.DB) (bool, error) {
 	hash, err := store.Setting(ctx, db, KeyPasswordHash, "")
 	return hash != "", err
@@ -29,9 +26,7 @@ func HasPassword(ctx context.Context, db *sql.DB) (bool, error) {
 var ErrPasswordExists = errors.New("le mot de passe de l'interface est déjà choisi")
 
 // SetInitialPassword choisit le premier mot de passe, depuis l'assistant.
-//
-// L'ecriture est atomique : deux visiteurs simultanes d'une instance neuve ne
-// peuvent pas choisir chacun le leur ; le second recoit ErrPasswordExists.
+// Ecriture atomique : une seconde tentative recoit ErrPasswordExists.
 func SetInitialPassword(ctx context.Context, db *sql.DB, password string) error {
 	hash, err := hashChecked(password)
 	if err != nil {

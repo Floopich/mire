@@ -14,11 +14,8 @@ import (
 // KindPower est un saut de la puissance moyenne entre deux releves.
 const KindPower = "puissance"
 
-// Ecarts de puissance moyenne qui font un evenement. Un saut brusque, meme
-// dans la plage nominale, trahit souvent un connecteur desserre ou un
-// amplificateur defaillant : la ligne n'a pas encore decroche, mais elle a
-// change. En voie montante, le modem ajuste sans cesse son emission : il lui
-// faut un ecart plus grand pour ne pas prendre ce reglage pour un incident.
+// Ecarts de puissance moyenne qui font un evenement. La voie montante, que
+// le modem ajuste en permanence, demande un ecart plus grand.
 const (
 	powerShiftDown = 2.0
 	powerShiftUp   = 3.0

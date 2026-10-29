@@ -11,9 +11,7 @@ import (
 )
 
 // Le profil horaire replie trente jours de mesures de la sonde sur une
-// journee : latence et pertes moyennes pour chaque heure. Une ligne saturee
-// le soir, quand tout le quartier regarde des videos, s'y voit d'un coup
-// d'oeil, la ou un graphique sur trente jours la noie dans la masse.
+// journee : latence et pertes moyennes pour chaque heure.
 
 const (
 	// profileDays est la profondeur du profil.

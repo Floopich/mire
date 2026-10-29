@@ -185,12 +185,8 @@ func (s *Server) Routes() http.Handler {
 	return s.withDemo(securityHeaders(mux))
 }
 
-// securityHeaders pose les en-tetes de protection sur chaque reponse.
-//
-// La page n'execute aucun script et ne charge rien d'exterieur : la
-// politique de contenu peut donc tout interdire sauf la feuille de style et
-// les images de l'instance. Une injection HTML, si elle passait un jour le
-// moteur de gabarits, n'aurait rien a executer.
+// securityHeaders pose les en-tetes de protection sur chaque reponse : la
+// politique de contenu n'autorise que les ressources de l'instance.
 func securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
@@ -560,9 +556,6 @@ func plural(n int, one, many string) string {
 }
 
 // bannerFor signale une collecte arretee ou muette.
-//
-// Une ligne coupee ne produit plus de releves : c'est l'absence de donnees,
-// pas une valeur, qui revele la panne.
 func (s *Server) bannerFor(st service.State, latest time.Time) *banner {
 	if !st.Collecting && errors.Is(st.ModelErr, modem.ErrUnsupported) {
 		return &banner{Kind: "info", Message: "Modem non pris en charge : seule la sonde Internet fonctionne.",
@@ -739,9 +732,6 @@ func upstreamFamily(modulation string) string {
 }
 
 // hoursParam borne la fenetre demandee.
-//
-// Sans borne, un parametre absurde ferait balayer dix ans de releves pour
-// dessiner une courbe de sept cents pixels de large.
 func hoursParam(r *http.Request) int {
 	h, err := strconv.Atoi(r.URL.Query().Get("heures"))
 	if err != nil || h <= 0 {
@@ -753,10 +743,8 @@ func hoursParam(r *http.Request) int {
 	return h
 }
 
-// handleHealth repond a la supervision : Docker, Uptime Kuma, systemd.
-//
-// Sans authentification, donc sans rien qui renseigne sur la ligne : seulement
-// si le service tourne et si la collecte produit encore des releves.
+// handleHealth repond a la supervision, sans authentification et sans rien
+// de la ligne.
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	latest, err := store.LastReadingTime(r.Context(), s.db)
 	st := s.opts.Service.State()
@@ -829,10 +817,8 @@ func errorLevel(status int) analyze.Level {
 	return analyze.Unknown
 }
 
-// bareCommon sert les pages hors session : connexion, erreurs, installation.
-// Ces pages (installation, connexion, erreur) ne disent rien de la ligne :
-// ni operateur ni modem en pied de page, avant la configuration comme pour
-// un visiteur non connecte.
+// bareCommon sert les pages hors session (connexion, erreurs,
+// installation) : ni operateur ni modem en pied de page.
 func (s *Server) bareCommon(title string) common {
 	return common{Title: title, Version: s.opts.Version, Demo: s.opts.Demo, DemoExit: s.opts.DemoExit}
 }

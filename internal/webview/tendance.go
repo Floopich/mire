@@ -11,10 +11,8 @@ import (
 	"github.com/floopich/mire/internal/store"
 )
 
-// La tendance lente montre ce qu'un releve isole ne montre pas : une ligne
-// qui se degrade de quelques dixiemes de dB par semaine, ou qui suit la
-// temperature exterieure. Les moyennes sont journalieres, sur les canaux
-// SC-QAM.
+// La tendance montre l'evolution lente de la ligne : moyennes journalieres
+// des canaux SC-QAM, et lien avec la temperature exterieure.
 
 const (
 	// minDays est le nombre de journees en dessous duquel une pente ou une

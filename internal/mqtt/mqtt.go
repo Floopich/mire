@@ -1,10 +1,6 @@
-// Package mqtt parle a un serveur MQTT 3.1.1.
-//
-// Mire publie son etat et ecoute un seul sujet de commande : connexion,
-// publication et abonnement en QoS 0, maintien de la connexion et
-// deconnexion. Ces quelques paquets de la norme OASIS MQTT 3.1.1 tiennent
-// ici sans dependance ; un message retenu est republie a chaque reconnexion,
-// ce qui rend le QoS 1 inutile.
+// Package mqtt parle a un serveur MQTT 3.1.1, sans dependance : connexion,
+// publication et abonnement en QoS 0, maintien de la connexion,
+// deconnexion.
 package mqtt
 
 import (

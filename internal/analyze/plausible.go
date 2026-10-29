@@ -10,22 +10,11 @@ import (
 
 // Puissance OFDM invraisemblable.
 //
-// DOCSIS 3.1 exprime la puissance d'un canal OFDM ramenee a 6 MHz : elle se
-// compare donc a celle des canaux SC-QAM. Sur un cable, la puissance suit la
-// frequence presque en ligne droite (la pente du reseau) ; le canal OFDM se
-// place sur le prolongement de celle de ses voisins SC-QAM.
-//
-// Certains firmwares publient pourtant, apres plusieurs jours de
-// fonctionnement, une puissance OFDM sans rapport avec ce qu'ils recoivent.
-// Cas releve sur un CGA4233 VOO : 26,6 dBmV figes pendant plus d'un jour,
-// pour 7 dBmV attendus et une reception excellente (SNR 43,5 dB) ; 6,2 dBmV
-// apres un redemarrage du modem. Un signal reellement 20 dB trop fort sur un
-// seul canal, sans effet sur sa qualite, n'est pas physique.
-//
-// Quand l'ecart a la pente depasse implausibleGap et que le reste du canal
-// est sain, la puissance est donc signalee comme une mesure douteuse, a
-// surveiller, et non comme une ligne hors limites. Les conditions sont
-// cumulatives : au moindre doute, le verdict ordinaire s'applique.
+// La puissance d'un canal OFDM est ramenee a 6 MHz et se place sur la pente
+// de ses voisins SC-QAM. Certains firmwares publient une valeur sans rapport
+// (par exemple 26,6 dBmV pour 7 attendus, SNR 43,5 dB), corrigee par un
+// redemarrage. Quand l'ecart depasse implausibleGap et que le canal est
+// sain par ailleurs, la mesure est signalee comme douteuse, a surveiller.
 
 const (
 	// implausibleGap est l'ecart a la pente au-dela duquel la mesure est

@@ -5,11 +5,9 @@ import (
 	"time"
 )
 
-// Limiter ralentit les tentatives de connexion par adresse.
-//
-// Le delai double a chaque echec, a partir de trois : les deux premieres
-// erreurs sont des fautes de frappe, pas une attaque. Il retombe a zero apres
-// une connexion reussie.
+// Limiter ralentit les tentatives de connexion par adresse : le delai
+// double a chaque echec a partir du troisieme, et retombe a zero apres une
+// connexion reussie.
 type Limiter struct {
 	mu       sync.Mutex
 	failures map[string]*entry

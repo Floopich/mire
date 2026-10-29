@@ -19,13 +19,9 @@ import (
 	"github.com/floopich/mire/internal/store"
 )
 
-// Une passerelle UniFi (Cloud Gateway, Dream Machine) fait elle-meme des
-// tests de debit. Depuis UniFi Network 11, elle n'en rend plus l'historique,
-// seulement le dernier test de chaque acces Internet : Mire le releve a
-// chaque lecture et construit l'historique a partir de la.
-//
-// L'acces se fait par une cle API de UniFi Network, ou par un compte local
-// de la console, de preference en lecture seule.
+// Une passerelle UniFi (Cloud Gateway, Dream Machine) ne rend que le dernier
+// test de chaque acces Internet : Mire le releve a chaque lecture. Acces par
+// une cle API de UniFi Network, ou par un compte local de la console.
 
 // dashboardPath est le tableau de bord de UniFi Network, qui porte le
 // dernier test ; une heure d'historique suffit, le reste est ignore.
@@ -177,7 +173,7 @@ type wanTest struct {
 }
 
 // latest choisit le test a retenir : celui de l'acces principal (WAN), a
-// defaut le plus recent. Un acces de secours, en 4G par exemple, ne doit pas
+// defaut le plus recent. Un acces secondaire ne doit pas
 // passer pour la ligne.
 func latest(body []byte) (store.SpeedTest, bool, error) {
 	var r struct {

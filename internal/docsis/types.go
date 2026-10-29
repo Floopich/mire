@@ -1,9 +1,7 @@
 // Package docsis porte le modele de donnees d'un releve DOCSIS.
 //
-// Les pilotes produisent un RawSnapshot fidele a ce que renvoie le modem :
-// valeurs en chaines, unites collees aux nombres, champs parfois absents.
-// La normalisation vers Snapshot est faite ici, en un seul endroit, pour que
-// chaque pilote n'ait a se soucier que de son propre format d'origine.
+// Les pilotes produisent un RawSnapshot fidele au modem ; la normalisation
+// vers Snapshot est faite ici.
 package docsis
 
 import (
@@ -14,15 +12,8 @@ import (
 	"time"
 )
 
-// FlexInt accepte un entier ecrit en nombre ou en chaine.
-//
-// Le CGA4233 renvoie parfois "channelID": 1 et parfois "channelID": "1" selon
-// la version de firmware. Un decodage strict rejetterait le releve entier pour
-// un guillemet ; on prefere lire les deux.
-//
-// Il tient sur 64 bits sur toutes les architectures : les compteurs d'erreurs
-// du modem depassent 2^31 (3 922 065 920 releves sur un canal OFDM), ce qu'un
-// int de 32 bits, sur armv7, ne contiendrait pas.
+// FlexInt accepte un entier ecrit en nombre ou en chaine, selon le firmware.
+// Il tient sur 64 bits : les compteurs d'erreurs depassent 2^31.
 type FlexInt int64
 
 func (f *FlexInt) UnmarshalJSON(data []byte) error {
@@ -76,11 +67,8 @@ type RawSnapshot struct {
 	Upstream   []RawUpstream   `json:"upstream"`
 }
 
-// Downstream est un canal descendant normalise.
-//
-// Les champs numeriques sont des pointeurs : le modem omet certaines valeurs
-// selon le type de canal, et un zero silencieux fausserait l'analyse bien plus
-// qu'une absence assumee. Un canal OFDM n'a pas de MSE au sens du QAM.
+// Downstream est un canal descendant normalise. Les champs numeriques sont
+// des pointeurs : une valeur absente reste nil, jamais zero.
 type Downstream struct {
 	ChannelID     int
 	FrequencyMHz  *float64
@@ -108,11 +96,8 @@ type Snapshot struct {
 	Upstream   []Upstream
 }
 
-// ParseNumber extrait un nombre d'une valeur du modem.
-//
-// Accepte "1.0", "-39.0", "650 MHz", "43,5" et les vides. Renvoie nil plutot
-// que zero quand la valeur est absente ou illisible : c'est la distinction qui
-// evite de compter un canal muet comme un canal a 0 dBmV.
+// ParseNumber extrait un nombre d'une valeur du modem : "1.0", "-39.0",
+// "650 MHz", "43,5". Renvoie nil pour une valeur absente ou illisible.
 func ParseNumber(raw string) *float64 {
 	s := strings.TrimSpace(raw)
 	if s == "" {
@@ -161,11 +146,7 @@ func (r RawSnapshot) Normalize(at time.Time) Snapshot {
 	return snap
 }
 
-// snr convertit le MSE du modem en SNR.
-//
-// Le CGA4233 publie une MSE negative ("-39.0") la ou l'abonne et les seuils
-// raisonnent en SNR positif. On prend la valeur absolue plutot que de propager
-// deux conventions dans tout le reste du programme.
+// snr convertit la MSE negative du modem en SNR positif.
 func snr(mse string) *float64 {
 	v := ParseNumber(mse)
 	if v == nil {
@@ -178,10 +159,8 @@ func snr(mse string) *float64 {
 	return v
 }
 
-// FlexFloat accepte un nombre ecrit en nombre ou en chaine, avec ou sans unite.
-//
-// Le firmware melange les deux : "PowerLevel": 1.5 dans une table, "1.5" dans
-// une autre, parfois "650 MHz". Un decodage strict rejetterait le releve entier.
+// FlexFloat accepte un nombre ecrit en nombre ou en chaine, avec ou sans
+// unite.
 type FlexFloat float64
 
 func (f *FlexFloat) UnmarshalJSON(data []byte) error {
@@ -209,11 +188,8 @@ func (f *FlexFloat) UnmarshalJSON(data []byte) error {
 }
 
 // CounterDelta renvoie l'accroissement d'un compteur cumulatif entre deux
-// releves.
-//
-// Un compteur qui baisse a ete remis a zero, en general par un redemarrage du
-// modem : sa valeur courante compte alors les erreurs survenues depuis, toutes
-// posterieures au releve precedent.
+// releves. Un compteur qui baisse a ete remis a zero : sa valeur courante
+// est alors l'accroissement.
 func CounterDelta(prev, cur int64) int64 {
 	if cur >= prev {
 		return cur - prev

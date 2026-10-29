@@ -15,9 +15,8 @@ import (
 	"github.com/floopich/mire/internal/store"
 )
 
-// La page « Comprendre la ligne » explique chaque mesure en francais courant,
-// avec les seuils du profil en vigueur et les valeurs du dernier releve : on
-// comprend mieux une notion quand on voit ce qu'elle vaut chez soi.
+// La page « Comprendre la ligne » explique chaque mesure avec les seuils du
+// profil et les valeurs du dernier releve.
 
 type link struct{ Href, Label string }
 
@@ -73,8 +72,8 @@ func learnSections(p operator.Profile, interval time.Duration, line status.Statu
 
 	// La ligne en deux mots.
 	sec := learnSection{ID: "ligne", Title: "La ligne en deux mots", Paras: []string{
-		"Le modem reçoit Internet par le câble coaxial, découpé en canaux : des bandes de fréquences qui portent chacune une part du trafic. La voie descendante, de l'opérateur vers vous, en compte une vingtaine ou plus ; la voie montante, de vous vers l'opérateur, quelques-unes.",
-		"Pour chaque canal, le modem publie trois mesures qui suffisent à juger la ligne : la puissance du signal, sa qualité (le SNR) et les erreurs de transmission. Mire les relève toutes les " + every(interval) + " et les compare aux seuils de votre opérateur.",
+		"Le signal du câble est découpé en canaux. La voie descendante va de l'opérateur vers vous, la voie montante de vous vers l'opérateur.",
+		"Pour chaque canal : puissance, qualité du signal (SNR) et erreurs. Mire les relève toutes les " + every(interval) + " et les compare aux seuils de votre opérateur.",
 	}}
 	if line.HasData {
 		sec.Yours = "Chez vous : " + plural(sum.DSCount, "canal descendant", "canaux descendants") + ", " +
@@ -84,13 +83,13 @@ func learnSections(p operator.Profile, interval time.Duration, line status.Statu
 
 	// Puissance recue.
 	sec = learnSection{ID: "puissance", Title: "Puissance reçue", Paras: []string{
-		"Exprimée en dBmV, elle dit si le signal arrive assez fort, sans l'être trop. Trop faible, il se noie dans le bruit ; trop fort, il sature le récepteur du modem. Dans les deux cas, des erreurs apparaissent.",
+		"En dBmV. Trop faible ou trop forte, elle provoque des erreurs.",
 	}}
 	if b, ok := t.DownstreamPowerFor(t.DownstreamDefault); ok && cal {
 		sec.Paras = append(sec.Paras, "Pour "+name+", la plage normale va "+rangeText(b.Good, "dBmV")+
 			" ; "+limitText(b.Warning, "dBmV")+", c'est à surveiller ; au-delà, critique.")
 	}
-	sec.Paras = append(sec.Paras, "La puissance varie un peu avec la fréquence : c'est la pente du réseau, normale. Un écart brusque sur tous les canaux à la fois vient presque toujours de l'installation : connecteur desserré, répartiteur ajouté, câble abîmé.")
+	sec.Paras = append(sec.Paras, "Un écart brusque sur tous les canaux vient souvent de l'installation : connecteur, répartiteur, câble.")
 	if sum.DSPowerMin != nil {
 		sec.Yours = "Chez vous : de " + Fmt(sum.DSPowerMin, "dBmV") + " à " + Fmt(sum.DSPowerMax, "dBmV") + "."
 	}
@@ -98,12 +97,12 @@ func learnSections(p operator.Profile, interval time.Duration, line status.Statu
 
 	// Emission.
 	sec = learnSection{ID: "emission", Title: "Émission", Paras: []string{
-		"C'est la puissance avec laquelle le modem émet vers l'opérateur. Il l'ajuste lui-même pour être entendu : plus le chemin du retour perd de signal, plus il doit émettre fort.",
+		"Puissance d'émission du modem vers l'opérateur. Elle monte quand le retour perd du signal.",
 	}}
 	if b, ok := t.UpstreamPowerFor(t.UpstreamDefault); ok && cal {
 		sec.Paras = append(sec.Paras, "Pour "+name+", "+rangeText(b.Good, "dBmV")+" est normal ; jusqu'à "+
 			short(b.Warning.Max)+" dBmV, c'est à surveiller ; au-delà, critique : vers "+short(b.Critical.Max)+
-			" dBmV, le modem n'est plus assez entendu et des canaux tombent. Une émission qui grimpe signale souvent un connecteur ou un répartiteur sur le trajet.")
+			" dBmV, des canaux tombent.")
 	}
 	if sum.USPowerMax != nil {
 		sec.Yours = "Chez vous : " + Fmt(sum.USPowerMax, "dBmV") + " au plus."
@@ -112,14 +111,14 @@ func learnSections(p operator.Profile, interval time.Duration, line status.Statu
 
 	// SNR.
 	sec = learnSection{ID: "snr", Title: "Qualité du signal : le SNR", Paras: []string{
-		"Le rapport signal/bruit, en dB, compare le signal au bruit qui l'accompagne. Plus il est élevé, mieux c'est : seul un SNR trop bas pose problème.",
+		"Rapport signal/bruit, en dB. Plus il est élevé, mieux c'est.",
 	}}
 	if b, ok := t.SNRFor("256QAM"); ok && cal {
-		p := "Le seuil dépend de la modulation : une modulation plus riche transporte plus de données mais demande un signal plus propre. Pour un canal 256QAM chez " +
+		p := "Pour un canal 256QAM chez " +
 			name + ", " + short(b.GoodMin) + " dB et plus est bon, sous " + short(b.GoodMin) + " dB à surveiller, sous " +
 			short(b.WarningMin) + " dB critique."
 		if o, ok := t.SNR["ofdm"]; ok {
-			p += " Un canal OFDM, plus robuste, est bon dès " + short(o.GoodMin) + " dB."
+			p += " Un canal OFDM est bon dès " + short(o.GoodMin) + " dB."
 		}
 		sec.Paras = append(sec.Paras, p)
 	}
@@ -130,8 +129,8 @@ func learnSections(p operator.Profile, interval time.Duration, line status.Statu
 
 	// Familles de canaux.
 	sec = learnSection{ID: "familles", Title: "SC-QAM, OFDM et OFDMA", Paras: []string{
-		"Les canaux SC-QAM, ceux de DOCSIS 3.0, occupent chacun 6 ou 8 MHz. Les canaux OFDM, en voie descendante, et OFDMA, en voie montante, ceux de DOCSIS 3.1, sont bien plus larges, souvent plus de 100 MHz, et portent l'essentiel du débit des abonnements rapides.",
-		"Leur puissance est ramenée à 6 MHz pour rester comparable à celle des SC-QAM : un canal OFDM se place donc sur la pente de ses voisins. Quand le modem publie une valeur sans rapport avec cette pente alors que la réception est excellente, Mire la signale comme une mesure douteuse : certains firmwares se trompent, et un redémarrage du modem la corrige.",
+		"SC-QAM : canaux DOCSIS 3.0, de 6 ou 8 MHz. OFDM (descendant) et OFDMA (montant) : canaux DOCSIS 3.1, bien plus larges.",
+		"Une puissance OFDM sans rapport avec les canaux voisins, alors que la réception est excellente, est signalée comme mesure douteuse : un redémarrage du modem la corrige souvent.",
 	}}
 	if line.HasData {
 		sec.Yours = "Chez vous : " + families(line.Snapshot) + "."
@@ -140,8 +139,8 @@ func learnSections(p operator.Profile, interval time.Duration, line status.Statu
 
 	// Modulation.
 	sec = learnSection{ID: "modulation", Title: "Modulation", Paras: []string{
-		"La modulation (16QAM, 64QAM, 256QAM…) dit combien de données chaque symbole transporte. L'opérateur la baisse quand le signal se dégrade : la liaison tient, au prix du débit.",
-		"En voie montante, une modulation qui baisse signale souvent du bruit qui entre dans le câble. Certains segments fonctionnent pourtant durablement en basse modulation : déclarée dans les réglages, cette modulation habituelle sert alors de référence.",
+		"16QAM, 64QAM, 256QAM… Elle baisse quand le signal se dégrade, au prix du débit.",
+		"Certains segments restent en basse modulation montante : déclarez-la dans les réglages pour qu'elle serve de référence.",
 	}, Link: &link{"/reglages/analyse", "Régler la modulation habituelle"}}
 	if m := upstreamModulations(line.Snapshot); m != "" {
 		sec.Yours = "Chez vous : voie montante en " + m + "."
@@ -150,11 +149,11 @@ func learnSections(p operator.Profile, interval time.Duration, line status.Statu
 
 	// Erreurs.
 	sec = learnSection{ID: "erreurs", Title: "Erreurs corrigées et non corrigées", Paras: []string{
-		"Chaque bloc de données transporte de quoi réparer quelques erreurs. Les erreurs corrigées sont normales, même nombreuses : rien n'est perdu. Les erreurs non corrigées sont des données perdues, que les applications doivent redemander.",
+		"Les erreurs corrigées sont normales. Les erreurs non corrigées sont des données perdues.",
 	}}
 	if e := t.Errors; cal && e.UncorrectablePctWarning > 0 {
-		sec.Paras = append(sec.Paras, "Le modem cumule ses compteurs depuis son démarrage ; Mire juge plutôt les dernières "+
-			hours(window)+". Il ne publie pas le nombre de blocs reçus : la part d'erreurs non corrigées se calcule donc sur les erreurs, et seul un volume de pertes la rend parlante. Pour "+
+		sec.Paras = append(sec.Paras, "Mire juge les dernières "+
+			hours(window)+". Pour "+
 			name+", un canal est à surveiller à partir de "+FmtCount(int(e.Spike()))+" erreurs non corrigées sur la période et "+
 			short(e.UncorrectablePctWarning)+" % de ses erreurs, critique à partir de "+short(e.UncorrectablePctCritical)+" %.")
 	}
@@ -171,26 +170,26 @@ func learnSections(p operator.Profile, interval time.Duration, line status.Statu
 	// Etats.
 	sec = learnSection{ID: "etats", Title: "Les états", States: []learnState{
 		{analyze.Good, "Dans la plage normale de l'opérateur."},
-		{analyze.Tolerated, "Un cran sous l'idéal, sans effet attendu sur la connexion."},
-		{analyze.Warning, "Hors de la plage normale : la connexion tient, mais la marge se réduit. Une mesure douteuse du modem est aussi classée ici."},
-		{analyze.Critical, "Près des limites ou au-delà : coupures, lenteurs ou pertes probables."},
+		{analyze.Tolerated, "Un cran sous l'idéal, sans effet sur la connexion."},
+		{analyze.Warning, "Hors de la plage normale, ou mesure douteuse."},
+		{analyze.Critical, "Coupures, lenteurs ou pertes probables."},
 		{analyze.Unknown, "Pas de mesure, ou un profil qui ne juge pas la ligne."},
 	}}
 	if cal {
 		sec.Paras = []string{"Les seuils viennent du profil d'opérateur. Pour " + name +
-			", ce sont des valeurs constatées par la communauté et les techniciens, pas une norme publiée : un ordre de grandeur, pas un verdict au dixième près."}
+			", ce sont des valeurs constatées, pas une norme publiée."}
 	} else {
-		sec.Paras = []string{"Le profil « " + name + " » ne juge pas la ligne : sans seuils propres à l'opérateur, un verdict aurait l'apparence du sérieux sans en avoir le fond. Les mesures restent relevées."}
+		sec.Paras = []string{"Le profil « " + name + " » ne juge pas la ligne : les mesures sont relevées sans seuils."}
 	}
 	out = append(out, sec)
 
 	// Que faire.
 	out = append(out, learnSection{ID: "agir", Title: "Que faire ?", Steps: []string{
-		"Vérifiez l'installation : connecteurs vissés à la main, pas de répartiteur inutile, câble coaxial en bon état, sans pli serré.",
-		"Redémarrez le modem quand une seule mesure paraît aberrante : un firmware peut publier une valeur fausse.",
-		"Laissez Mire mesurer quelques jours : un problème qui revient le soir ou par temps froid se voit sur la durée.",
-		"Contactez l'opérateur avec les dates, les coupures et les canaux hors limites : un technicien gagne du temps, et vous aussi.",
-		"Ne touchez ni au boîtier de l'opérateur ni à l'amplificateur d'immeuble : ils lui appartiennent.",
+		"Vérifiez l'installation : connecteurs serrés, pas de répartiteur inutile, câble en bon état.",
+		"Une seule mesure aberrante : redémarrez le modem.",
+		"Un problème intermittent se voit après quelques jours de mesures.",
+		"Contactez l'opérateur avec le rapport de la ligne.",
+		"Ne touchez ni au boîtier de l'opérateur ni à l'amplificateur d'immeuble.",
 	}})
 	return out
 }

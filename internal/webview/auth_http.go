@@ -146,12 +146,8 @@ func isHTTPS(r *http.Request) bool {
 	return r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
 }
 
-// clientKey identifie l'appelant pour le limiteur.
-//
-// On prend l'adresse de la connexion, pas un en-tete : X-Forwarded-For se
-// falsifie, et une adresse falsifiee permettrait de contourner le limiteur en
-// changeant d'identite a chaque essai. Derriere un proxy inverse, tous les
-// appelants partagent donc le meme compteur : c'est plus strict, pas moins.
+// clientKey identifie l'appelant pour le limiteur par l'adresse de la
+// connexion, jamais par un en-tete falsifiable.
 func clientKey(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

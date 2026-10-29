@@ -22,9 +22,6 @@ import (
 )
 
 // docsisPath porte les cinq tables en une seule requete.
-//
-// Les demander separement multiplierait par cinq le cout d'une collecte sur un
-// firmware qui met deja plusieurs secondes a repondre.
 const docsisPath = "/api/v1/modem/exUSTbl,exDSTbl,USTbl,DSTbl,ErrTbl"
 
 const (
@@ -87,11 +84,8 @@ func (m *CGA4233) Snapshot(ctx context.Context) (docsis.RawSnapshot, error) {
 	return parsePayload(body)
 }
 
-// fetch interroge un endpoint authentifie, avec une seule reconnexion.
-//
-// Seuls 400, 401 et 403 justifient de rejouer le cycle de login complet : sur
-// les autres echecs, insister brulerait une requete et une session sur un
-// modem qui n'en accorde pas beaucoup.
+// fetch interroge un endpoint authentifie, avec une seule reconnexion, et
+// seulement apres un 400, 401 ou 403.
 func (m *CGA4233) fetch(ctx context.Context, path string) ([]byte, error) {
 	if m.token == "" {
 		if err := m.login(ctx); err != nil {
@@ -242,11 +236,8 @@ func (m *CGA4233) postLogin(ctx context.Context, password string, out any) error
 	return nil
 }
 
-// deriveTwice reproduit la derivation attendue par le firmware.
-//
-// Le deuxieme tour prend la representation hexadecimale du premier, pas ses
-// octets : c'est ce que fait l'interface web, et s'en ecarter donne un hash
-// syntaxiquement valide que le modem refuse.
+// deriveTwice reproduit la derivation de l'interface web : le deuxieme tour
+// prend la representation hexadecimale du premier.
 func deriveTwice(password, salt, saltWeb string) (string, error) {
 	first, err := pbkdf2.Key(sha256.New, password, []byte(salt), pbkdf2Iterations, pbkdf2Length)
 	if err != nil {

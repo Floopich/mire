@@ -12,11 +12,8 @@ import (
 	"github.com/floopich/mire/internal/settings"
 )
 
-// L'assistant de premier demarrage tient en trois etapes : le mot de passe
-// de l'interface, l'operateur, le modem. L'operateur vient avant le modem :
-// il donne l'adresse et le modele les plus probables. Chaque etape enregistre ses reglages
-// au fur et a mesure : un abandon en cours de route laisse une instance
-// utilisable, a completer depuis la page Reglages.
+// L'assistant de premier demarrage : mot de passe, operateur, modem. Chaque
+// etape enregistre ses reglages ; un abandon laisse une instance utilisable.
 
 type setupView struct {
 	common

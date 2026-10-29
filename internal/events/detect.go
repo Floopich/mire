@@ -1,8 +1,5 @@
-// Package events tient le journal de la ligne.
-//
-// Chaque releve est compare au precedent : ce qui a change devient un
-// evenement date, inscrit une fois pour toutes. Le journal repond a la
-// question que pose une ligne capricieuse : que s'est-il passe, et quand ?
+// Package events tient le journal de la ligne : chaque releve est compare au
+// precedent, et ce qui a change devient un evenement date.
 package events
 
 import (

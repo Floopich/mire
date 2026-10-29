@@ -1,14 +1,8 @@
-// Package probe surveille la connexion : Internet repond-il, et en combien
-// de temps ?
+// Package probe verifie qu'Internet repond, par une connexion TCP vers
+// quelques cibles publiques, fermee des qu'elle est etablie.
 //
-// La sonde ouvre une connexion TCP vers quelques cibles publiques. TCP plutot
-// que ping : l'ICMP exige des privileges que le conteneur n'a pas, et une
-// poignee de main TCP mesure le meme aller-retour. Elle ne transmet rien :
-// la connexion est fermee des qu'elle est etablie.
-//
-// Quand plus rien ne repond, la sonde interroge aussi le modem : s'il repond,
-// c'est la ligne qui est coupee ; sinon, c'est le reseau local, ou la machine
-// de Mire elle-meme.
+// Quand plus rien ne repond, la sonde interroge le modem : s'il repond, la
+// ligne est coupee ; sinon, le reseau local.
 package probe
 
 import (
@@ -110,12 +104,8 @@ func (p *Prober) Run(ctx context.Context) error {
 	}
 }
 
-// resume reprend une coupure restee ouverte au dernier arret du service.
-//
-// Sa fin reelle est inconnue : Mire ne sondait plus. Elle est refermee a la
-// derniere mesure enregistree, ce qui en donne une duree minimale, plutot que
-// prolongee jusqu'au redemarrage, ce qui l'allongerait de toute la duree de
-// l'arret.
+// resume referme une coupure restee ouverte au dernier arret du service, a
+// la derniere mesure enregistree : sa duree est donc minimale.
 func (p *Prober) resume(ctx context.Context) {
 	o, ok, err := store.CurrentOutage(ctx, p.db)
 	if err != nil || !ok {

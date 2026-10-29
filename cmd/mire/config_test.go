@@ -58,7 +58,7 @@ func TestReglagesInvalidesRefuses(t *testing.T) {
 }
 
 func TestLeMotDePasseDuModemNeSePasseJamaisEnOption(t *testing.T) {
-	c, err := parseConfig("mire", nil, env(map[string]string{"MIRE_MODEM_PASSWORD": "secret"}), io.Discard)
+	c, err := parseConfig("mire", nil, env(map[string]string{"MIRE_MODEM_MOT_DE_PASSE": "secret"}), io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}

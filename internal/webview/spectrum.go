@@ -32,11 +32,7 @@ type spectrumView struct {
 
 // Spectrum dessine la bande de canaux : chaque canal a sa frequence, colore
 // selon son etat.
-//
-// C'est la lecture d'ensemble de la ligne, celle qu'une mire de reglage donne
-// d'un coup d'oeil : un canal en defaut se voit a sa place dans le spectre,
-// sans parcourir un tableau. Les canaux dont le modem ne donne pas la
-// frequence restent dans le tableau mais pas ici, faute de position honnete.
+// Les canaux sans frequence connue n'y figurent pas.
 func Spectrum(label string, rows []channelRow, wide, narrow int) *spectrumView {
 	var placed []channelRow
 	for _, r := range rows {

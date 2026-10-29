@@ -9,11 +9,8 @@ import (
 	"strings"
 )
 
-// IsTerminal dit si l'entree standard est un terminal.
-//
-// Sert a ne demander le mot de passe que devant un humain : sous systemd ou
-// dans un conteneur, une invite bloquerait le demarrage sans que personne ne
-// la voie.
+// IsTerminal dit si l'entree standard est un terminal : sous systemd ou dans
+// un conteneur, aucune invite n'est affichee.
 func IsTerminal(f *os.File) bool {
 	info, err := f.Stat()
 	if err != nil {
@@ -22,11 +19,8 @@ func IsTerminal(f *os.File) bool {
 	return info.Mode()&os.ModeCharDevice != 0
 }
 
-// ReadPassword demande un mot de passe sur le terminal.
-//
-// masked masque la frappe. On le laisse desactivable : un mot de passe long
-// se colle, et ne rien voir de ce qu'on a colle rend l'erreur invisible
-// jusqu'a l'echec d'authentification.
+// ReadPassword demande un mot de passe sur le terminal ; masked masque la
+// frappe.
 func ReadPassword(prompt string, masked bool) (string, error) {
 	return readPasswordFrom(os.Stdin, os.Stderr, prompt, masked)
 }

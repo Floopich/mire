@@ -2,25 +2,25 @@
 
 <h1 align="center">Mire</h1>
 
-<p align="center">Surveillance continue d'une ligne câble DOCSIS : chaque relevé du modem conservé, l'état de la ligne dit en une phrase.</p>
+<p align="center">Surveillance continue d'une ligne câble DOCSIS.</p>
 
 ![Vue d'ensemble de Mire](docs/images/vue-ensemble.png)
 
-Un modem câble mesure en permanence la qualité de la ligne, mais n'en garde rien : son interface n'affiche qu'un instantané. Or une ligne se dégrade peu à peu, et l'on n'en voit que les symptômes : la visio qui se fige, le débit qui chute le soir. Mire relève ces mesures, les conserve et les juge selon les seuils de l'opérateur : ce qui se dégrade, depuis quand, et pourquoi.
+Mire relève les mesures du modem câble, les conserve et juge chaque canal selon les seuils de l'opérateur.
 
-> **In English.** Mire continuously monitors a DOCSIS cable line: it polls the modem, keeps every reading and judges each channel against the operator's thresholds. Internet probe, throughput from Speedtest Tracker or a UniFi gateway, line report with CSV export, notifications, Prometheus metrics and a Home Assistant device. Single binary or Docker image; the interface is in French. Profiles for the VOO and Telenet networks (Belgium), driver for the Technicolor CGA4233; other modems and operators are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md).
+> **In English.** Mire monitors a DOCSIS cable line: it polls the modem, keeps every reading and rates each channel against the operator's thresholds. French interface; profiles for the VOO and Telenet networks (Belgium), driver for the Technicolor CGA4233.
 
 ## Fonctionnalités
 
-- **État de la ligne** : chaque canal jugé selon les seuils de l'opérateur (bon, toléré, à surveiller, critique), avec la cause en une phrase.
-- **Journal** : changements d'état, redémarrages du modem, canaux perdus, pics d'erreurs, sauts de puissance, et vos notes d'intervention.
-- **Internet** : une sonde date chaque coupure et distingue la ligne du réseau local ; latence heure par heure, débit lu dans Speedtest Tracker ou sur une passerelle UniFi.
-- **Tendance** : l'évolution sur 30 jours à un an, rapprochée de la température extérieure.
-- **Rapport** : le bilan d'une période, à imprimer en PDF, avec la comparaison avant et après une intervention ; les données s'exportent en CSV.
-- **Modem** : informations, réseau domestique en mode routeur, redémarrage.
-- **Notifications** : ntfy, Gotify, Discord, Telegram, Slack, mail ou webhook.
-- **Intégrations** : métriques Prometheus, appareil Home Assistant par MQTT.
-- **Simple** : un binaire ou une image Docker, une base SQLite, aucun service externe ; installable comme une application sur téléphone.
+- **État de la ligne** : chaque canal classé bon, toléré, à surveiller ou critique, avec la cause.
+- **Journal** : changements d'état, redémarrages, canaux perdus, pics d'erreurs, sauts de puissance, notes.
+- **Internet** : coupures, latence heure par heure, débit (Speedtest Tracker ou passerelle UniFi).
+- **Tendance** : évolution sur 30 jours à un an, avec la température extérieure.
+- **Rapport** : bilan d'une période en PDF, comparaison avant et après une intervention, export CSV.
+- **Modem** : informations, réseau domestique, redémarrage.
+- **Notifications** : ntfy, Gotify, Discord, Telegram, Slack, mail, webhook.
+- **Intégrations** : métriques Prometheus, Home Assistant par MQTT.
+- **Léger** : un binaire ou une image Docker, une base SQLite ; installable comme application.
 
 ## Aperçu
 
@@ -31,7 +31,7 @@ Un modem câble mesure en permanence la qualité de la ligne, mais n'en garde ri
 
 ## Installation
 
-Enregistrez ce `compose.yaml`, puis lancez `docker compose up -d` :
+`compose.yaml` :
 
 ```yaml
 services:
@@ -48,11 +48,11 @@ volumes:
   mire-data:
 ```
 
-Ouvrez `http://<machine>:1340`. L'accueil propose d'**essayer la démo**, sur une ligne fictive, ou de **configurer Mire** en trois étapes : mot de passe, opérateur, modem, que Mire cherche lui-même.
+`docker compose up -d`, puis `http://<machine>:1340` : essayez la démo, ou configurez Mire en trois étapes (mot de passe, opérateur, modem).
 
 - **Mettre à jour** : `docker compose pull && docker compose up -d`.
-- **Démo seule**, sans rien conserver : `docker run --rm -p 1340:1340 -e MIRE_DEMO=true ghcr.io/floopich/mire:latest`.
-- **Sans Docker** : binaires pour Linux (amd64, arm64, armv7) et Windows dans les [Releases](https://github.com/floopich/mire/releases), service systemd décrit dans la [configuration](docs/configuration.md#installation-sans-docker).
+- **Démo seule** : `docker run --rm -p 1340:1340 -e MIRE_DEMO=true ghcr.io/floopich/mire:latest`.
+- **Sans Docker** : binaires Linux et Windows dans les [Releases](https://github.com/floopich/mire/releases), voir [Installation sans Docker](docs/configuration.md#installation-sans-docker).
 
 ## Modems et opérateurs
 
@@ -64,17 +64,17 @@ Ouvrez `http://<machine>:1340`. L'accueil propose d'**essayer la démo**, sur un
 |---|---|
 | VOO / Orange | réseau VOO : Wallonie, une partie de Bruxelles |
 | Telenet / Orange | réseau Telenet : Flandre, une partie de Bruxelles |
-| Non calibré | autre opérateur : les relevés sont conservés sans juger la ligne |
+| Autre opérateur | relevés conservés, sans jugement de la ligne |
 
-Votre modem n'y figure pas ? Choisissez « Autre modem » : la sonde Internet fonctionne, et la page Modem prépare en quelques clics le rapport anonymisé qui permet de l'ajouter.
+Modem absent de la liste : choisissez « Autre modem », puis **Proposer mon modem** dans la page Modem.
 
 ## Documentation
 
-- [Fonctionnement](docs/fonctionnement.md) : comment Mire juge la ligne, journal, sonde Internet, tendance, rapport.
-- [Configuration](docs/configuration.md) : réglages, variables d'environnement, commandes, sauvegarde, sécurité.
-- [Intégrations](docs/integrations.md) : débit, notifications, métriques, Home Assistant, supervision.
-- [Contribuer](CONTRIBUTING.md) : ajouter un modem ou un opérateur ; [charte graphique](docs/charte.md).
+- [Fonctionnement](docs/fonctionnement.md)
+- [Configuration](docs/configuration.md)
+- [Intégrations](docs/integrations.md)
+- [Contribuer](CONTRIBUTING.md)
 
 ## Licence
 
-MIT, copyright (c) 2026 Floopich : voir [LICENSE](LICENSE). Ressources embarquées : Roboto Flex (SIL Open Font License 1.1) et Material Symbols (Apache License 2.0), licences dans `internal/webview/assets/`.
+MIT, voir [LICENSE](LICENSE). Roboto Flex (SIL Open Font License 1.1) et Material Symbols (Apache License 2.0), licences dans `internal/webview/assets/`.

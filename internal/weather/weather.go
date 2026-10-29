@@ -1,9 +1,5 @@
-// Package weather releve la temperature journaliere d'un lieu, pour la
-// rapprocher de la tendance de la ligne : un cable ou un amplificateur
-// sensible au froid ou a la chaleur se voit ainsi.
-//
-// Les donnees viennent d'Open-Meteo, service gratuit sans compte ni cle :
-// seule la position choisie lui est envoyee.
+// Package weather releve la temperature journaliere d'un lieu sur
+// Open-Meteo, sans compte ; seule la position est envoyee.
 package weather
 
 import (

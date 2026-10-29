@@ -19,10 +19,8 @@ type migration struct {
 	sql     string
 }
 
-// loadMigrations lit les migrations embarquees, triees par numero.
-//
-// Le nom suit la forme NNNN_description.sql. Un numero duplique est une erreur
-// de developpement qu'il vaut mieux voir au demarrage qu'une fois installe.
+// loadMigrations lit les migrations embarquees (NNNN_description.sql),
+// triees par numero. Un numero duplique est une erreur.
 func loadMigrations() ([]migration, error) {
 	entries, err := migrationFS.ReadDir("migrations")
 	if err != nil {
@@ -66,10 +64,7 @@ func CodeVersion() (int, error) {
 	return all[len(all)-1].version, nil
 }
 
-// schemaVersion lit la version enregistree dans la base.
-//
-// On utilise user_version, un entier que SQLite stocke dans l'en-tete du
-// fichier : pas de table a creer avant de savoir s'il faut en creer une.
+// schemaVersion lit la version enregistree (PRAGMA user_version).
 func schemaVersion(db *sql.DB) (int, error) {
 	var v int
 	err := db.QueryRow("PRAGMA user_version").Scan(&v)
@@ -78,10 +73,7 @@ func schemaVersion(db *sql.DB) (int, error) {
 
 // Migrate amene la base au schema attendu par ce binaire.
 //
-// Refuse de continuer si la base vient d'une version plus recente : une
-// instance installee chez quelqu'un d'autre ne se repare pas a distance, et
-// mieux vaut un refus clair au demarrage qu'une ecriture dans un schema qu'on
-// ne comprend pas.
+// Refuse une base venant d'une version plus recente.
 func Migrate(db *sql.DB) error {
 	all, err := loadMigrations()
 	if err != nil {
@@ -113,9 +105,6 @@ func Migrate(db *sql.DB) error {
 }
 
 // applyMigration joue une migration et sa version dans la meme transaction.
-//
-// Les deux vont ensemble : une migration appliquee sans sa version serait
-// rejouee au demarrage suivant, sur un schema qui l'a deja subie.
 func applyMigration(db *sql.DB, m migration) error {
 	tx, err := db.Begin()
 	if err != nil {

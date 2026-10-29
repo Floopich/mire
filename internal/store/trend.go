@@ -7,10 +7,6 @@ import (
 )
 
 // DayLine resume une journee de releves : moyennes des canaux SC-QAM.
-//
-// Les canaux OFDM et OFDMA sont ecartes : leur arrivee ou leur depart, ou une
-// mesure douteuse du modem, deplaceraient la moyenne sans que la ligne ait
-// change.
 type DayLine struct {
 	Day      string // AAAA-MM-JJ, heure locale
 	DSPower  *float64
