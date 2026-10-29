@@ -133,7 +133,7 @@ git tag v1.2.0
 git push origin v1.2.0
 ```
 
-Le tag crée la release avec les binaires, et l'image `1.2.0`, `1.2` et `latest`. Un tag à suffixe (`v1.3.0-rc1`) publie une pré-version. Ne créez pas la release depuis GitHub : publiée sans ses binaires, elle ne peut plus les recevoir.
+Le tag crée la release (binaires, notes tirées du message du commit) et l'image `1.2.0`, `1.2` et `latest`. Un tag à suffixe (`v1.3.0-rc1`) publie une pré-version. Ne créez pas la release depuis GitHub : publiée sans ses binaires, elle ne peut plus les recevoir.
 
 ## Interface et textes
 

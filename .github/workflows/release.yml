@@ -42,15 +42,14 @@ jobs:
       - name: Publication
         env:
           GH_TOKEN: ${{ github.token }}
-        # Un tag a suffixe (v1.2.0-rc1) est une pre-version : publiee, mais ni
-        # marquee comme derniere version, ni poussee sous l'image latest.
-        # Une version publiee depuis GitHub (Releases, « Draft a new release »)
-        # cree le tag et la Release : les binaires s'y ajoutent alors.
+        # Un tag a suffixe (v1.2.0-rc1) publie une pre-version. Les notes
+        # reprennent le message du commit tague.
         run: |
           set -eu
-          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
-            gh release upload "${GITHUB_REF_NAME}" dist/* --clobber
-            exit 0
-          fi
           if [[ "${GITHUB_REF_NAME}" == *-* ]]; then genre=--prerelease; else genre=--latest; fi
-          gh release create "${GITHUB_REF_NAME}" dist/* --generate-notes --verify-tag "$genre"
+          {
+            git log -1 --format=%b "${GITHUB_SHA}"
+            echo
+            echo "Image Docker : \`ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/mire:${GITHUB_REF_NAME#v}\`"
+          } > notes.md
+          gh release create "${GITHUB_REF_NAME}" dist/* --title "Mire ${GITHUB_REF_NAME#v}" --notes-file notes.md --verify-tag "$genre"

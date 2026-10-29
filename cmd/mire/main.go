@@ -169,7 +169,7 @@ func serve(args []string) error {
 			return err
 		}
 		defer d.Close()
-		return listen(ctx, stop, cfg, logger, d.handler, nil)
+		return listen(ctx, stop, cfg, logger, d.handler, nil, false)
 	}
 
 	db, err := open(cfg)
@@ -230,16 +230,16 @@ func serve(args []string) error {
 			}
 		}
 	}()
+	firstVisit := false
 	if ok, err := auth.HasPassword(ctx, db); err == nil && !ok {
-		logger.Warn("première visite : ouvrez l'interface pour choisir le mot de passe et configurer le modem",
-			"adresse", cfg.Listen)
+		firstVisit = true
 	}
-	err = listen(ctx, stop, cfg, logger, srv.Routes(), &wg)
+	err = listen(ctx, stop, cfg, logger, srv.Routes(), &wg, firstVisit)
 	return err
 }
 
 // listen sert l'interface jusqu'a l'arret demande.
-func listen(ctx context.Context, stop func(), cfg config, logger *slog.Logger, handler http.Handler, wg *sync.WaitGroup) error {
+func listen(ctx context.Context, stop func(), cfg config, logger *slog.Logger, handler http.Handler, wg *sync.WaitGroup, firstVisit bool) error {
 	server := &http.Server{
 		Addr:              cfg.Listen,
 		Handler:           handler,
@@ -254,7 +254,14 @@ func listen(ctx context.Context, stop func(), cfg config, logger *slog.Logger, h
 		defer cancel()
 		_ = server.Shutdown(shutdown)
 	}()
-	logger.Info("interface disponible", "adresse", cfg.Listen, "version", currentVersion())
+	port := cfg.Listen
+	if _, p, err := net.SplitHostPort(cfg.Listen); err == nil {
+		port = p
+	}
+	logger.Info("Mire " + currentVersion() + " : interface sur le port " + port)
+	if firstVisit {
+		logger.Info("première visite : ouvrez l'interface pour configurer Mire")
+	}
 	err := server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		stop()

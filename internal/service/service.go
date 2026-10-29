@@ -147,6 +147,9 @@ func Resolve(ctx context.Context, db *sql.DB, forced settings.Source) (State, er
 	return st, nil
 }
 
+// ErrNoModemPassword signale un modem pas encore configure.
+var ErrNoModemPassword = errors.New("mot de passe du modem non renseigné")
+
 // Driver construit le pilote du modem configure.
 func (st State) Driver() (modem.Driver, error) {
 	if st.ModelErr != nil {
@@ -154,7 +157,7 @@ func (st State) Driver() (modem.Driver, error) {
 	}
 	password := st.Values.String(settings.ModemPassword)
 	if password == "" {
-		return nil, errors.New("mot de passe du modem non renseigné")
+		return nil, ErrNoModemPassword
 	}
 	return st.Model.New(modem.Config{URL: st.Address, User: st.User, Password: password})
 }
@@ -256,9 +259,12 @@ func (m *Manager) Reload(ctx context.Context) error {
 	m.cancel = cancel
 
 	driver, err := st.Driver()
-	if err != nil {
+	switch {
+	case errors.Is(err, ErrNoModemPassword):
+		m.logger.Info("collecte en attente : modem à configurer")
+	case err != nil:
 		m.logger.Warn("collecte inactive", "raison", err)
-	} else {
+	default:
 		st.Collecting = true
 		st.Modem = driver
 		db := m.db
