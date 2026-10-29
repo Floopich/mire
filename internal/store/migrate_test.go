@@ -2,6 +2,8 @@ package store
 
 import (
 	"database/sql"
+	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -120,5 +122,63 @@ func TestNumerosDeMigrationUniquesEtOrdonnes(t *testing.T) {
 		if all[i].version <= all[i-1].version {
 			t.Errorf("%s et %s ne sont pas strictement croissants", all[i-1].name, all[i].name)
 		}
+	}
+}
+
+func TestUneBaseEstCopieeAvantSaMigration(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "mire.db")
+	latest, _ := CodeVersion()
+	all, err := loadMigrations()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ancienne, err := sql.Open(driverName, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range all {
+		if m.version < latest {
+			if err := applyMigration(ancienne, m); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	_ = ancienne.Close()
+	// Une copie plus ancienne est remplacee par la nouvelle.
+	if err := os.WriteFile(path+".avant-v1", []byte("vieux"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	db, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = db.Close()
+	copie := fmt.Sprintf("%s.avant-v%d", path, latest-1)
+	info, err := os.Stat(copie)
+	if err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("copie avant migration : %v %v", info, err)
+	}
+	if _, err := os.Stat(path + ".avant-v1"); !os.IsNotExist(err) {
+		t.Error("l'ancienne copie doit être retirée")
+	}
+	v, err := sql.Open(driverName, copie)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = v.Close() }()
+	if got, _ := schemaVersion(v); got != latest-1 {
+		t.Errorf("la copie est en version %d, attendu %d", got, latest-1)
+	}
+
+	// Une base neuve n'a rien a copier.
+	neuve := filepath.Join(t.TempDir(), "neuve.db")
+	db, err = Open(neuve)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = db.Close()
+	if m, _ := filepath.Glob(neuve + ".avant-v*"); len(m) != 0 {
+		t.Errorf("copie inattendue : %v", m)
 	}
 }

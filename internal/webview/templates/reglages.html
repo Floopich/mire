@@ -112,9 +112,13 @@
  <section class="card settings-panel" aria-labelledby="titre-rubrique">
   <header class="panel-head">
    <h2 id="titre-rubrique" class="title-l">Sauvegarde</h2>
-   <p class="body-m muted">Copie complète de la base, mot de passe du modem compris.</p>
+   <p class="body-m muted">Copie de la base, à garder à l'abri.</p>
   </header>
-  <div class="form-actions"><a class="btn filled" href="/reglages/sauvegarde/telecharger" download>{{icon "telecharger"}}Télécharger une sauvegarde</a></div>
+  <div class="form-actions">
+   <a class="btn filled" href="/reglages/sauvegarde/telecharger" download>{{icon "telecharger"}}Sauvegarde complète</a>
+   <a class="btn tonal" href="/reglages/sauvegarde/telecharger?secrets=non" download>{{icon "telecharger"}}Sans mots de passe ni jetons</a>
+  </div>
+  <p class="help body-m">Complète : mots de passe et jetons compris. Sans mots de passe : à ressaisir après restauration, celui de l'interface compris.</p>
   <p class="help body-m">Restaurer : <code>mire restauration FICHIER</code>, Mire arrêté.</p>
  </section>
  {{end}}

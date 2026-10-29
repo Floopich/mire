@@ -86,7 +86,7 @@ Image pour `amd64`, `arm64` et `armv7`.
 | `1.2.3`, `1.2` | version précise, ou dernière correction d'une version |
 | `main` | version en développement |
 
-Mettre à jour : `docker compose pull && docker compose up -d`. Les données sont conservées et la base est mise à jour au démarrage.
+Mettre à jour : `docker compose pull && docker compose up -d`. Les données sont conservées et la base est mise à jour au démarrage ; avant de la modifier, Mire en garde une copie à côté, `mire.db.avant-vN` (la plus récente seulement).
 
 **Dossier des données.** Pour un dossier sur la machine plutôt que le volume `mire-data`, remplacez `mire-data:/data` par `./data:/data` et attribuez-le à l'utilisateur du conteneur (65532) avant le premier démarrage :
 
@@ -121,7 +121,7 @@ Ouvrez ensuite `http://<machine>:1340`. Le service tourne sous le compte `mire` 
 |---|---|
 | `mire` | collecte les relevés et sert l'interface |
 | `mire releve` | prend un relevé et l'enregistre |
-| `mire sauvegarde FICHIER` | copie la base, sans arrêter le service ; `-` pour la sortie standard |
+| `mire sauvegarde FICHIER` | copie la base, sans arrêter le service ; `-` pour la sortie standard ; `-sans-secrets` retire mots de passe et jetons |
 | `mire restauration FICHIER` | remplace la base par une sauvegarde, service arrêté ; `-` pour l'entrée standard |
 | `mire mot-de-passe` | change le mot de passe de l'interface et ferme les sessions |
 | `mire sante` | vérifie qu'une instance répond |
@@ -136,7 +136,7 @@ Avec Docker : `docker compose exec -it mire mire mot-de-passe`, ou `docker compo
 
 Sans arrêter la collecte :
 
-- dans l'interface : **Réglages, Sauvegarde**, « Télécharger une sauvegarde » ;
+- dans l'interface : **Réglages, Sauvegarde**, « Sauvegarde complète » ou « Sans mots de passe ni jetons » ;
 - en ligne de commande, par exemple chaque nuit :
 
 ```bash
@@ -146,7 +146,7 @@ docker compose exec -T mire mire sauvegarde - > mire-$(date +%F).db
 mire sauvegarde /chemin/mire-sauvegarde.db
 ```
 
-La copie ne remplace jamais un fichier existant. Elle contient le mot de passe du modem : gardez-la à l'abri.
+La copie ne remplace jamais un fichier existant. Complète, elle contient le mot de passe du modem et les jetons : gardez-la à l'abri. Avec `-sans-secrets` (`mire sauvegarde -sans-secrets FICHIER`), mots de passe, jetons et sessions sont retirés ; après restauration, ils se ressaisissent, celui de l'interface compris.
 
 **Restaurer**, Mire arrêté : l'ancienne base est conservée à côté, sous un nom daté.
 
@@ -179,5 +179,7 @@ L'installation demande une adresse en HTTPS.
 - Sessions de 30 jours ; cookie `HttpOnly` et `SameSite=Strict`.
 - Formulaires refusés depuis une autre origine.
 - Aucun script ni ressource externe.
-- Image sans shell, utilisateur non root.
+- Image sans shell, utilisateur non root ; le `compose.yaml` fourni ajoute un système de fichiers en lecture seule, sans aucun privilège (`read_only`, `cap_drop: ALL`, `no-new-privileges`).
+- Valeur supprimée effacée du fichier de la base (`secure_delete`).
+- Failles connues des dépendances vérifiées à chaque modification et chaque semaine (`govulncheck`).
 - Ne sort du réseau local que ce que vous activez (notifications, MQTT, météo, débit) et les connexions de la sonde vers ses cibles.

@@ -2,6 +2,8 @@ package webview
 
 import (
 	"bytes"
+	"context"
+	"github.com/floopich/mire/internal/settings"
 	"net/http"
 	"net/url"
 	"os"
@@ -78,6 +80,36 @@ func TestSauvegardeTelechargee(t *testing.T) {
 	}
 	if d := rec.Header().Get("Content-Disposition"); !strings.HasPrefix(d, `attachment; filename="mire-`) {
 		t.Errorf("Content-Disposition %q", d)
+	}
+}
+
+func TestSauvegardeSansSecretsTelechargee(t *testing.T) {
+	db := baseRemplie(t, 1)
+	dir := t.TempDir()
+	h, _ := monter(t, db, essai{DataDir: dir})
+	token := session(t, db)
+	if err := settings.Set(context.Background(), db, settings.Source{}, map[string]string{
+		settings.ModemPassword: "temoin-modem-7a1d", settings.MQTTPassword: "temoin-mqtt-2b9c"}); err != nil {
+		t.Fatal(err)
+	}
+	rec := get(t, h, token, "/reglages/sauvegarde/telecharger?secrets=non")
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Header().Get("Content-Disposition"), "-sans-secrets.db") {
+		t.Fatalf("HTTP %d, %q", rec.Code, rec.Header().Get("Content-Disposition"))
+	}
+	for _, temoin := range []string{"temoin-modem-7a1d", "temoin-mqtt-2b9c", token} {
+		if bytes.Contains(rec.Body.Bytes(), []byte(temoin)) {
+			t.Errorf("%s reste dans la sauvegarde", temoin)
+		}
+	}
+	if bytes.Contains(rec.Body.Bytes(), []byte("pbkdf2")) {
+		t.Error("l'empreinte du mot de passe de l'interface reste dans la sauvegarde")
+	}
+	if entries, _ := os.ReadDir(dir); len(entries) != 0 {
+		t.Errorf("fichiers restants : %v", entries)
+	}
+	complete := get(t, h, token, "/reglages/sauvegarde/telecharger")
+	if !bytes.Contains(complete.Body.Bytes(), []byte("temoin-modem-7a1d")) {
+		t.Error("la sauvegarde complete doit garder le mot de passe du modem")
 	}
 }
 

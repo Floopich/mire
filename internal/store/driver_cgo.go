@@ -18,5 +18,5 @@ const driverName = "sqlite3"
 // connexion qui l'a recu. Passes ici, ils sont rejoues a chaque nouvelle
 // connexion du pool.
 func dsn(path string) string {
-	return path + "?_journal_mode=WAL&_synchronous=NORMAL&_foreign_keys=on&_busy_timeout=5000"
+	return path + "?_journal_mode=WAL&_synchronous=NORMAL&_foreign_keys=on&_busy_timeout=5000&_secure_delete=on"
 }

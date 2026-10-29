@@ -14,6 +14,34 @@ func Backup(ctx context.Context, db *sql.DB, path string) error {
 	return err
 }
 
+// BackupWithout ecrit une copie comme Backup, sans les reglages nommes ni
+// les sessions. secure_delete et VACUUM effacent aussi les valeurs retirees
+// des pages libres du fichier.
+func BackupWithout(ctx context.Context, db *sql.DB, path string, keys []string) error {
+	if err := Backup(ctx, db, path); err != nil {
+		return err
+	}
+	c, err := sql.Open(driverName, path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = c.Close() }()
+	c.SetMaxOpenConns(1)
+	if _, err := c.ExecContext(ctx, `PRAGMA secure_delete = ON`); err != nil {
+		return err
+	}
+	if _, err := c.ExecContext(ctx, `DELETE FROM sessions`); err != nil {
+		return err
+	}
+	for _, k := range keys {
+		if _, err := c.ExecContext(ctx, `DELETE FROM settings WHERE key = ?`, k); err != nil {
+			return err
+		}
+	}
+	_, err = c.ExecContext(ctx, `VACUUM`)
+	return err
+}
+
 // Validate verifie qu'un fichier est une base de Mire intacte, sans la
 // modifier : une base SQLite d'un autre programme, ou abimee, est refusee.
 // Les migrations d'une base plus ancienne s'appliqueront a son ouverture.

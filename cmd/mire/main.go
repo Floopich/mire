@@ -48,7 +48,8 @@ Utilisation :
   mire mot-de-passe [options]    change le mot de passe de l'interface
   mire sauvegarde [options] FICHIER
                                  copie la base dans FICHIER, même en marche ;
-                                 - écrit sur la sortie standard
+                                 - écrit sur la sortie standard ;
+                                 -sans-secrets retire mots de passe et jetons
   mire restauration [options] FICHIER
                                  remplace la base par une sauvegarde, Mire
                                  arrêté ; - lit l'entrée standard
@@ -417,6 +418,7 @@ func setPassword(args []string) error {
 // backup copie la base dans un fichier, sans arreter le service : c'est la
 // sauvegarde a planifier, ou a faire avant une mise a jour.
 func backup(args []string) error {
+	clean, args := takeFlag(args, "sans-secrets")
 	cfg, rest, err := parseConfigArgs("mire sauvegarde", args, os.Getenv, os.Stderr)
 	if err != nil {
 		return err
@@ -426,7 +428,7 @@ func backup(args []string) error {
 	}
 	target := rest[0]
 	if target == "-" {
-		return backupToStdout(context.Background(), cfg)
+		return backupToStdout(context.Background(), cfg, clean)
 	}
 	if _, err := os.Stat(target); err == nil {
 		return fmt.Errorf("%s existe déjà : choisissez un autre nom", target)
@@ -436,15 +438,38 @@ func backup(args []string) error {
 		return err
 	}
 	defer func() { _ = db.Close() }()
-	if err := store.Backup(context.Background(), db, target); err != nil {
+	if err := writeBackup(context.Background(), db, target, clean); err != nil {
 		return err
 	}
-	// La copie contient le mot de passe du modem, comme la base.
+	// Une copie complete contient le mot de passe du modem, comme la base.
 	if err := os.Chmod(target, 0o600); err != nil {
 		return err
 	}
 	fmt.Fprintln(os.Stderr, "Sauvegarde écrite :", target)
 	return nil
+}
+
+// takeFlag retire une option booleenne propre a une commande, ecrite -nom
+// ou --nom, et dit si elle etait presente.
+func takeFlag(args []string, name string) (bool, []string) {
+	found := false
+	out := make([]string, 0, len(args))
+	for _, a := range args {
+		if a == "-"+name || a == "--"+name {
+			found = true
+			continue
+		}
+		out = append(out, a)
+	}
+	return found, out
+}
+
+// writeBackup ecrit une sauvegarde complete, ou sans secrets.
+func writeBackup(ctx context.Context, db *sql.DB, path string, clean bool) error {
+	if clean {
+		return store.BackupWithout(ctx, db, path, webview.BackupSecretKeys())
+	}
+	return store.Backup(ctx, db, path)
 }
 
 // readNewPassword lit le nouveau mot de passe : deux saisies masquees sur un

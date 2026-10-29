@@ -172,6 +172,20 @@ func (v Values) Duration(k string) time.Duration {
 	return d
 }
 
+// SecretKeys sont les cles en base des reglages secrets : mots de passe,
+// jetons, adresses de webhook.
+func SecretKeys() []string {
+	var out []string
+	for _, g := range Groups() {
+		for _, d := range g.Defs {
+			if d.Kind == Password {
+				out = append(out, key(d.Key))
+			}
+		}
+	}
+	return out
+}
+
 // Locked dit si la valeur est imposee par l'environnement.
 func (v Values) Locked(k string) bool { return v.locked[k] }
 

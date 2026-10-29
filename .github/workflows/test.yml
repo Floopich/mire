@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Chaque semaine, pour les failles publiees depuis le dernier changement.
+  schedule:
+    - cron: "17 5 * * 1"
 
 permissions:
   contents: read
@@ -13,9 +16,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Derniere version stable de Go, correctifs de securite compris : go.mod
+      # ne fixe que la version minimale.
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: go.mod
+          go-version: stable
+          check-latest: true
           cache: true
 
       - name: Formatage
@@ -47,6 +53,9 @@ jobs:
           CGO_ENABLED: "0"
           GOARCH: "386"
         run: go test -tags purego ./...
+
+      - name: Failles connues (govulncheck)
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 -tags purego ./...
 
       - name: Compilation croisee du binaire distribue
         env:

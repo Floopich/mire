@@ -43,6 +43,13 @@ services:
       - "1340:1340"
     volumes:
       - mire-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   mire-data:

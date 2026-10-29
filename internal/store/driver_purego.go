@@ -14,5 +14,5 @@ const driverName = "sqlite"
 // s'appliquent a chaque connexion du pool et pas seulement a la premiere.
 func dsn(path string) string {
 	return path + "?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)" +
-		"&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
+		"&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=secure_delete(1)"
 }

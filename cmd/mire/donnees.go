@@ -52,7 +52,7 @@ func tempPath(dir, prefix string) string {
 // backupToStdout ecrit une sauvegarde sur la sortie standard : avec Docker,
 // « docker compose exec -T mire mire sauvegarde - > mire.db » la recupere
 // sans acceder au volume.
-func backupToStdout(ctx context.Context, cfg config) error {
+func backupToStdout(ctx context.Context, cfg config, clean bool) error {
 	if cli.IsTerminal(os.Stdout) {
 		return errors.New("redirigez la sortie vers un fichier : mire sauvegarde - > mire-sauvegarde.db")
 	}
@@ -63,7 +63,7 @@ func backupToStdout(ctx context.Context, cfg config) error {
 	defer func() { _ = db.Close() }()
 	tmp := tempPath(cfg.DataDir, "sauvegarde")
 	defer func() { _ = os.Remove(tmp) }()
-	if err := store.Backup(ctx, db, tmp); err != nil {
+	if err := writeBackup(ctx, db, tmp, clean); err != nil {
 		return err
 	}
 	f, err := os.Open(tmp)

@@ -237,7 +237,7 @@ func (s *Server) nav(ctx context.Context, st service.State, current string) []na
 	out = append(out,
 		navItem{ID: sectionSecurity, Title: "Sécurité", Summary: "Mot de passe de cette interface",
 			Icon: sectionIcons[sectionSecurity], Current: current == sectionSecurity},
-		navItem{ID: sectionBackup, Title: "Sauvegarde", Summary: "Copie complète de la base",
+		navItem{ID: sectionBackup, Title: "Sauvegarde", Summary: "Copie de la base",
 			Icon: sectionIcons[sectionBackup], Current: current == sectionBackup})
 	return out
 }
