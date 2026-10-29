@@ -1,6 +1,6 @@
 {
   "id": "generique",
-  "name": "Opérateur non calibré",
+  "name": "Autre opérateur",
   "region": "",
   "default_modem_url": "http://192.168.0.1",
   "calibrated": false,

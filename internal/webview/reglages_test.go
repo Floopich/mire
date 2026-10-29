@@ -95,7 +95,7 @@ func TestLAssistantEnregistreLOperateur(t *testing.T) {
 	h, svc := monter(t, db, essai{})
 	token := session(t, db)
 	body := get(t, h, token, "/installation/operateur").Body.String()
-	if strings.Index(body, "Telenet / Orange") < 0 || strings.Index(body, "VOO / Orange") > strings.Index(body, "Opérateur non calibré") {
+	if strings.Index(body, "Telenet / Orange") < 0 || strings.Index(body, "VOO / Orange") > strings.Index(body, "Autre opérateur") {
 		t.Errorf("profils proposés, calibrés d'abord : %s", body)
 	}
 	rec := posteAvec(t, h, token, "/installation/operateur", url.Values{"profil": {"generique"}, "intervalle": {"20m"}})

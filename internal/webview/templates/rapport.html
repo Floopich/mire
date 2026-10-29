@@ -20,7 +20,6 @@
 {{with .Exports}}
 <section class="card report-part no-print" aria-labelledby="donnees-titre">
  <h2 class="title-m" id="donnees-titre">Données de la période</h2>
- <p class="hint body-m">Fichiers CSV : heure ISO 8601, virgule, point décimal.</p>
  <div class="shortcuts">{{range .}}<a class="btn tonal" href="{{.URL}}" download>{{icon "telecharger"}}{{.Label}}</a>{{end}}</div>
 </section>
 {{end}}

@@ -35,9 +35,9 @@ func journalRapport(t *testing.T, db *sql.DB, now time.Time) {
 		kind       string
 		start, end time.Time
 	}{
-		{"ligne", day(-12, 20), day(-12, 22)},
+		{"ligne", day(-12, 20), day(-12, 20).Add(2 * time.Hour)},
 		{"ligne", day(-6, 9), day(-6, 9).Add(30 * time.Minute)},
-		{"local", day(-4, 1), day(-4, 4)},
+		{"local", day(-4, 1), day(-4, 1).Add(3 * time.Hour)},
 	} {
 		id, err := store.OpenOutage(ctx, db, o.kind, o.start, "Coupure.")
 		if err != nil {

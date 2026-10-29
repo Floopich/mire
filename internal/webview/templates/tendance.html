@@ -6,9 +6,9 @@
  <h1 class="headline-s">Tendance de la ligne</h1>
 </div>
 
-{{if not .WeatherOn}}
-<div class="notice info" role="status">{{icon "info"}}<p>{{if .HasWeather}}Météo désactivée : les journées déjà relevées restent affichées.{{else}}Activez la météo pour comparer la ligne à la température.{{end}} <a href="/reglages/meteo">Réglages</a></p></div>
-{{else}}{{with .WeatherNote}}<p class="hint body-m">{{.}}</p>{{end}}{{end}}
+{{if not .WeatherOn}}{{if .HasWeather}}
+<div class="notice info" role="status">{{icon "info"}}<p>Météo désactivée : les journées déjà relevées restent affichées. <a href="/reglages/meteo">Réglages</a></p></div>
+{{end}}{{else}}{{with .WeatherNote}}<p class="hint body-m">{{.}}</p>{{end}}{{end}}
 
 <div class="toolbar">
  <h2 class="title-l">Sur la période</h2>

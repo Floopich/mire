@@ -52,7 +52,7 @@ func New(origin time.Time) *Line {
 
 // Model est le modele a inscrire au registre des modems.
 func (l *Line) Model() modem.Model {
-	return modem.Model{ID: ModelID, Name: "Modem de démonstration", Hidden: true,
+	return modem.Model{ID: ModelID, Name: "Démonstration", Hidden: true,
 		New: func(modem.Config) (modem.Driver, error) { return l, nil }}
 }
 
@@ -227,7 +227,7 @@ func (l *Line) Snapshot(context.Context) (docsis.RawSnapshot, error) {
 // Info decrit le modem fictif, en mode pont.
 func (l *Line) Info(context.Context) (modem.Info, error) {
 	now := l.Now()
-	return modem.Info{Model: "Modem de démonstration", Uptime: now.Sub(l.lastRestart(now)).Round(time.Second), Mode: modem.ModeBridge,
+	return modem.Info{Model: "Démonstration", Uptime: now.Sub(l.lastRestart(now)).Round(time.Second), Mode: modem.ModeBridge,
 		Status: "OPERATIONAL"}, nil
 }
 

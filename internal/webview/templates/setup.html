@@ -62,7 +62,7 @@
    {{$addr := .Address}}
    {{range .Detected}}
    <label class="choice"><input type="radio" name="adresse" value="{{.URL}}"{{if eq .URL $addr}} checked{{end}}>
-    <span><span class="title-m">{{.URL}}</span><small>{{if .Model}}{{.Model.Label}}{{else if .DOCSIS}}modem câble non pris en charge{{else}}{{or .Title "autre appareil"}}{{end}}</small></span></label>
+    <span><span class="title-m">{{.URL}}</span><small>{{if .Model}}{{.Model.Label}}{{else if .DOCSIS}}modem câble non pris en charge{{end}}</small></span></label>
    {{end}}
    <label class="choice"><input type="radio" name="adresse" value="autre"{{if not .Detected}} checked{{end}}>
     <span><span class="title-m">Autre adresse</span><small>À saisir ci-dessous</small></span></label>

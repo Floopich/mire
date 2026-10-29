@@ -230,7 +230,7 @@ func errors(e ErrorCount, limits operator.ErrorLimits) Finding {
 			count(total), window, count(e.Uncorrected))}
 	}
 	pct := float64(e.Uncorrected) / float64(total) * 100
-	msg := fmt.Sprintf("%s non corrigées sur %s erreurs en %s (%s\u202f%%)",
+	msg := fmt.Sprintf("%s non corrigées sur %s en %s (%s\u202f%%)",
 		count(e.Uncorrected), count(total), window, num(pct))
 	switch {
 	case e.Uncorrected < limits.Spike():

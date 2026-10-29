@@ -191,7 +191,7 @@ func serve(args []string) error {
 	}
 	defer mgr.Stop()
 	if st := mgr.State(); !st.Profile.Calibrated {
-		logger.Warn("profil non calibré : les relevés sont conservés, mais l'état de la ligne ne sera pas qualifié",
+		logger.Warn("opérateur sans seuils : relevés conservés, ligne non qualifiée",
 			"profil", st.Profile.ID)
 	}
 

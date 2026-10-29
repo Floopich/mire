@@ -129,5 +129,5 @@
  {{else}}
  <div class="field"><input id="{{.ID}}" name="{{.Key}}" type="{{.Type}}" value="{{.Value}}" placeholder="{{if and .IsPassword .IsSet}}••••••••{{else}}{{or .Placeholder " "}}{{end}}"{{if .IsPassword}} autocomplete="new-password"{{end}}{{if .Locked}} disabled{{end}}><label for="{{.ID}}">{{.Label}}{{if and .IsPassword .IsSet}} (enregistré){{end}}</label></div>
  {{end}}
- {{if .Locked}}<p class="help body-m locked">{{icon "verrou"}}Imposé par la variable {{.Env}}.</p>{{else}}{{with .Help}}<p class="help body-m">{{.}}</p>{{end}}{{end}}
+ {{if .Locked}}<p class="help body-m locked">{{icon "verrou"}}{{if .Env}}Imposé par la variable {{.Env}}.{{else}}Fixé pour la démonstration.{{end}}</p>{{else}}{{with .Help}}<p class="help body-m">{{.}}</p>{{end}}{{end}}
 </div>{{end}}

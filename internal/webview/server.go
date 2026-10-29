@@ -521,8 +521,8 @@ func maxPtr(cur, v *float64) *float64 {
 // verdictFor formule l'etat de la ligne en une phrase.
 func verdictFor(profile operator.Profile, hasData bool, h analyze.Health) verdict {
 	if !profile.Calibrated {
-		return verdict{analyze.Unknown, "Profil non calibré",
-			"Relevés conservés, sans jugement de la ligne."}
+		return verdict{analyze.Unknown, "Ligne non qualifiée",
+			"Relevés conservés, sans seuils pour cet opérateur."}
 	}
 	if !hasData {
 		return verdict{analyze.Unknown, "En attente du premier relevé",
@@ -556,7 +556,7 @@ func plural(n int, one, many string) string {
 	if n == 1 {
 		return "1 " + one
 	}
-	return strconv.Itoa(n) + " " + many
+	return FmtCount(n) + " " + many
 }
 
 // bannerFor signale une collecte arretee ou muette.
@@ -830,7 +830,9 @@ func errorLevel(status int) analyze.Level {
 }
 
 // bareCommon sert les pages hors session : connexion, erreurs, installation.
+// Ces pages (installation, connexion, erreur) ne disent rien de la ligne :
+// ni operateur ni modem en pied de page, avant la configuration comme pour
+// un visiteur non connecte.
 func (s *Server) bareCommon(title string) common {
-	st := s.opts.Service.State()
-	return common{Title: title, Profile: st.Profile, Version: s.opts.Version, Modem: modemName(st), Demo: s.opts.Demo, DemoExit: s.opts.DemoExit}
+	return common{Title: title, Version: s.opts.Version, Demo: s.opts.Demo, DemoExit: s.opts.DemoExit}
 }

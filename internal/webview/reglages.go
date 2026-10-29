@@ -368,6 +368,11 @@ func (s *Server) reglagesView(r *http.Request, section string, explicit bool, in
 	}
 	if g, isGroup, _ := knownSection(st, section); isGroup {
 		gv := buildGroup(g, st.Values, input)
+		if s.opts.Demo {
+			for i := range gv.Fields {
+				gv.Fields[i].Env = ""
+			}
+		}
 		gv.Saved = r.URL.Query().Get("enregistre") != ""
 		// Un modele jamais choisi s'affiche tel qu'il s'applique : celui que
 		// fournit l'operateur, sinon « Autre modem ».
@@ -579,7 +584,19 @@ const detectTimeout = 10 * time.Second
 // detect cherche le modem sur les adresses usuelles.
 func (s *Server) detect(ctx context.Context, _ *work) any {
 	st := s.opts.Service.State()
-	return modem.Detect(ctx, modem.Hosts(st.Values.String(settings.ModemURL), st.Profile.DefaultModemURL))
+	return cableModems(modem.Detect(ctx, modem.Hosts(st.Values.String(settings.ModemURL), st.Profile.DefaultModemURL)))
+}
+
+// cableModems ne garde que les modems cable : un routeur ou une autre page
+// qui repond n'interesse pas l'utilisateur.
+func cableModems(found []modem.Candidate) []modem.Candidate {
+	var out []modem.Candidate
+	for _, c := range found {
+		if c.Model != nil || c.DOCSIS {
+			out = append(out, c)
+		}
+	}
+	return out
 }
 
 // testFor rend l'essai en cours ou son resultat ; la page se recharge tant
