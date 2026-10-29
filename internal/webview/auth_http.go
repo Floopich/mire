@@ -131,7 +131,7 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name: sessionCookie, Value: "", Path: "/",
-		HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: -1,
+		HttpOnly: true, Secure: isHTTPS(r), SameSite: http.SameSiteStrictMode, MaxAge: -1,
 	})
 	http.Redirect(w, r, "/connexion", http.StatusSeeOther)
 }
