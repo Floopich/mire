@@ -1,0 +1,46 @@
+{{define "actions"}}{{template "logout" .}}{{end}}
+
+{{define "content"}}
+<div class="page-head">
+ <a class="btn text icon-btn" href="{{.Back}}" aria-label="Revenir à la vue d'ensemble">{{icon "retour"}}</a>
+ <h1 class="headline-s">Canal {{.Direction}} {{.Channel.ChannelID}}</h1>
+</div>
+
+<dl class="figures">
+ <div><dt class="label-l">Modulation</dt><dd>{{or .Channel.Modulation "—"}}</dd></div>
+ <div><dt class="label-l">Puissance</dt><dd>{{fmtValue .Channel.Power "dBmV"}}</dd></div>
+ {{if eq .Direction "descendant"}}<div><dt class="label-l">SNR</dt><dd>{{fmtValue .Channel.SNR "dB"}}</dd></div>{{end}}
+ <div><dt class="label-l">Dernier relevé</dt><dd>{{ago .Channel.LastSeen}}</dd></div>
+</dl>
+
+<div class="toolbar">
+ <h2 class="title-l">Historique</h2>
+ {{template "windows" .}}
+</div>
+
+<section class="card chart-card">
+ <h3 class="title-m">Puissance</h3>
+ {{with .PowerBand}}<p class="hint body-m">Plage nominale : {{.}}.</p>{{end}}
+ {{index .Charts 0}}
+</section>
+{{if gt (len .Charts) 1}}
+<section class="card chart-card">
+ <h3 class="title-m">Rapport signal sur bruit</h3>
+ {{with .SNRFloor}}<p class="hint body-m">Seuil : {{.}}.</p>{{end}}
+ {{index .Charts 1}}
+</section>
+{{end}}
+{{if .Errors}}
+<section class="card chart-card">
+ <h3 class="title-m">Erreurs</h3>
+ <p class="hint body-m"><span class="key corr"></span>corrigées : {{fmtCount64 .ErrorTotals.Corrected}} <span class="key noncorr"></span>non corrigées : {{fmtCount64 .ErrorTotals.Uncorrected}} sur la période.</p>
+ {{.Errors}}
+</section>
+{{end}}
+<section class="card chart-card" aria-labelledby="journal-canal">
+ <h3 id="journal-canal" class="title-m">Événements du canal</h3>
+ {{if .Events}}<ul class="list events compact">{{range .Events}}{{template "event-recent" .}}{{end}}</ul>
+ {{else}}<p class="body-m muted">Aucun événement sur la période.</p>{{end}}
+</section>
+<p class="hint body-m">{{fmtCount .Points}} relevés sur la période.</p>
+{{end}}

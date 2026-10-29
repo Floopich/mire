@@ -1,0 +1,55 @@
+{{define "actions"}}{{template "logout" .}}{{end}}
+
+{{define "content"}}
+<div class="page-head">
+ <a class="btn text icon-btn" href="/modem" aria-label="Revenir à la page Modem">{{icon "retour"}}</a>
+ <h1 class="headline-s">{{.Heading}}</h1>
+</div>
+<p class="intro body-l muted">Un rapport anonymisé du modem, à relire avant l'envoi.</p>
+
+{{if .Running}}
+<section class="card modem-card" aria-labelledby="analyse" aria-live="polite">
+ <h2 id="analyse" class="title-l">Lecture du modem…</h2>
+ <progress class="report-progress" value="{{.Done}}" max="{{.Total}}"></progress>
+ <p class="body-m"><b>{{.Step}}</b>{{if .Total}} · étape {{.Position}} sur {{.Total}}{{end}} · depuis {{.Elapsed}}</p>
+ <p class="hint body-m">Modem lu : {{.Address}}.</p>
+</section>
+{{else if not .Ready}}
+{{if .Expired}}<div class="notice info" role="status">{{icon "info"}}<p>Ce rapport n'est plus disponible : préparez-en un nouveau.</p></div>{{end}}
+<section class="card modem-card" aria-labelledby="contenu-rapport">
+ <h2 id="contenu-rapport" class="title-l">Ce que contient le rapport</h2>
+ <ul class="todo body-m">
+  <li>La page d'accueil du modem et les adresses de son interface.</li>
+  {{if .Supported}}<li>Ses réponses une fois connecté : informations, canaux, réseau.</li>{{end}}
+  <li>Rien n'est modifié sur le modem.</li>
+  <li>Adresses MAC, numéro de série, noms Wi-Fi et d'appareils, adresses IP publiques et jetons masqués.</li>
+ </ul>
+ <form method="post" action="/modem/proposer" class="name-form">
+  <input type="hidden" name="adresse" value="{{.Address}}">
+  <div class="field"><input id="modele" name="modele" type="text" maxlength="80" value="{{.Name}}" placeholder="Marque et modèle, sur l'étiquette"><label for="modele">Votre modem</label></div>
+  <div class="confirm-row"><button type="submit" class="btn filled">{{icon "modem"}}Préparer le rapport</button></div>
+ </form>
+ <p class="hint body-m">Modem lu : {{or .Address "aucune adresse configurée"}}.</p>
+</section>
+{{else}}
+<section class="card modem-card" aria-labelledby="envoyer">
+ <h2 id="envoyer" class="title-l">Rapport prêt</h2>
+ <p class="body-m">La demande s'ouvre sur GitHub, déjà remplie.</p>
+ <form method="get" action="/modem/proposer" class="name-form">
+  <input type="hidden" name="rapport" value="{{.ReportID}}">
+  <div class="field"><input id="modele" name="modele" type="text" maxlength="80" value="{{.Name}}" placeholder="Marque et modèle, sur l'étiquette"><label for="modele">Votre modem</label></div>
+  <div class="confirm-row"><button type="submit" class="btn text">Renommer</button></div>
+ </form>
+ <div class="confirm-row">
+  <a class="btn filled" href="{{.Issue}}" rel="noopener noreferrer" target="_blank">Créer la demande sur GitHub</a>
+  <a class="btn text" href="{{.Download}}" download="{{.FileName}}">{{icon "telecharger"}}Rapport complet (texte)</a>
+ </div>
+ <p class="hint body-m">Compte GitHub requis. Rien ne part sans votre clic.</p>
+</section>
+<section class="card modem-card" aria-labelledby="relire">
+ <h2 id="relire" class="title-l">Ce qui sera envoyé</h2>
+ <pre class="report-json">{{.Summary}}</pre>
+ <details><summary class="body-m">Voir le rapport complet</summary><pre class="report-json">{{.Full}}</pre></details>
+</section>
+{{end}}
+{{end}}

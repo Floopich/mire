@@ -1,0 +1,133 @@
+{{define "extra-css"}}<link rel="stylesheet" href="{{asset "/reglages.css"}}">{{end}}
+{{define "actions"}}{{template "logout" .}}{{end}}
+
+{{define "content"}}
+<div class="page-head">
+ <a class="btn text icon-btn{{if .Explicit}} to-home{{end}}" href="/" aria-label="Revenir à la vue d'ensemble">{{icon "retour"}}</a>
+ {{if .Explicit}}<a class="btn text icon-btn to-list" href="/reglages" aria-label="Revenir aux réglages">{{icon "retour"}}</a>{{end}}
+ <h1 class="headline-s">Réglages</h1>
+</div>
+
+<div class="settings{{if .Explicit}} chosen{{end}}">
+ <nav class="settings-nav" aria-label="Rubriques des réglages">
+  <ul class="nav-list">
+   {{range .Nav}}<li><a href="/reglages/{{.ID}}"{{if .Current}} class="current"{{if $.Explicit}} aria-current="page"{{end}}{{end}}>
+    {{icon .Icon}}
+    <span class="nav-text"><span class="title-m">{{.Title}}</span><small class="body-m{{if .Attention}} attention{{end}}">{{.Summary}}</small></span>
+    <span class="chevron">{{icon "suivant"}}</span>
+   </a></li>{{end}}
+  </ul>
+ </nav>
+
+ <div class="settings-detail">
+ {{if .Group}}{{with .Group}}
+ <section class="card settings-panel" aria-labelledby="titre-rubrique">
+  <form method="post" action="/reglages/{{.ID}}">
+   <header class="panel-head">
+    <h2 id="titre-rubrique" class="title-l">{{.Title}}</h2>
+    {{with .Help}}<p class="body-m muted">{{.}}</p>{{end}}
+   </header>
+   {{with .Toggle}}
+   <div class="main-switch">
+    <label class="title-m" for="{{.ID}}">{{.Label}}</label>
+    {{template "switch" .}}
+   </div>
+   {{if .Locked}}<p class="help body-m locked">{{icon "verrou"}}{{if .Checked}}Activée{{else}}Désactivée{{end}} par la variable {{.Env}}.</p>{{end}}
+   {{end}}
+   {{if .Saved}}<div class="notice ok" role="status">{{icon "check"}}<p>Réglages enregistrés et appliqués.</p></div>{{end}}
+   {{with .Err}}<div class="notice alerte" role="alert">{{icon "alerte"}}<p>{{.}}</p></div>{{end}}
+   {{with $.Testing}}{{template "working" .}}{{end}}
+   {{with $.Searching}}{{template "working" .}}{{end}}
+   {{with $.Test}}<div class="notice {{if .OK}}ok{{else}}alerte{{end}}" role="status">{{if .OK}}{{icon "check"}}{{else}}{{icon "alerte"}}{{end}}<p>{{.Message}}</p></div>{{end}}
+   {{if .Fields}}<div class="reveal fields">
+    {{range .Fields}}{{template "field" .}}{{end}}
+   </div>{{end}}
+   {{if not .Inert}}<div class="form-actions">
+    <button type="submit" class="btn filled">Enregistrer</button>
+    {{if eq .ID "modem"}}
+    <button type="submit" class="btn tonal" formaction="/reglages/modem/tester">Enregistrer et tester</button>
+    <a class="btn text" href="/reglages/modem?detecter=1">Détecter le modem</a>
+    {{end}}
+    {{if eq .ID "notifications"}}
+    <button type="submit" class="btn tonal" formaction="/reglages/notifications/tester">Enregistrer et envoyer un essai</button>
+    {{end}}
+    {{if eq .ID "meteo"}}
+    <button type="submit" class="btn tonal" formaction="/reglages/meteo/tester">Enregistrer et tester</button>
+    {{end}}
+    {{if eq .ID "debit"}}
+    <button type="submit" class="btn tonal" formaction="/reglages/debit/tester">Enregistrer et tester</button>
+    {{end}}
+    {{if eq .ID "domotique"}}
+    <button type="submit" class="btn tonal" formaction="/reglages/domotique/tester">Enregistrer et tester</button>
+    {{end}}
+   </div>{{end}}
+  </form>
+  {{if and (eq .ID "modem") $.Detecting}}
+  <div class="detected">
+   <h3 class="title-m">Appareils trouvés</h3>
+   {{if $.Detected}}
+   <ul class="list one">
+    {{range $.Detected}}
+    <li><form method="post" action="/reglages/modem" class="row {{if .Model}}bon{{else if .DOCSIS}}tolere{{else}}inconnu{{end}}">
+     <span class="main"><span class="title-m">{{.URL}}</span><small>{{or .Title "page sans titre"}}</small></span>
+     <span class="state"><span class="tag">{{if .Model}}{{.Model.Label}}{{else if .DOCSIS}}modem câble non pris en charge{{else}}autre appareil{{end}}</span></span>
+     <input type="hidden" name="modem.adresse" value="{{.URL}}">
+     {{with .Model}}<input type="hidden" name="modem.modele" value="{{.ID}}">{{end}}
+     <button type="submit" class="btn tonal">Utiliser</button>
+     {{if and (not .Model) .DOCSIS}}<a class="btn text" href="/modem/proposer?adresse={{.URL}}">Proposer</a>{{end}}
+    </form></li>
+    {{end}}
+   </ul>
+   {{else}}<p class="body-m muted">Aucun modem trouvé : saisissez son adresse.</p>{{end}}
+  </div>
+  {{end}}
+ </section>
+ {{end}}{{else if eq .Section "securite"}}
+ <section class="card settings-panel" aria-labelledby="titre-rubrique">
+  <form method="post" action="/reglages/mot-de-passe">
+   <header class="panel-head">
+    <h2 id="titre-rubrique" class="title-l">Sécurité</h2>
+    <p class="body-m muted">Le changer ferme les autres sessions.</p>
+   </header>
+   {{if .PasswordOK}}<div class="notice ok" role="status">{{icon "check"}}<p>Mot de passe changé.</p></div>{{end}}
+   {{with .PasswordErr}}<div class="notice alerte" role="alert">{{icon "alerte"}}<p>{{.}}</p></div>{{end}}
+   <div class="fields">
+    <div class="field-row"><div class="field"><input id="mdp-actuel" name="actuel" type="password" autocomplete="current-password" placeholder=" " required><label for="mdp-actuel">Mot de passe actuel</label></div></div>
+    <div class="field-row"><div class="field"><input id="mdp-nouveau" name="nouveau" type="password" autocomplete="new-password" placeholder=" " minlength="8" required><label for="mdp-nouveau">Nouveau mot de passe</label></div><p class="help body-m">Huit caractères au minimum.</p></div>
+    <div class="field-row"><div class="field"><input id="mdp-confirmation" name="confirmation" type="password" autocomplete="new-password" placeholder=" " minlength="8" required><label for="mdp-confirmation">Confirmation</label></div></div>
+   </div>
+   <div class="form-actions"><button type="submit" class="btn filled">Changer le mot de passe</button></div>
+  </form>
+ </section>
+ {{else if eq .Section "sauvegarde"}}
+ <section class="card settings-panel" aria-labelledby="titre-rubrique">
+  <header class="panel-head">
+   <h2 id="titre-rubrique" class="title-l">Sauvegarde</h2>
+   <p class="body-m muted">Copie complète de la base, mot de passe du modem compris.</p>
+  </header>
+  <div class="form-actions"><a class="btn filled" href="/reglages/sauvegarde/telecharger" download>{{icon "telecharger"}}Télécharger une sauvegarde</a></div>
+  <p class="help body-m">Restaurer : <code>mire restauration FICHIER</code>, Mire arrêté.</p>
+ </section>
+ {{end}}
+ </div>
+</div>
+{{end}}
+
+{{define "switch"}}<label class="switch" for="{{.ID}}">
+ <input type="checkbox" role="switch" id="{{.ID}}" name="{{.Key}}" value="true"{{if .Checked}} checked{{end}}{{if .Locked}} disabled{{end}}>
+ <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+ <span class="sr">{{.Label}}</span>
+</label>{{end}}
+
+{{define "field"}}{{if .OnlyAttr}}<div class="field-row only" data-condition="{{.OnlyAttr}}">{{else}}<div class="field-row">{{end}}
+ {{if .IsBool}}
+ <div class="bool-row"><label class="body-l" for="{{.ID}}">{{.Label}}</label>{{template "switch" .}}</div>
+ {{else if .IsSelect}}
+ <div class="field select"><select id="{{.ID}}" name="{{.Key}}"{{if .Locked}} disabled{{end}}>
+  {{$v := .Value}}{{range .Options}}<option value="{{.Value}}"{{if eq .Value $v}} selected{{end}}>{{.Label}}</option>{{end}}
+ </select><label for="{{.ID}}">{{.Label}}</label></div>
+ {{else}}
+ <div class="field"><input id="{{.ID}}" name="{{.Key}}" type="{{.Type}}" value="{{.Value}}" placeholder="{{if and .IsPassword .IsSet}}••••••••{{else}}{{or .Placeholder " "}}{{end}}"{{if .IsPassword}} autocomplete="new-password"{{end}}{{if .Locked}} disabled{{end}}><label for="{{.ID}}">{{.Label}}{{if and .IsPassword .IsSet}} (enregistré){{end}}</label></div>
+ {{end}}
+ {{if .Locked}}<p class="help body-m locked">{{icon "verrou"}}Imposé par la variable {{.Env}}.</p>{{else}}{{with .Help}}<p class="help body-m">{{.}}</p>{{end}}{{end}}
+</div>{{end}}

@@ -1,0 +1,56 @@
+name: Publication
+
+on:
+  push:
+    # Seul un numéro de version publie : v1.2.3, ou v1.2.3-rc1. Un tag mal
+    # formé (v.1.2.3, v1.2) ne déclenche rien.
+    tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
+
+permissions:
+  contents: write
+
+jobs:
+  binaires:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Binaires statiques en Go pur, pour une installation sans Docker :
+      # NAS, Raspberry Pi, Windows.
+      - name: Compilation
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -eu
+          mkdir -p dist
+          for cible in linux/amd64 linux/arm64 linux/arm/7 windows/amd64; do
+            IFS=/ read -r os arch arm <<<"$cible"
+            # Nom sans version : releases/latest/download/<nom> designe ainsi
+            # toujours la derniere version, sans adresse a mettre a jour.
+            nom="mire-${os}-${arch}${arm:+v$arm}"
+            [ "$os" = windows ] && nom="$nom.exe"
+            CGO_ENABLED=0 GOOS=$os GOARCH=$arch GOARM=$arm \
+              go build -trimpath -tags purego -ldflags "-s -w -X main.version=$VERSION" \
+              -o "dist/$nom" ./cmd/mire
+          done
+          (cd dist && sha256sum * > SHA256SUMS)
+
+      - name: Publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # Un tag a suffixe (v1.2.0-rc1) est une pre-version : publiee, mais ni
+        # marquee comme derniere version, ni poussee sous l'image latest.
+        # Une version publiee depuis GitHub (Releases, « Draft a new release »)
+        # cree le tag et la Release : les binaires s'y ajoutent alors.
+        run: |
+          set -eu
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" dist/* --clobber
+            exit 0
+          fi
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then genre=--prerelease; else genre=--latest; fi
+          gh release create "${GITHUB_REF_NAME}" dist/* --generate-notes --verify-tag "$genre"

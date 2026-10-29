@@ -1,0 +1,101 @@
+{{define "actions"}}{{template "logout" .}}{{end}}
+
+{{define "content"}}
+{{with .Banner}}<div class="notice {{.Kind}}" role="status">{{if eq .Kind "alerte"}}{{icon "alerte"}}{{else}}{{icon "info"}}{{end}}<p>{{.Message}}{{with .Link}} <a href="{{.}}">{{$.Banner.LinkLabel}}</a>{{end}}</p></div>{{end}}
+
+<section class="hero {{.Verdict.Level}}" aria-labelledby="verdict-titre">
+ {{template "badge" .Verdict.Level}}
+ <div>
+  <h1 id="verdict-titre" class="display">{{.Verdict.Title}}</h1>
+  <p class="lead">{{.Verdict.Detail}}</p>
+  {{if .HasData}}<p class="when body-m">Dernier relevé {{ago .Stats.Latest}}, le {{fmtTime .Stats.Latest}}.</p>{{end}}
+ </div>
+ {{with .Next}}<div class="next">{{.SVG}}<p class="label-m">{{.Label}}</p></div>{{end}}
+</section>
+
+{{with .SpectrumDS}}
+<section class="card bands" aria-label="Bande de canaux">
+ <figure>
+  <figcaption class="title-m">Voie descendante <span class="muted body-m">{{template "count" len $.Down}}</span></figcaption>
+  {{.Wide}}{{.Narrow}}
+  <p class="scale label-m muted"><span>{{.From}}</span>{{if .Breaks}}<span class="gap">plages vides raccourcies</span>{{end}}<span>{{.To}}</span></p>
+ </figure>
+ {{with $.SpectrumUS}}
+ <figure>
+  <figcaption class="title-m">Voie montante <span class="muted body-m">{{template "count" len $.Up}}</span></figcaption>
+  {{.Wide}}
+  <p class="scale label-m muted"><span>{{.From}}</span><span>{{.To}}</span></p>
+ </figure>
+ {{end}}
+ <ul class="legend label-l" aria-label="Légende">
+  {{range $.Legend}}<li class="{{.}}"><svg class="pip" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .}}"/></svg>{{label .}}</li>{{end}}
+ </ul>
+ <p class="legend-more"><a class="btn text" href="/comprendre">Comprendre ces valeurs{{icon "suivant"}}</a></p>
+</section>
+{{end}}
+
+{{if .HasData}}
+<dl class="figures">
+ <div><dt class="label-l">Puissance descendante</dt><dd>{{if .Stats.DSPowerMin}}{{fmtValue .Stats.DSPowerMin "dBmV"}}<span class="to"> à </span>{{fmtValue .Stats.DSPowerMax "dBmV"}}{{else}}—{{end}}</dd></div>
+ <div><dt class="label-l">SNR le plus bas</dt><dd>{{fmtValue .Stats.DSSNRMin "dB"}}</dd></div>
+ <div><dt class="label-l">Émission la plus forte</dt><dd>{{fmtValue .Stats.USPowerMax "dBmV"}}</dd></div>
+ <div><dt class="label-l">Relevés conservés</dt><dd>{{fmtCount .Stats.Readings}}<span class="since">depuis le {{fmtTime .Stats.First}}</span></dd></div>
+</dl>
+{{end}}
+
+{{if .HasData}}
+<nav class="shortcuts" aria-label="Pour aller plus loin">
+ <a class="btn tonal" href="/tendance">{{icon "tendance"}}Tendance de la ligne</a>
+ <a class="btn tonal" href="/rapport">{{icon "rapport"}}Rapport de la ligne</a>
+</nav>
+{{end}}
+
+{{if .HasData}}
+<section class="card recent" aria-labelledby="recents">
+ <div class="card-head"><h2 id="recents" class="title-m">Derniers événements</h2><a class="btn text" href="/evenements">Tout le journal</a></div>
+ {{if .Events}}<ul class="list events compact">{{range .Events}}{{template "event-recent" .}}{{end}}</ul>
+ {{else}}<p class="body-m muted">Aucun événement depuis 30 jours.</p>{{end}}
+</section>
+{{end}}
+
+{{if .HasData}}
+<div class="toolbar">
+ <h2 id="canaux" class="title-l">Canaux</h2>
+ {{template "windows" .}}
+</div>
+
+{{if .Down}}
+<h3 class="list-title title-m">Voie descendante</h3>
+{{range .DownGroups}}
+<h4 class="list-sub label-l">{{.Label}} <span class="muted">{{template "count" len .Rows}}</span></h4>
+<ul class="list">
+ <li class="head label-m muted" aria-hidden="true"><span></span><span>Fréquence</span><span>Puissance</span><span>SNR</span><span>État</span></li>
+ {{range .Rows}}{{template "row" .}}{{end}}
+</ul>
+{{end}}
+{{else}}
+<p class="empty-state">Aucun canal relevé sur cette période.</p>
+{{end}}
+
+{{if .Up}}
+<h3 class="list-title title-m">Voie montante</h3>
+{{range .UpGroups}}
+<h4 class="list-sub label-l">{{.Label}} <span class="muted">{{template "count" len .Rows}}</span></h4>
+<ul class="list one">
+ <li class="head label-m muted" aria-hidden="true"><span></span><span>Fréquence</span><span>Puissance</span><span>État</span></li>
+ {{range .Rows}}{{template "row" .}}{{end}}
+</ul>
+{{end}}
+{{end}}
+{{end}}
+{{end}}
+
+{{define "count"}}{{.}} {{if gt . 1}}canaux{{else}}canal{{end}}{{end}}
+
+{{define "row"}}<li><a class="row {{.Level}}" href="{{.Href}}">
+ <span class="chip"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .Level}}"/></svg><b><span class="sr">Canal </span>{{.ID}}</b></span>
+ <span class="main"><span class="title-m">{{fmtMHz .Freq}}</span><small>{{or .Modulation "—"}}</small></span>
+ <span class="value"><small>Puissance</small>{{fmtValue .Power "dBmV"}}</span>
+ {{if .SNRColumn}}<span class="value"><small>SNR</small>{{fmtValue .SNR "dB"}}</span>{{end}}
+ <span class="state"><span class="tag">{{levelIcon .Level}}{{label .Level}}</span>{{with .Note}}<span class="note">{{.}}</span>{{end}}</span>
+</a></li>{{end}}

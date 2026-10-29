@@ -1,0 +1,60 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Formatage
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "Fichiers non formates :"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Analyse statique
+        run: go vet ./...
+
+      - name: Tests (pilote cgo)
+        run: go test -race ./...
+
+      # Les binaires distribues sont compiles en Go pur : si seule la variante
+      # cgo etait testee, une regression du pilote ne se verrait qu'apres la
+      # publication.
+      - name: Tests (pilote Go pur)
+        run: go test -tags purego ./...
+
+      # L'image et les binaires existent aussi en armv7, ou un int tient sur
+      # 32 bits : les compteurs du modem depassent 2^31. Les tests tournent
+      # donc aussi sur une architecture 32 bits.
+      - name: Tests en 32 bits (pilote Go pur)
+        env:
+          CGO_ENABLED: "0"
+          GOARCH: "386"
+        run: go test -tags purego ./...
+
+      - name: Compilation croisee du binaire distribue
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          # Memes cibles que la publication (release.yml), Windows compris :
+          # une cible cassee se voit ici, pas le jour du tag.
+          for cible in linux/arm64 linux/arm linux/amd64 windows/amd64; do
+            GOOS="${cible%/*}" GOARCH="${cible#*/}" \
+              go build -tags purego ./... || exit 1
+          done

@@ -1,0 +1,13 @@
+{
+  "name": "mire-couleurs",
+  "private": true,
+  "description": "Genere le schema de couleurs Material 3 de Mire depuis sa couleur source.",
+  "type": "module",
+  "scripts": {
+    "schema": "esbuild schema.mjs --bundle --platform=node --format=esm --outfile=.schema.bundle.mjs --log-level=warning && node .schema.bundle.mjs '#E8817F'"
+  },
+  "devDependencies": {
+    "@material/material-color-utilities": "0.4.0",
+    "esbuild": "^0.25.0"
+  }
+}

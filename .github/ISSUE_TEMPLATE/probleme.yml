@@ -1,0 +1,31 @@
+name: Problème
+description: Signaler un comportement inattendu de Mire.
+labels: ["problème"]
+body:
+  - type: textarea
+    id: constat
+    attributes:
+      label: Ce qui se passe
+      description: Ce que vous voyez, et ce que vous attendiez.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version de Mire
+      description: Affichée en bas de page, ou par « mire version ».
+    validations:
+      required: true
+  - type: input
+    id: installation
+    attributes:
+      label: Installation et modem
+      placeholder: Docker sur un NAS, Technicolor CGA4233, profil voo
+    validations:
+      required: true
+  - type: textarea
+    id: journal
+    attributes:
+      label: Journal du service
+      description: Les lignes utiles de « docker compose logs mire », sans mot de passe.
+      render: text

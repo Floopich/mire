@@ -1,0 +1,33 @@
+{{define "actions"}}{{template "logout" .}}{{end}}
+
+{{define "content"}}
+<div class="page-head">
+ <a class="btn text icon-btn" href="/" aria-label="Revenir à la vue d'ensemble">{{icon "retour"}}</a>
+ <h1 class="headline-s">Événements</h1>
+</div>
+
+<form method="post" action="/evenements/notes?heures={{.Hours}}" class="card note-form">
+ <h2 class="title-m">Ajouter une note</h2>
+ {{with .NoteErr}}<div class="notice alerte" role="alert">{{icon "alerte"}}<p>{{.}}</p></div>{{end}}
+ <div class="note-fields">
+  <div class="field"><textarea id="note-texte" name="texte" maxlength="500" rows="2" required placeholder=" ">{{.Texte}}</textarea><label for="note-texte">Note</label></div>
+  <div class="field"><input id="note-quand" name="quand" type="datetime-local" value="{{.NoteNow}}" required><label for="note-quand">Date et heure</label></div>
+ </div>
+ <button type="submit" class="btn filled">Ajouter au journal</button>
+</form>
+
+<div class="toolbar" id="journal">
+ <h2 class="title-l">{{if .Count}}{{fmtCount .Count}} événement{{if gt .Count 1}}s{{end}}{{else}}Journal{{end}}</h2>
+ {{template "windows" .}}
+</div>
+
+{{if .Days}}
+{{range .Days}}
+<h3 class="list-title title-m">{{.Label}}</h3>
+<ul class="list events">{{range .Events}}{{template "event" .}}{{end}}</ul>
+{{end}}
+{{range .Notes}}<form id="note-{{.ID}}" method="post" action="/evenements/notes/{{.ID}}/supprimer?heures={{$.Hours}}"></form>{{end}}
+{{else}}
+<p class="empty-state">Aucun événement sur cette période.</p>
+{{end}}
+{{end}}

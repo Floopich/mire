@@ -1,0 +1,99 @@
+{{define "actions"}}{{template "logout" .}}{{end}}
+
+{{define "content"}}
+{{if .Confirm}}
+<div class="page-head">
+ <a class="btn text icon-btn" href="/modem" aria-label="Revenir à la page Modem">{{icon "retour"}}</a>
+ <h1 class="headline-s">Redémarrer le modem</h1>
+</div>
+{{with .Reading}}{{template "working" .}}{{else}}{{if .TooSoon}}
+<div class="notice info" role="status">{{icon "info"}}<p>Redémarrage déjà demandé {{ago .LastAsked}}.</p></div>
+<p><a class="btn tonal" href="/modem">Revenir à la page Modem</a></p>
+{{else}}
+<section class="card modem-card" aria-labelledby="confirmer">
+ <h2 id="confirmer" class="title-l">Redémarrer maintenant ?</h2>
+ <p class="body-l">Internet, le Wi-Fi et le téléphone du modem seront coupés 3 à 5 minutes. Les réglages ne changent pas.</p>
+ <form method="post" action="/modem/redemarrer" class="confirm-row">
+  <button type="submit" class="btn danger">{{icon "redemarrer"}}Redémarrer le modem</button>
+  <a class="btn text" href="/modem">Annuler</a>
+ </form>
+</section>
+{{end}}{{end}}
+{{else}}
+<div class="page-head">
+ <a class="btn text icon-btn" href="/" aria-label="Revenir à la vue d'ensemble">{{icon "retour"}}</a>
+ <h1 class="headline-s">Modem</h1>
+</div>
+
+{{with .Notice}}<div class="notice {{.Kind}}" role="status">{{if eq .Kind "ok"}}{{icon "check"}}{{else if eq .Kind "alerte"}}{{icon "alerte"}}{{else}}{{icon "info"}}{{end}}<p>{{.Message}}{{if .Restarting}} <a href="/modem">Relire le modem</a>{{end}}</p></div>{{end}}
+
+{{if .Problem}}
+<div class="notice info" role="status">{{icon "info"}}<p>{{.Problem}}{{if .ProblemLink}} <a href="/reglages/modem">Réglages</a>{{end}}</p></div>
+{{if not .Demo}}{{template "propose" .}}{{end}}
+{{else}}
+{{if .Unsupported}}<p class="empty-state">Informations non disponibles pour ce modèle.</p>{{end}}
+{{with .ReadErr}}<div class="notice alerte" role="status">{{icon "alerte"}}<p>{{.}}</p></div>{{end}}
+{{with .Reading}}{{template "working" .}}{{end}}
+
+{{if .Facts}}
+<dl class="figures facts">
+ {{range .Facts}}<div><dt class="label-l">{{.Label}}</dt><dd>{{.Value}}{{with .Hint}}<span class="since">{{.}}</span>{{end}}</dd></div>{{end}}
+</dl>
+{{end}}
+<p class="hint body-m modem-link">Interface du modem : <a href="{{.Address}}" rel="noopener noreferrer">{{.Address}}</a></p>
+
+{{if .CanRestart}}
+<div class="toolbar">
+ <h2 class="title-l">Redémarrage</h2>
+</div>
+<section class="card modem-card">
+ <p class="body-m">Coupe Internet 3 à 5 minutes.{{if not .LastAsked.IsZero}} Dernière demande : {{fmtTime .LastAsked}}.{{end}}</p>
+ <a class="btn tonal" href="/modem/redemarrer">{{icon "redemarrer"}}Redémarrer le modem…</a>
+</section>
+{{end}}
+
+{{if eq .Mode "pont"}}
+<div class="toolbar"><h2 class="title-l">Réseau domestique</h2></div>
+<p class="body-m muted">Mode pont : le réseau se gère sur votre routeur.</p>
+{{end}}
+
+{{if .RouterShown}}
+<div class="toolbar"><h2 class="title-l">Réseau domestique</h2></div>
+{{with .Missing}}<p class="hint body-m">Le modem n'a pas rendu : {{.}}.</p>{{end}}
+<div class="modem-grid">
+ {{if .LAN}}<section class="card" aria-labelledby="lan">
+  <h3 id="lan" class="title-m">Réseau local</h3>
+  <dl class="kv body-m">{{range .LAN}}<dt>{{.Label}}</dt><dd>{{.Value}}</dd>{{end}}</dl>
+ </section>{{end}}
+ {{range $i, $r := .Radios}}<section class="card" aria-labelledby="wifi-{{$i}}">
+  <h3 id="wifi-{{$i}}" class="title-m">Wi-Fi {{$r.Band}} <span class="pastille">{{if $r.Enabled}}Activé{{else}}Désactivé{{end}}</span></h3>
+  <dl class="kv body-m{{if not $r.Enabled}} off{{end}}">{{range $r.Facts}}<dt>{{.Label}}</dt><dd>{{.Value}}</dd>{{end}}</dl>
+ </section>{{end}}
+</div>
+{{if .Hosts}}
+<section class="card modem-card" aria-labelledby="appareils">
+ <h3 id="appareils" class="title-m">Appareils</h3>
+ <p class="hint body-m">{{.HostsActive}} connecté{{if gt .HostsActive 1}}s{{end}} sur {{len .Hosts}} connu{{if gt (len .Hosts) 1}}s{{end}} du modem.</p>
+ <div class="table-wrap"><table class="data">
+  <thead><tr><th scope="col">Nom</th><th scope="col">Adresse IP</th><th scope="col">Adresse MAC</th><th scope="col">État</th></tr></thead>
+  <tbody>{{range .Hosts}}<tr{{if not .Active}} class="off"{{end}}><th scope="row">{{or .Name "—"}}</th><td>{{or .IP "—"}}</td><td>{{or .MAC "—"}}</td><td>{{if .Active}}Connecté{{else}}Absent{{end}}</td></tr>{{end}}</tbody>
+ </table></div>
+</section>
+{{end}}
+<p class="hint body-m">Lecture seule.</p>
+{{end}}
+{{with .RouterErr}}<div class="notice alerte" role="status">{{icon "alerte"}}<p>{{.}}</p></div>{{end}}
+{{if not .Demo}}{{template "propose" .}}{{end}}
+{{end}}
+{{end}}
+{{end}}
+
+{{define "propose"}}{{if .Supported}}<div class="toolbar"><h2 class="title-l">Améliorer la prise en charge</h2></div>
+<section class="card modem-card">
+ <p class="body-m">Une information manque ou une fonction échoue : envoyez un rapport anonymisé.</p>
+ <a class="btn tonal" href="/modem/proposer">{{icon "rapport"}}Envoyer le rapport du modem</a>
+</section>{{else}}<div class="toolbar"><h2 class="title-l">Faire prendre en charge votre modem</h2></div>
+<section class="card modem-card">
+ <p class="body-m">Envoyez un rapport anonymisé pour qu'il soit pris en charge.</p>
+ <a class="btn tonal" href="/modem/proposer">{{icon "rapport"}}Proposer mon modem</a>
+</section>{{end}}{{end}}

@@ -1,0 +1,57 @@
+name: Nouveau modem
+description: Demander la prise en charge d'un modem câble que Mire ne connaît pas encore.
+title: "Modem : "
+labels: ["modem"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci ! Un pilote ne s'écrit qu'à partir de réponses réelles du modem.
+        Le plus simple : dans Mire, page Modem, « Proposer mon modem » prépare
+        un rapport anonymisé et ouvre une demande déjà remplie ; ce formulaire
+        n'est alors pas nécessaire.
+        Sinon, avant de coller une réponse, retirez les adresses MAC, le numéro
+        de série, les adresses IP publiques et tout identifiant de connexion.
+  - type: input
+    id: modele
+    attributes:
+      label: Modèle du modem
+      description: Tel qu'il figure sur l'étiquette.
+      placeholder: Technicolor CGA4233
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Version du firmware
+      placeholder: CGA4233VOO-21.3-…
+  - type: input
+    id: operateur
+    attributes:
+      label: Opérateur et pays
+      placeholder: VOO, Belgique
+    validations:
+      required: true
+  - type: input
+    id: adresse
+    attributes:
+      label: Adresse de la page des canaux
+      description: L'adresse où le modem affiche ses canaux, et si elle demande une connexion.
+      placeholder: http://192.168.100.1/…, connexion avec identifiant
+    validations:
+      required: true
+  - type: textarea
+    id: releves
+    attributes:
+      label: Réponses du modem
+      description: |
+        La sortie de `mire diagnostic`, ou le contenu brut de la page ou de l'API
+        des canaux (HTML ou JSON), anonymisé.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: remarques
+    attributes:
+      label: Remarques
+      description: Particularités connues, mode bridge ou routeur, captures d'écran.

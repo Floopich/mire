@@ -1,0 +1,162 @@
+{
+  "id": "voo",
+  "name": "VOO / Orange",
+  "region": "réseau VOO",
+  "country": "BE",
+  "time_zone": "Europe/Brussels",
+  "default_modem_url": "http://192.168.100.1",
+  "default_modem": "cga4233",
+  "calibrated": true,
+  "source": "https://forum.voo.be",
+  "notes": "Vaut pour les abonnés VOO et Orange raccordés au réseau câble VOO (Wallonie, une partie de Bruxelles) : les seuils dépendent du réseau, pas de la marque. Valeurs empiriques issues des retours de la communauté et des techniciens VOO, non normatives ; les tolérances varient selon le segment. 192.168.100.1 est l'adresse de diagnostic DOCSIS imposée par la spécification : elle sert la page des canaux, que le modem soit en bridge ou en routeur. Voie descendante : plage bonne élargie à ±8 dBmV, la pratique VOO jugeant 8 à 10 dBmV non problématiques. Voie montante : la borne basse de 28 dBmV n'est qu'un garde-fou, seule une émission excessive pose problème ; normale sous 49 dBmV, 51 dBmV est le plafond sur quatre porteuses, les canaux tombent au-delà de 52. Un OFDMA à 30 dBmV est sain. Les planchers de SNR des canaux OFDM s'appuient sur CableLabs DOCSIS 3.1 PHY (CM-SP-PHYv3.1-I08) : VOO ne publie pas de plancher de MER agrégé, et sans eux un canal OFDM serait jugé sur le plancher de 40 dB du 4096QAM. Un canal montant durablement en 16QAM peut relever de la configuration du segment plutôt que d'une dégradation : comparer avec l'historique avant de conclure.",
+  "thresholds": {
+    "downstream_default": "256QAM",
+    "downstream_power": {
+      "64QAM": {
+        "good": {
+          "min": -8,
+          "max": 8
+        },
+        "warning": {
+          "min": -10,
+          "max": 10
+        },
+        "critical": {
+          "min": -15,
+          "max": 15
+        }
+      },
+      "256QAM": {
+        "good": {
+          "min": -8,
+          "max": 8
+        },
+        "warning": {
+          "min": -10,
+          "max": 10
+        },
+        "critical": {
+          "min": -15,
+          "max": 15
+        }
+      },
+      "1024QAM": {
+        "good": {
+          "min": -8,
+          "max": 8
+        },
+        "warning": {
+          "min": -10,
+          "max": 10
+        },
+        "critical": {
+          "min": -15,
+          "max": 15
+        }
+      },
+      "4096QAM": {
+        "good": {
+          "min": -8,
+          "max": 8
+        },
+        "warning": {
+          "min": -10,
+          "max": 10
+        },
+        "critical": {
+          "min": -15,
+          "max": 15
+        }
+      },
+      "ofdm": {
+        "good": {
+          "min": -8,
+          "max": 8
+        },
+        "warning": {
+          "min": -10,
+          "max": 10
+        },
+        "critical": {
+          "min": -15,
+          "max": 15
+        }
+      }
+    },
+    "upstream_default": "sc_qam",
+    "upstream_power": {
+      "sc_qam": {
+        "good": {
+          "min": 28,
+          "max": 49
+        },
+        "warning": {
+          "min": 27,
+          "max": 51
+        },
+        "critical": {
+          "min": 25,
+          "max": 52
+        }
+      },
+      "ofdma": {
+        "good": {
+          "min": 28,
+          "max": 49
+        },
+        "warning": {
+          "min": 27,
+          "max": 51
+        },
+        "critical": {
+          "min": 25,
+          "max": 52
+        }
+      }
+    },
+    "snr_default": "256QAM",
+    "snr": {
+      "64QAM": {
+        "good_min": 27,
+        "warning_min": 25,
+        "critical_min": 24
+      },
+      "256QAM": {
+        "good_min": 35,
+        "warning_min": 33,
+        "critical_min": 30
+      },
+      "1024QAM": {
+        "good_min": 39,
+        "warning_min": 37,
+        "critical_min": 36
+      },
+      "4096QAM": {
+        "good_min": 40,
+        "warning_min": 38,
+        "critical_min": 36
+      },
+      "ofdm": {
+        "good_min": 27,
+        "warning_min": 25.5,
+        "critical_min": 24.5
+      }
+    },
+    "upstream_modulation": {
+      "critical_max_qam": 4,
+      "warning_max_qam": 16
+    },
+    "upstream_ofdma": {
+      "critical_max_qam": 32,
+      "warning_max_qam": 64,
+      "tolerated_max_qam": 128
+    },
+    "errors": {
+      "uncorrectable_pct_warning": 1,
+      "uncorrectable_pct_critical": 3,
+      "window_hours": 24,
+      "min_codewords": 1000,
+      "spike_uncorrectable": 1000
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{{define "content"}}
+<section class="login">
+ <div class="badge">{{template "logo" .}}</div>
+ <h1 class="headline-s">Connexion à Mire</h1>
+ {{with .Err}}<div class="notice alerte" role="alert">{{icon "alerte"}}<p>{{.}}</p></div>{{end}}
+ <form method="post" action="/connexion">
+  <div class="field">
+   <input id="mdp" name="mot_de_passe" type="password" autocomplete="current-password" placeholder=" " autofocus required>
+   <label for="mdp">Mot de passe</label>
+  </div>
+  <button type="submit" class="btn filled large">Se connecter</button>
+ </form>
+ <p class="hint body-m">Mot de passe oublié : <code>mire mot-de-passe</code> sur la machine de Mire.</p>
+</section>
+{{end}}

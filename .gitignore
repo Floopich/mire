@@ -1,0 +1,18 @@
+# Binaires compiles
+/mire
+/dist/
+*.exe
+
+# Donnees locales
+*.db
+*.db-wal
+*.db-shm
+/data/
+.env
+
+# Outils
+.idea/
+.vscode/
+/tools/couleurs/node_modules/
+/tools/couleurs/.schema.bundle.mjs
+*.test

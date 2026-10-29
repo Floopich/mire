@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Icone d'application « any » : le logo sur une tuile arrondie claire. -->
+  <rect width="512" height="512" rx="112" fill="#FFF8F7"/>
+  <g transform="translate(80 80) scale(2.75)">
+    <rect x="14" y="28" width="16" height="76" fill="#808080"/>
+    <rect x="35" y="46" width="16" height="58" fill="#808080"/>
+    <rect x="56" y="70" width="16" height="34" fill="#E8817F"/>
+    <rect x="77" y="46" width="16" height="58" fill="#808080"/>
+    <rect x="98" y="28" width="16" height="76" fill="#808080"/>
+    <line x1="4" y1="58" x2="124" y2="58" stroke="#E8817F" stroke-width="4" stroke-dasharray="9 7" stroke-linecap="round" opacity="0.85"/>
+  </g>
+</svg>

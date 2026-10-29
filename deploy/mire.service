@@ -1,0 +1,38 @@
+# Service systemd de Mire, pour une installation sans Docker.
+# Installation et mise à jour : voir le README, « Installation sans Docker ».
+[Unit]
+Description=Mire, analyse en continu d'une ligne DOCSIS
+Documentation=https://github.com/floopich/mire
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=mire
+Group=mire
+# Réglages propres à l'installation, au format de .env.exemple.
+EnvironmentFile=-/etc/mire/mire.env
+Environment=MIRE_DONNEES=/var/lib/mire
+ExecStart=/usr/local/bin/mire
+Restart=on-failure
+RestartSec=10s
+
+# Durcissement : Mire n'écrit que dans son dossier de données.
+StateDirectory=mire
+StateDirectoryMode=0750
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

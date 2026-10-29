@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="mire-logo-title">
+  <title id="mire-logo-title">Mire</title>
+  <rect x="14" y="28" width="16" height="76" fill="#808080"/>
+  <rect x="35" y="46" width="16" height="58" fill="#808080"/>
+  <rect x="56" y="70" width="16" height="34" fill="#E8817F"/>
+  <rect x="77" y="46" width="16" height="58" fill="#808080"/>
+  <rect x="98" y="28" width="16" height="76" fill="#808080"/>
+  <line x1="4" y1="58" x2="124" y2="58" stroke="#E8817F" stroke-width="4" stroke-dasharray="9 7" stroke-linecap="round" opacity="0.85"/>
+</svg>

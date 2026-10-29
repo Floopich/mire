@@ -1,0 +1,161 @@
+{
+  "id": "telenet",
+  "name": "Telenet / Orange",
+  "region": "réseau Telenet",
+  "country": "BE",
+  "time_zone": "Europe/Brussels",
+  "default_modem_url": "http://192.168.100.1",
+  "calibrated": true,
+  "source": "https://broadbandlibrary.com/cable-modem-transmit-power/",
+  "notes": "Vaut pour les abonnés Telenet et Orange raccordés au réseau câble Telenet (Flandre, une partie de Bruxelles). Telenet ne publie pas de seuils : ceux-ci reprennent la spécification DOCSIS et les références de terrain de l'industrie, pas des tolérances propres au réseau. Voie descendante : plage d'entrée du modem de −15 à +15 dBmV (CableLabs), idéal entre −10 et +10 dBmV (Brady Volpe, The Volpe Firm). SNR : minimums opérationnels de 27 dB en 64QAM et 31 dB en 256QAM (Ron Hranac, SCTE, Cablefax, 2009 ; Brady Volpe) ; planchers OFDM, 1024QAM et 4096QAM selon CableLabs DOCSIS 3.1 PHY (CM-SP-PHYv3.1). Voie montante : 40 à 47 dBmV typiques et 50 dBmV au plus par canal avec quatre canaux liés, au-delà de 52 dBmV le signal n'atteint plus le CMTS (Ron Hranac, Broadband Library ; Brady Volpe) ; une émission basse n'est signalée que sous 35 dBmV. Ces seuils sont à affiner avec des relevés de lignes Telenet : signalez un écart par une demande « Nouvel opérateur ».",
+  "thresholds": {
+    "downstream_default": "256QAM",
+    "downstream_power": {
+      "64QAM": {
+        "good": {
+          "min": -8,
+          "max": 8
+        },
+        "warning": {
+          "min": -10,
+          "max": 10
+        },
+        "critical": {
+          "min": -15,
+          "max": 15
+        }
+      },
+      "256QAM": {
+        "good": {
+          "min": -8,
+          "max": 8
+        },
+        "warning": {
+          "min": -10,
+          "max": 10
+        },
+        "critical": {
+          "min": -15,
+          "max": 15
+        }
+      },
+      "1024QAM": {
+        "good": {
+          "min": -8,
+          "max": 8
+        },
+        "warning": {
+          "min": -10,
+          "max": 10
+        },
+        "critical": {
+          "min": -15,
+          "max": 15
+        }
+      },
+      "4096QAM": {
+        "good": {
+          "min": -8,
+          "max": 8
+        },
+        "warning": {
+          "min": -10,
+          "max": 10
+        },
+        "critical": {
+          "min": -15,
+          "max": 15
+        }
+      },
+      "ofdm": {
+        "good": {
+          "min": -8,
+          "max": 8
+        },
+        "warning": {
+          "min": -10,
+          "max": 10
+        },
+        "critical": {
+          "min": -15,
+          "max": 15
+        }
+      }
+    },
+    "upstream_default": "sc_qam",
+    "upstream_power": {
+      "sc_qam": {
+        "good": {
+          "min": 35,
+          "max": 48
+        },
+        "warning": {
+          "min": 32,
+          "max": 50
+        },
+        "critical": {
+          "min": 30,
+          "max": 52
+        }
+      },
+      "ofdma": {
+        "good": {
+          "min": 35,
+          "max": 48
+        },
+        "warning": {
+          "min": 32,
+          "max": 50
+        },
+        "critical": {
+          "min": 30,
+          "max": 52
+        }
+      }
+    },
+    "snr_default": "256QAM",
+    "snr": {
+      "64QAM": {
+        "good_min": 27,
+        "warning_min": 25,
+        "critical_min": 24
+      },
+      "256QAM": {
+        "good_min": 33,
+        "warning_min": 31,
+        "critical_min": 30
+      },
+      "1024QAM": {
+        "good_min": 39,
+        "warning_min": 37,
+        "critical_min": 36
+      },
+      "4096QAM": {
+        "good_min": 40,
+        "warning_min": 38,
+        "critical_min": 36
+      },
+      "ofdm": {
+        "good_min": 27,
+        "warning_min": 25.5,
+        "critical_min": 24.5
+      }
+    },
+    "upstream_modulation": {
+      "critical_max_qam": 4,
+      "warning_max_qam": 16
+    },
+    "upstream_ofdma": {
+      "critical_max_qam": 32,
+      "warning_max_qam": 64,
+      "tolerated_max_qam": 128
+    },
+    "errors": {
+      "uncorrectable_pct_warning": 1,
+      "uncorrectable_pct_critical": 3,
+      "window_hours": 24,
+      "min_codewords": 1000,
+      "spike_uncorrectable": 1000
+    }
+  }
+}

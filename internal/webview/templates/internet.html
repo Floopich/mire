@@ -1,0 +1,84 @@
+{{define "actions"}}{{template "logout" .}}{{end}}
+
+{{define "content"}}
+<div class="page-head">
+ <a class="btn text icon-btn" href="/" aria-label="Revenir à la vue d'ensemble">{{icon "retour"}}</a>
+ <h1 class="headline-s">Internet</h1>
+</div>
+
+{{if not .Probing}}
+<div class="notice info" role="status">{{icon "info"}}<p>Sonde désactivée. <a href="/reglages/sonde">Réglages</a></p></div>
+{{end}}
+
+<div class="toolbar">
+ <h2 class="title-l">Sur la période</h2>
+ {{template "windows" .}}
+</div>
+
+{{if .HasSamples}}
+<dl class="figures">
+ <div><dt class="label-l">Disponibilité</dt><dd>{{.Availability}}</dd></div>
+ <div><dt class="label-l">Coupures</dt><dd>{{.OutageCount}}{{with .OutageTotal}}<span class="since">{{.}} au total</span>{{end}}</dd></div>
+ <div><dt class="label-l">Latence moyenne</dt><dd>{{or .Latency "—"}}</dd></div>
+ <div><dt class="label-l">Tentatives sans réponse</dt><dd>{{.Loss}}</dd></div>
+</dl>
+
+<section class="card chart-card">
+ <h3 class="title-m">Latence</h3>
+ <p class="hint body-m">Millisecondes, moyenne par tranche de 5 minutes.</p>
+ {{index .Charts 0}}
+</section>
+<section class="card chart-card">
+ <h3 class="title-m">Tentatives sans réponse</h3>
+ {{index .Charts 1}}
+</section>
+{{else}}
+<p class="empty-state">Aucune mesure sur cette période.{{if .Probing}}{{end}}</p>
+{{end}}
+
+{{with .Speed}}{{if .Shown}}
+<section class="card chart-card" aria-labelledby="debit">
+ <h3 id="debit" class="title-m">Débit</h3>
+ {{if .Count}}
+ <p class="hint body-m">{{.Count}} {{if eq .Count 1}}mesure{{else}}mesures{{end}} de {{.Source}}, la dernière le {{fmtTime .Last}}.</p>
+ <dl class="figures">
+  <div><dt class="label-l">Descendant médian</dt><dd>{{.Down}}</dd></div>
+  <div><dt class="label-l">Descendant le plus bas</dt><dd>{{.DownLow}}</dd></div>
+  <div><dt class="label-l">Montant médian</dt><dd>{{.Up}}</dd></div>
+ </dl>
+ <p class="hint body-m">Descendant, Mbit/s</p>
+ {{index .Charts 0}}
+ <p class="hint body-m">Montant, Mbit/s</p>
+ {{index .Charts 1}}
+ {{else}}
+ <p class="body-m muted">Aucune mesure de débit sur cette période{{if not .LastEver.IsZero}} ; la dernière date du {{fmtTime .LastEver}}{{end}}.</p>
+ {{end}}
+</section>
+{{end}}{{end}}
+
+<section class="card chart-card profile" aria-labelledby="profil">
+ <h3 id="profil" class="title-m">Heure par heure, sur 30 jours</h3>
+ {{if .ProfileVerdict}}
+ <div class="notice {{if .ProfileAlert}}surveiller{{else}}ok{{end}}" role="status">{{if .ProfileAlert}}{{icon "alerte"}}{{else}}{{icon "check"}}{{end}}<p>{{.ProfileVerdict}}</p></div>
+ <p class="hint body-m">Latence moyenne par heure.</p>
+ {{index .ProfileCharts 0}}
+ <p class="hint body-m">Tentatives sans réponse par heure.</p>
+ {{index .ProfileCharts 1}}
+ {{else}}
+ <p class="body-m muted">Disponible après trois jours de mesures{{if .ProfileDays}} ({{.ProfileDays}} pour l'instant){{end}}.</p>
+ {{end}}
+</section>
+
+<section class="card chart-card" aria-labelledby="coupures">
+ <h3 id="coupures" class="title-m">Coupures</h3>
+ {{if and .CompensationShown .CompensationCount}}
+ <p class="hint body-m">{{if eq .CompensationCount 1}}Une coupure dépasse{{else}}{{.CompensationCount}} coupures dépassent{{end}} 8 heures : environ {{.CompensationTotal}} de compensation légale.  <a href="https://www.ibpt.be/consommateurs/telephonie-internet-tv/protection-des-consommateurs/compensation-pour-interruption-de-service" rel="noopener noreferrer">Les règles de l'IBPT</a></p>
+ {{end}}
+ {{if .Outages}}<ul class="list events compact">{{range .Outages}}<li class="event {{.Level}}">
+  <svg class="pip" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .Level}}"/></svg>
+  <time class="label-l" datetime="{{.Start.UTC.Format "2006-01-02T15:04:05Z"}}">{{fmtTime .Start}}</time>
+  <p class="body-m"><b>{{.Label}}</b> {{if .Ongoing}}depuis {{.Duration}}, en cours{{else}}pendant {{.Duration}}{{end}}. {{.Cause}}{{with .Compensation}} <span class="pastille">Compensation estimée : {{.}}</span>{{end}}</p>
+ </li>{{end}}</ul>
+ {{else}}<p class="body-m muted">Aucune coupure sur la période.</p>{{end}}
+</section>
+{{end}}

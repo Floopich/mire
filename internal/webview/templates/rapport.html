@@ -1,0 +1,92 @@
+{{define "actions"}}{{template "logout" .}}{{end}}
+
+{{define "content"}}
+<div class="page-head no-print">
+ <a class="btn text icon-btn" href="/" aria-label="Revenir à la vue d'ensemble">{{icon "retour"}}</a>
+ <h1 class="headline-s">Rapport de la ligne</h1>
+</div>
+
+<form class="card report-form no-print" method="get" action="/rapport">
+ <p class="body-m muted">Choisissez une période, puis imprimez ou enregistrez en PDF (Ctrl+P).</p>
+ <div class="report-fields">
+  <div class="field"><input type="date" id="r-du" name="du" value="{{.Du}}" placeholder="jj/mm/aaaa" required><label for="r-du">Du</label></div>
+  <div class="field"><input type="date" id="r-au" name="au" value="{{.Au}}" placeholder="jj/mm/aaaa" required><label for="r-au">Au</label></div>
+  <div class="field"><input type="date" id="r-intervention" name="intervention" value="{{.Intervention}}" placeholder="jj/mm/aaaa"><label for="r-intervention">Date d'intervention (facultatif)</label></div>
+  <div class="field"><select id="r-jours" name="jours">{{range .Choices}}<option value="{{.}}"{{if eq . $.Jours}} selected{{end}}>{{.}} jours</option>{{end}}</select><label for="r-jours">Comparer sur</label></div>
+ </div>
+ <button type="submit" class="btn filled">Afficher</button>
+</form>
+{{with .Err}}<div class="notice alerte no-print" role="alert">{{icon "alerte"}}<p>{{.}}</p></div>{{end}}
+{{with .Exports}}
+<section class="card report-part no-print" aria-labelledby="donnees-titre">
+ <h2 class="title-m" id="donnees-titre">Données de la période</h2>
+ <p class="hint body-m">Fichiers CSV : heure ISO 8601, virgule, point décimal.</p>
+ <div class="shortcuts">{{range .}}<a class="btn tonal" href="{{.URL}}" download>{{icon "telecharger"}}{{.Label}}</a>{{end}}</div>
+</section>
+{{end}}
+
+<article class="report">
+ <header class="report-head">
+  <h2 class="headline-s">Rapport de la ligne, {{.PeriodLabel}}</h2>
+  <p class="body-m muted">{{with .Modem}}Modem {{.}} · {{end}}{{if .Profile.Name}}Profil {{.Profile.Name}}{{if .Profile.Region}} ({{.Profile.Region}}){{end}} · {{end}}Établi par Mire {{.Version}} le {{fmtTime .Generated}}</p>
+ </header>
+
+ <section class="card report-part">
+  <h3 class="title-m">Synthèse</h3>
+  <ul class="summary body-l">{{range .Summary}}<li>{{.}}</li>{{end}}</ul>
+  {{if .Shares}}<ul class="legend label-l shares" aria-label="Temps par état">{{range .Shares}}<li class="{{.Level}}"><svg class="pip" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .Level}}"/></svg>{{label .Level}} : {{.Percent}} ({{.Duration}})</li>{{end}}</ul>{{end}}
+ </section>
+
+ {{with .Compare}}
+ <section class="card report-part">
+  <h3 class="title-m">Avant et après l'intervention</h3>
+  {{with .Short}}<p class="hint body-m">{{.}}</p>{{end}}
+  <div class="table-wrap"><table class="data">
+   <thead><tr><th scope="col">Mesure</th><th scope="col">{{.Before}}</th><th scope="col">{{.After}}</th><th scope="col">Évolution</th></tr></thead>
+   <tbody>{{range .Rows}}<tr><th scope="row">{{.Label}}</th><td>{{.Before}}</td><td>{{.After}}</td><td>{{if .Verdict}}<span class="verdict {{.Tone}}">{{.Verdict}}</span>{{else}}—{{end}}</td></tr>{{end}}</tbody>
+  </table></div>
+ </section>
+ {{end}}
+
+ {{if .HasData}}
+ <section class="card report-part">
+  <h3 class="title-m">Canaux descendants</h3>
+  <p class="hint body-m">Puissance minimale à maximale, SNR minimal à moyen, part des relevés hors plage.</p>
+  <div class="table-wrap"><table class="data">
+   <thead><tr><th scope="col">Canal</th><th scope="col">Fréquence</th><th scope="col">Puissance</th><th scope="col">Moyenne</th><th scope="col">SNR</th><th scope="col">Non corrigées</th><th scope="col">Hors plage</th></tr></thead>
+   <tbody>{{range .DS}}<tr class="{{.Level}}"><th scope="row">{{.ID}} <small>{{.Modulation}}</small></th><td>{{.Frequency}}</td><td>{{.Power}}</td><td>{{.PowerAvg}}</td><td>{{.SNR}}</td><td>{{or .Errors "—"}}</td><td>{{or .Out "—"}}</td></tr>{{end}}</tbody>
+  </table></div>
+ </section>
+ <section class="card report-part">
+  <h3 class="title-m">Canaux montants</h3>
+  <div class="table-wrap"><table class="data">
+   <thead><tr><th scope="col">Canal</th><th scope="col">Fréquence</th><th scope="col">Émission</th><th scope="col">Moyenne</th><th scope="col">Hors plage</th></tr></thead>
+   <tbody>{{range .US}}<tr class="{{.Level}}"><th scope="row">{{.ID}} <small>{{.Modulation}}</small></th><td>{{.Frequency}}</td><td>{{.Power}}</td><td>{{.PowerAvg}}</td><td>{{or .Out "—"}}</td></tr>{{end}}</tbody>
+  </table></div>
+ </section>
+ {{end}}
+
+ <section class="card report-part">
+  <h3 class="title-m">Coupures d'Internet</h3>
+  {{with .CompensationTotal}}<p class="hint body-m">Compensation légale estimée : {{.}}.</p>{{end}}
+  {{if .Outages}}<ul class="list events compact">{{range .Outages}}<li class="event {{.Level}}">
+   <svg class="pip" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .Level}}"/></svg>
+   <time class="label-l" datetime="{{.Start.UTC.Format "2006-01-02T15:04:05Z"}}">{{fmtTime .Start}}</time>
+   <p class="body-m"><b>{{.Label}}</b> {{if .Ongoing}}depuis {{.Duration}}, en cours{{else}}pendant {{.Duration}}{{end}}. {{.Cause}}{{with .Compensation}} <span class="pastille">Compensation estimée : {{.}}</span>{{end}}</p>
+  </li>{{end}}</ul>
+  {{else}}<p class="body-m muted">Aucune coupure sur la période.</p>{{end}}
+ </section>
+
+ <section class="card report-part">
+  <h3 class="title-m">Journal</h3>
+  <p class="hint body-m">Alertes et notes, retours à la normale omis.</p>
+  {{if .Events}}<ul class="list events compact">{{range .Events}}<li class="event {{if .Note}}note{{else}}{{.Level}}{{end}}">
+   {{if .Note}}<span class="pip">{{icon "note"}}</span>{{else}}<svg class="pip" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .Level}}"/></svg>{{end}}
+   <time class="label-l" datetime="{{.Time.UTC.Format "2006-01-02T15:04:05Z"}}">{{fmtTime .Time}}</time>
+   <p class="body-m">{{if .Note}}<b>Note.</b> {{end}}{{.Message}}</p>
+  </li>{{end}}</ul>
+  {{if .EventsTruncated}}<p class="hint body-m">Journal tronqué : raccourcissez la période.</p>{{end}}
+  {{else}}<p class="body-m muted">Aucune alerte sur la période.</p>{{end}}
+ </section>
+</article>
+{{end}}

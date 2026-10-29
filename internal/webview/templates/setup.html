@@ -1,0 +1,93 @@
+{{define "content"}}
+<section class="setup">
+ <div class="badge">{{template "logo" .}}</div>
+ <h1 class="headline-s">Bienvenue dans Mire</h1>
+ {{if .StepNumber}}<ol class="steps" aria-label="Étapes de l'installation">
+  <li{{if eq .StepNumber 1}} aria-current="step"{{end}} class="{{if gt .StepNumber 1}}done{{end}}"><span>1</span>Mot de passe</li>
+  <li{{if eq .StepNumber 2}} aria-current="step"{{end}} class="{{if gt .StepNumber 2}}done{{end}}"><span>2</span>Opérateur</li>
+  <li{{if eq .StepNumber 3}} aria-current="step"{{end}}><span>3</span>Modem</li>
+ </ol>{{end}}
+ {{with .Err}}<div class="notice alerte" role="alert">{{icon "alerte"}}<p>{{.}}</p></div>{{end}}
+
+ {{if eq .Step "accueil"}}
+ <p class="body-l muted setup-lead">Surveillance continue de votre ligne câble.</p>
+ <div class="setup-choices">
+  <form method="post" action="/demo" class="card setup-form">
+   <h2 class="title-l">Découvrir Mire</h2>
+   <p class="body-m muted">Une ligne fictive avec trois mois d'historique. Rien n'est conservé.</p>
+   <button type="submit" class="btn tonal large">Essayer la démo</button>
+  </form>
+  <div class="card setup-form">
+   <h2 class="title-l">Installer Mire</h2>
+   <p class="body-m muted">Mot de passe, opérateur, modem.</p>
+   <a class="btn filled large" href="/installation?etape=mot-de-passe">Configurer pour ma ligne</a>
+  </div>
+ </div>
+ {{end}}
+
+ {{if eq .Step "demo"}}{{with .Searching}}{{template "working" .}}{{end}}{{end}}
+
+ {{if eq .Step "mot-de-passe"}}
+ <form method="post" action="/installation" class="card setup-form">
+  <h2 class="title-l">Choisissez le mot de passe de Mire</h2>
+  <p class="body-m muted">Huit caractères au minimum.</p>
+  <div class="field"><input id="nouveau" name="nouveau" type="password" autocomplete="new-password" placeholder=" " minlength="8" autofocus required><label for="nouveau">Mot de passe</label></div>
+  <div class="field"><input id="confirmation" name="confirmation" type="password" autocomplete="new-password" placeholder=" " minlength="8" required><label for="confirmation">Confirmation</label></div>
+  <button type="submit" class="btn filled large">Continuer</button>
+ </form>
+ {{end}}
+
+ {{if eq .Step "modem"}}
+ {{with .Searching}}{{template "working" .}}{{else}}{{with .Testing}}{{template "working" .}}{{else}}
+ {{with .Test}}<div class="notice {{if .OK}}ok{{else}}alerte{{end}}" role="status">{{if .OK}}{{icon "check"}}{{else}}{{icon "alerte"}}{{end}}<p>{{.Message}}</p></div>{{end}}
+ {{if .Unsupported}}
+ <div class="card setup-form">
+  <h2 class="title-l">Modem non pris en charge</h2>
+  <p class="body-m muted">La sonde Internet fonctionne. Proposez votre modem pour qu'il soit pris en charge.</p>
+  <a class="btn filled large" href="/modem/proposer">Proposer mon modem</a>
+  <a class="btn text" href="/">Terminer</a>
+ </div>
+ {{else if and .Test .Test.OK}}
+ <div class="card setup-form">
+  <h2 class="title-l">Le modem répond</h2>
+  <p class="body-m muted">Premier relevé dans un instant.</p>
+  <a class="btn filled large" href="/">Terminer</a>
+ </div>
+ {{else}}
+ <form method="post" action="/installation/modem" class="card setup-form">
+  <h2 class="title-l">Votre modem</h2>
+  <p class="body-m muted">Choisissez le modem et indiquez le mot de passe de son interface.</p>
+  <fieldset class="choices">
+   <legend class="label-l">Adresse du modem</legend>
+   {{$addr := .Address}}
+   {{range .Detected}}
+   <label class="choice"><input type="radio" name="adresse" value="{{.URL}}"{{if eq .URL $addr}} checked{{end}}>
+    <span><span class="title-m">{{.URL}}</span><small>{{if .Model}}{{.Model.Label}}{{else if .DOCSIS}}modem câble non pris en charge{{else}}{{or .Title "autre appareil"}}{{end}}</small></span></label>
+   {{end}}
+   <label class="choice"><input type="radio" name="adresse" value="autre"{{if not .Detected}} checked{{end}}>
+    <span><span class="title-m">Autre adresse</span><small>À saisir ci-dessous</small></span></label>
+   <div class="field"><input id="adresse-autre" name="adresse_autre" type="text" placeholder="http://192.168.100.1" value="{{if not .Detected}}{{.Address}}{{end}}"><label for="adresse-autre">Autre adresse</label></div>
+  </fieldset>
+  <div class="field select"><select id="modele" name="modele">{{$m := .Model}}{{range .Models}}<option value="{{.Value}}"{{if eq .Value $m}} selected{{end}}>{{.Label}}</option>{{end}}</select><label for="modele">Modèle</label></div>
+  <div class="field"><input id="identifiant" name="identifiant" type="text" value="{{.User}}" placeholder="{{or .DefaultUser " "}}"><label for="identifiant">Identifiant du modem</label></div>
+  <div class="field"><input id="mot-de-passe" name="mot_de_passe" type="password" autocomplete="off" placeholder="{{if .PasswordSet}}••••••••{{else}} {{end}}"><label for="mot-de-passe">Mot de passe du modem{{if .PasswordSet}} (enregistré){{end}}</label></div>
+  <button type="submit" class="btn filled large">Tester et continuer</button>
+  <a class="btn text" href="/">Configurer plus tard</a>
+  <p class="help body-m">Modem absent de la liste ? <a href="/modem/proposer{{with .Address}}?adresse={{.}}{{end}}">Proposez-le</a>.</p>
+ </form>
+ {{end}}
+ {{end}}{{end}}
+ {{end}}
+
+ {{if eq .Step "operateur"}}
+ <form method="post" action="/installation/operateur" class="card setup-form">
+  <h2 class="title-l">Votre opérateur</h2>
+  <p class="body-m muted">Abonné Orange : choisissez votre réseau câble, VOO ou Telenet.</p>
+  <div class="field select"><select id="profil" name="profil">{{$p := .ProfileID}}{{range .Profiles}}<option value="{{.Value}}"{{if eq .Value $p}} selected{{end}}>{{.Label}}</option>{{end}}</select><label for="profil">Opérateur</label></div>
+  <div class="field"><input id="intervalle" name="intervalle" type="text" value="{{.Interval}}" placeholder="10m"><label for="intervalle">Intervalle entre deux relevés</label></div>
+  <p class="help body-m">10 minutes suffisent.</p>
+  <button type="submit" class="btn filled large">Continuer</button>
+ </form>
+ {{end}}
+</section>
+{{end}}

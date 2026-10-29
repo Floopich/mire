@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="referrer" content="same-origin">
+{{if .Refresh}}<meta http-equiv="refresh" content="{{.Refresh}}">{{end}}
+<title>{{.Title}} – Mire</title>
+<link rel="icon" href="/static/mire.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/static/icone-apple-180.png">
+<meta name="theme-color" content="#E8817F">
+<link rel="preload" href="/static/roboto-flex.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{asset "/static/mire.css"}}">
+{{block "extra-css" .}}{{end}}
+</head>
+<body>
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header class="app-bar">
+ <a class="brand" href="/" aria-label="Mire, vue d'ensemble">
+  {{template "logo" .}}
+  <span>Mire</span>
+ </a>
+ {{block "actions" .}}{{end}}
+</header>
+{{if .Demo}}<div class="demo-band body-m" role="note">{{icon "info"}}<span>Démonstration : données fictives.</span>{{if .DemoExit}}<form method="post" action="/demo/quitter"><button type="submit" class="btn filled">Configurer pour ma ligne</button></form>{{end}}</div>{{end}}
+<main id="contenu">
+{{template "content" .}}
+</main>
+<footer class="foot body-m">
+ <p>Mire {{.Version}}{{if .Profile.Name}}, profil {{.Profile.Name}}{{if .Profile.Region}} ({{.Profile.Region}}){{end}}{{end}}{{with .Modem}}, modem {{.}}{{end}}</p>
+</footer>
+</body>
+</html>
+
+{{define "logo"}}<svg viewBox="0 0 128 128" class="logo" aria-hidden="true">
+ <rect x="14" y="28" width="16" height="76" class="barre"/>
+ <rect x="35" y="46" width="16" height="58" class="barre"/>
+ <rect x="56" y="70" width="16" height="34" class="barre-seuil"/>
+ <rect x="77" y="46" width="16" height="58" class="barre"/>
+ <rect x="98" y="28" width="16" height="76" class="barre"/>
+ <line x1="4" y1="58" x2="124" y2="58" class="seuil"/>
+</svg>{{end}}
+
+{{define "working"}}<div class="working" role="status" aria-live="polite">
+ <p class="body-l"><b>{{.Step}}…</b></p>
+ <div class="indeterminate" aria-hidden="true"></div>
+ <p class="body-m muted">{{.Elapsed}}</p>
+</div>{{end}}
+
+{{define "logout"}}<nav class="actions" aria-label="Compte">
+ <a class="btn text" href="/internet">{{icon "connexion"}}<span class="hide-s">Internet</span></a>
+ <a class="btn text" href="/modem">{{icon "modem"}}<span class="hide-s">Modem</span></a>
+ <a class="btn text" href="/evenements">{{icon "journal"}}<span class="hide-s">Événements</span></a>
+ <a class="btn text" href="/reglages">{{icon "reglages"}}<span class="hide-s">Réglages</span></a>
+ {{if not .Demo}}<form method="post" action="/deconnexion">
+  <button type="submit" class="btn tonal">{{icon "sortie"}}<span class="hide-s">Se déconnecter</span></button>
+ </form>{{end}}
+</nav>{{end}}
+
+{{define "windows"}}<nav class="group" aria-label="Période affichée">
+ {{range .Windows}}<a href="{{$.Path}}?heures={{.Hours}}"{{if .Active}} aria-current="true"{{end}}>{{.Label}}</a>{{end}}
+</nav>{{end}}
+
+{{define "event"}}<li class="event {{if .Note}}note{{else}}{{.Level}}{{end}}">
+ {{if .Note}}<span class="pip">{{icon "note"}}</span>{{else}}<svg class="pip" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .Level}}"/></svg>{{end}}
+ <time class="label-l" datetime="{{.Time.UTC.Format "2006-01-02T15:04:05Z"}}">{{hour .Time}}</time>
+ <p class="body-m">{{if .Note}}<b>Note.</b> {{end}}{{.Message}}{{with .Href}} <a href="{{.}}">Voir le canal</a>{{end}}{{if .Deletable}} <button type="submit" form="note-{{.ID}}" class="link-btn">Supprimer</button>{{end}}</p>
+</li>{{end}}
+
+{{define "event-recent"}}<li class="event {{if .Note}}note{{else}}{{.Level}}{{end}}">
+ {{if .Note}}<span class="pip">{{icon "note"}}</span>{{else}}<svg class="pip" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .Level}}"/></svg>{{end}}
+ <time class="label-l" datetime="{{.Time.UTC.Format "2006-01-02T15:04:05Z"}}">{{ago .Time}}</time>
+ <p class="body-m">{{if .Note}}<b>Note.</b> {{end}}{{.Message}}{{with .Href}} <a href="{{.}}">Voir le canal</a>{{end}}{{if .Deletable}} <button type="submit" form="note-{{.ID}}" class="link-btn">Supprimer</button>{{end}}</p>
+</li>{{end}}
+
+{{define "badge"}}<div class="badge {{.}}"><svg class="shape" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .}}"/></svg>{{levelIcon .}}</div>{{end}}

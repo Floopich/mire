@@ -1,0 +1,110 @@
+package webview
+
+import (
+	"fmt"
+	"html/template"
+	"math"
+	"strings"
+
+	"github.com/floopich/mire/internal/analyze"
+)
+
+// Formes expressives, a la maniere de la bibliotheque de formes Material 3.
+//
+// Chaque niveau d'etat a sa propre silhouette en plus de sa couleur : un
+// lecteur qui distingue mal les couleurs reconnait encore un etat critique a
+// ses pointes. Les contours sont calcules ici plutot que copies, pour rester
+// nets a toutes les tailles.
+type shapeSpec struct {
+	lobes int     // 0 pour un cercle
+	depth float64 // profondeur des creux, en fraction du rayon
+	sharp float64 // 1 pour des festons doux, plus pour des pointes
+}
+
+var levelShapes = map[analyze.Level]shapeSpec{
+	analyze.Good:      {lobes: 9, depth: 0.12, sharp: 1},   // biscuit : festons doux
+	analyze.Tolerated: {lobes: 6, depth: 0.22, sharp: 1},   // fleur
+	analyze.Warning:   {lobes: 8, depth: 0.24, sharp: 2.4}, // soleil
+	analyze.Critical:  {lobes: 12, depth: 0.32, sharp: 4},  // eclat
+	analyze.Unknown:   {lobes: 0},                          // cercle
+}
+
+// shapeD rend le contour d'une forme, centre dans un carre de 48 unites.
+func shapeD(l analyze.Level) string {
+	return shapePath(levelShapes[l], 24, 24, 23)
+}
+
+func shapePath(s shapeSpec, cx, cy, r float64) string {
+	if s.lobes == 0 {
+		return fmt.Sprintf("M%g %gA%g %g 0 1 1 %g %gA%g %g 0 1 1 %g %gZ",
+			cx-r, cy, r, r, cx+r, cy, r, r, cx-r, cy)
+	}
+	const steps = 180
+	var b strings.Builder
+	for i := range steps {
+		theta := 2 * math.Pi * float64(i) / steps
+		f := math.Pow((1+math.Cos(float64(s.lobes)*theta))/2, s.sharp)
+		radius := r * ((1 - s.depth) + s.depth*f)
+		// Un lobe pointe vers le haut.
+		x := cx + radius*math.Sin(theta)
+		y := cy - radius*math.Cos(theta)
+		cmd := "L"
+		if i == 0 {
+			cmd = "M"
+		}
+		fmt.Fprintf(&b, "%s%.2f %.2f", cmd, x, y)
+	}
+	b.WriteString("Z")
+	return b.String()
+}
+
+// Pictogrammes Material Symbols (licence Apache 2.0), cadre 0 -960 960 960.
+var icons = map[string]string{
+	"redemarrer":    "M440-122q-121-15-200.5-105.5T160-440q0-66 26-126.5T260-672l57 57q-38 34-57.5 79T240-440q0 88 56 155.5T440-202v80Zm80 0v-80q87-16 143.5-83T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 56-44 44h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z",
+	"modem":         "M200-120q-33 0-56.5-23.5T120-200v-160q0-33 23.5-56.5T200-440h400v-160h80v160h80q33 0 56.5 23.5T840-360v160q0 33-23.5 56.5T760-120H200Zm0-80h560v-160H200v160Zm80-40q17 0 28.5-11.5T320-280q0-17-11.5-28.5T280-320q-17 0-28.5 11.5T240-280q0 17 11.5 28.5T280-240Zm140 0q17 0 28.5-11.5T460-280q0-17-11.5-28.5T420-320q-17 0-28.5 11.5T380-280q0 17 11.5 28.5T420-240Zm140 0q17 0 28.5-11.5T600-280q0-17-11.5-28.5T560-320q-17 0-28.5 11.5T520-280q0 17 11.5 28.5T560-240Zm10-390-58-58q26-24 58-38t70-14q38 0 70 14t58 38l-58 58q-14-14-31.5-22t-38.5-8q-21 0-38.5 8T570-630ZM470-730l-56-56q44-44 102-69t124-25q66 0 124 25t102 69l-56 56q-33-33-76.5-51.5T640-800q-50 0-93.5 18.5T470-730ZM200-200v-160 160Z",
+	"collecte":      "m612-292 56-56-148-148v-184h-80v216l172 172ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400Zm0 320q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Z",
+	"analyse":       "M120-120v-80l80-80v160h-80Zm160 0v-240l80-80v320h-80Zm160 0v-320l80 81v239h-80Zm160 0v-239l80-80v319h-80Zm160 0v-400l80-80v480h-80ZM120-327v-113l280-280 160 160 280-280v113L560-447 400-607 120-327Z",
+	"notifications": "M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z",
+	"abonnement":    "M600-120q-118 0-210-67T260-360H120v-80h122q-3-24-2.5-44.5T242-520H120v-80h140q38-106 130-173t210-67q69 0 130.5 24.5T840-748l-57 56q-37-32-83.5-50T600-760q-85 0-152 44.5T347-600h253v80H323q-4 27-3 47.5t3 32.5h277v80H347q34 71 101 115.5T600-200q53 0 99.5-18t83.5-50l57 56q-48 43-109.5 67.5T600-120Z",
+	"metriques":     "m105-233-65-47 200-320 120 140 160-260 109 163q-23 1-43.5 5.5T545-539l-22-33-152 247-121-141-145 233ZM863-40 738-165q-20 14-44.5 21t-50.5 7q-75 0-127.5-52.5T463-317q0-75 52.5-127.5T643-497q75 0 127.5 52.5T823-317q0 26-7 50.5T795-221L920-97l-57 57ZM643-217q42 0 71-29t29-71q0-42-29-71t-71-29q-42 0-71 29t-29 71q0 42 29 71t71 29Zm89-320q-19-8-39.5-13t-42.5-6l205-324 65 47-188 296Z",
+	"debit":         "M418-340q24 24 62 23.5t56-27.5l224-336-336 224q-27 18-28.5 55t22.5 61Zm62-460q59 0 113.5 16.5T696-734l-76 48q-33-17-68.5-25.5T480-720q-133 0-226.5 93.5T160-400q0 42 11.5 83t32.5 77h552q23-38 33.5-79t10.5-85q0-36-8.5-70T766-540l48-76q30 47 47.5 100T880-406q1 57-13 109t-41 99q-11 18-30 28t-40 10H204q-21 0-40-10t-30-28q-26-45-40-95.5T80-400q0-83 31.5-155.5t86-127Q252-737 325-768.5T480-800Zm7 313Z",
+	"maison":        "M240-200h120v-240h240v240h120v-360L480-740 240-560v360Zm-80 80v-480l320-240 320 240v480H520v-240h-80v240H160Zm320-350Z",
+	"meteo":         "M520-520v-80h200v80H520Zm0-160v-80h320v80H520ZM320-120q-83 0-141.5-58.5T120-320q0-48 21-89.5t59-70.5v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q38 29 59 70.5t21 89.5q0 83-58.5 141.5T320-120ZM200-320h240q0-29-12.5-54T392-416l-32-24v-280q0-17-11.5-28.5T320-760q-17 0-28.5 11.5T280-720v280l-32 24q-23 17-35.5 42T200-320Z",
+	"tendance":      "m136-240-56-56 296-298 160 160 208-206H640v-80h240v240h-80v-104L536-320 376-480 136-240Z",
+	"rapport":       "M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z",
+	"suivant":       "M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z",
+	"note":          "M160-400v-80h280v80H160Zm0-160v-80h440v80H160Zm0-160v-80h440v80H160Zm360 560v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q8 9 12.5 20t4.5 22q0 11-4 22.5T863-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z",
+	"supprimer":     "M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z",
+	"telecharger":   "M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z",
+	"check":         "M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z",
+	"alerte":        "M480-120q-33 0-56.5-23.5T400-200q0-33 23.5-56.5T480-280q33 0 56.5 23.5T560-200q0 33-23.5 56.5T480-120Zm-80-240v-480h160v480H400Z",
+	"inconnu":       "M200-440v-80h560v80H200Z",
+	"retour":        "m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z",
+	"info":          "M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z",
+	"reglages":      "M440-120v-240h80v80h320v80H520v80h-80Zm-320-80v-80h240v80H120Zm160-160v-80H120v-80h160v-80h80v240h-80Zm160-80v-80h400v80H440Zm160-160v-240h80v80h160v80H680v80h-80Zm-480-80v-80h400v80H120Z",
+	"verrou":        "M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z",
+	"connexion":     "M63-537 0-600q95-97 219.5-148.5T480-800q29 0 57.5 2.5T595-791l-42 85q-18-3-36.5-3.5T480-710q-118 0-225 45.5T63-537Zm124 119-64-64q81-68 180-101t205-28l-42 90q-77-2-148 26t-131 77Zm257 254q-29-11-40.5-41t2.5-59l237-490q3-8 10.5-10.5t15.5-.5q8 2 13 9t3 15L547-206q-8 32-39.5 43.5T444-164Zm330-253q-22-19-46-34.5T678-478l23-88q38 15 72 36t64 48l-63 65Zm123-120q-38-37-81-67.5T724-656l22-90q60 26 113.5 63T960-600l-63 63Z",
+	"journal":       "M480-120q-138 0-240.5-91.5T122-440h82q14 104 92.5 172T480-200q117 0 198.5-81.5T760-480q0-117-81.5-198.5T480-760q-69 0-129 32t-101 88h110v80H120v-240h80v94q51-64 124.5-99T480-840q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-480q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-120Zm112-192L440-464v-216h80v184l128 128-56 56Z",
+	"sortie":        "M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z",
+}
+
+// icon rend un pictogramme decoratif : le texte voisin porte le sens.
+func icon(name string) template.HTML {
+	d, ok := icons[name]
+	if !ok {
+		return ""
+	}
+	return template.HTML(`<svg class="icon" viewBox="0 -960 960 960" aria-hidden="true"><path d="` + d + `"/></svg>`)
+}
+
+// levelIcon choisit le pictogramme d'un niveau.
+func levelIcon(l analyze.Level) template.HTML {
+	switch l {
+	case analyze.Good, analyze.Tolerated:
+		return icon("check")
+	case analyze.Warning, analyze.Critical:
+		return icon("alerte")
+	default:
+		return icon("inconnu")
+	}
+}

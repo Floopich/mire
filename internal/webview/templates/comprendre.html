@@ -1,0 +1,26 @@
+{{define "actions"}}{{template "logout" .}}{{end}}
+
+{{define "content"}}
+<div class="page-head">
+ <a class="btn text icon-btn" href="/" aria-label="Revenir à la vue d'ensemble">{{icon "retour"}}</a>
+ <h1 class="headline-s">Comprendre la ligne</h1>
+</div>
+<p class="intro body-l muted">Les mesures et les seuils de votre opérateur.</p>
+
+<nav class="toc label-l" aria-label="Sommaire">
+ {{range .Sections}}<a href="#{{.ID}}">{{.Title}}</a>{{end}}
+</nav>
+
+{{range .Sections}}
+<section class="card learn" id="{{.ID}}" aria-labelledby="t-{{.ID}}">
+ <h2 id="t-{{.ID}}" class="title-l">{{.Title}}</h2>
+ {{range .Paras}}<p class="body-l">{{.}}</p>{{end}}
+ {{with .States}}<dl class="states">{{range .}}
+  <div class="{{.Level}}"><dt class="label-l"><svg class="pip" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .Level}}"/></svg>{{label .Level}}</dt><dd class="body-m">{{.Text}}</dd></div>
+ {{end}}</dl>{{end}}
+ {{with .Steps}}<ol class="todo body-l">{{range .}}<li>{{.}}</li>{{end}}</ol>{{end}}
+ {{with .Yours}}<p class="pastille yours">{{.}}</p>{{end}}
+ {{with .Link}}<p><a class="btn text" href="{{.Href}}">{{.Label}}{{icon "suivant"}}</a></p>{{end}}
+</section>
+{{end}}
+{{end}}
