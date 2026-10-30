@@ -274,6 +274,7 @@ func (m *Manager) Reload(ctx context.Context) error {
 		st.Collecting = true
 		st.Modem = driver
 		db := m.db
+		info, _ := driver.(modem.InfoReader)
 		collector := collect.New(driver, m.db, collect.Options{
 			Interval:  st.Interval,
 			Retention: st.Retention(),
@@ -286,6 +287,7 @@ func (m *Manager) Reload(ctx context.Context) error {
 				Analyze: func(ctx context.Context, snap docsis.Snapshot) (analyze.Health, error) {
 					return st.Analyze(ctx, db, snap)
 				},
+				Modem:  info,
 				Logger: m.logger,
 			},
 		})

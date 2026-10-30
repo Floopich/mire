@@ -47,7 +47,7 @@
  <h2 class="title-l">Redémarrage</h2>
 </div>
 <section class="card modem-card">
- <p class="body-m">Coupe Internet 3 à 5 minutes.{{if not .LastAsked.IsZero}} Dernière demande : {{fmtTime .LastAsked}}.{{end}}</p>
+ <p class="body-m">Coupe Internet 3 à 5 minutes.{{if not .LastAsked.IsZero}} Dernière demande : {{fmtTime .LastAsked}}{{with .AskResult}}, {{.}}{{end}}.{{end}}</p>
  <a class="btn tonal" href="/modem/redemarrer">{{icon "redemarrer"}}Redémarrer le modem…</a>
 </section>
 {{end}}

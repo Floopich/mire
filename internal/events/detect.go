@@ -19,7 +19,10 @@ const (
 	KindState   = "etat"
 	KindRestart = "redemarrage"
 	// KindRestartAsked est un redemarrage demande depuis la page Modem.
-	KindRestartAsked  = "redemarrage_demande"
+	KindRestartAsked = "redemarrage_demande"
+	// KindRestartMissed : le modem a accepte la demande, mais ne s'est pas
+	// arrete, son temps de fonctionnement en temoigne.
+	KindRestartMissed = "redemarrage_absent"
 	KindChannelsLost  = "canaux_perdus"
 	KindChannelsBack  = "canaux_retrouves"
 	KindModulation    = "modulation"

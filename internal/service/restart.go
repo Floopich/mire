@@ -81,6 +81,7 @@ func RestartModem(ctx context.Context, db *sql.DB, d modem.Driver, from string, 
 	err := rs.Restart(rctx)
 	var out Outcome
 	var msg string
+	level := analyze.Good
 	switch {
 	case err == nil:
 		out, msg = RestartAsked, "Redémarrage du modem demandé depuis "+from+"."
@@ -90,12 +91,13 @@ func RestartModem(ctx context.Context, db *sql.DB, d modem.Driver, from string, 
 		logger.Warn("redémarrage du modem demandé, sans confirmation", "depuis", from, "erreur", err)
 	case errors.Is(err, modem.ErrRestartRefused):
 		out, msg = RestartRefused, "Redémarrage du modem demandé depuis "+from+" ; le modem l'a refusé."
+		level = analyze.Warning
 		logger.Warn("redémarrage du modem refusé", "depuis", from, "erreur", err)
 	default:
 		logger.Warn("redémarrage du modem impossible", "depuis", from, "erreur", err)
 		return RestartFailed
 	}
-	e := store.Event{Time: now(), Kind: events.KindRestartAsked, Level: int(analyze.Good), Message: msg}
+	e := store.Event{Time: now(), Kind: events.KindRestartAsked, Level: int(level), Message: msg}
 	if err := store.SaveEvents(context.WithoutCancel(ctx), db, []store.Event{e}); err != nil {
 		logger.Error("journal", "erreur", err)
 	}

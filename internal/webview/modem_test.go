@@ -345,3 +345,23 @@ func TestEssaiLentDuModem(t *testing.T) {
 		t.Errorf("résultat : %s", body)
 	}
 }
+
+func TestLaPageModemDitCeQuIlEstAdvenuDeLaDemande(t *testing.T) {
+	ctx := context.Background()
+	for kind, attendu := range map[string]string{
+		events.KindRestart:       "redémarrage confirmé.",
+		events.KindRestartMissed: "le modem n&#39;a pas redémarré.",
+	} {
+		h, token, db := serveurModem(t, pilotePont())
+		demande := time.Now().Add(-20 * time.Minute)
+		if err := store.SaveEvents(ctx, db, []store.Event{
+			{Time: demande, Kind: events.KindRestartAsked, Level: 1, Message: "Redémarrage du modem demandé depuis Mire."},
+			{Time: demande.Add(4 * time.Minute), Kind: kind, Level: 1, Message: "Constat."},
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if body := get(t, h, token, "/modem").Body.String(); !strings.Contains(body, attendu) {
+			t.Errorf("%s : %q absent", kind, attendu)
+		}
+	}
+}

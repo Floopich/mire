@@ -17,7 +17,8 @@ La page **Comprendre la ligne** détaille chaque mesure avec les seuils de l'op�
 | Événement | Déclencheur |
 |---|---|
 | Changement d'état | la ligne change d'état ; la cause est nommée |
-| Redémarrage du modem | compteurs d'erreurs remis à zéro |
+| Redémarrage du modem | compteurs d'erreurs ou durée de fonctionnement remis à zéro |
+| Redémarrage non effectué | durée de fonctionnement qui court toujours 10 minutes après une demande |
 | Canal perdu, retrouvé | un canal disparaît du relevé, ou revient |
 | Modulation | un canal change de modulation |
 | Pic d'erreurs | plus de 1 000 erreurs non corrigées entre deux relevés |
@@ -44,7 +45,7 @@ Toutes les 30 secondes, une sonde ouvre une connexion TCP vers `1.1.1.1`, `8.8.8
 Modèle, version du logiciel, état de la ligne câble, durée de fonctionnement et mode.
 
 - **Mode routeur** : réseau local, Wi-Fi et appareils connectés, en lecture seule.
-- **Redémarrage** : après confirmation. Internet, le Wi-Fi et le téléphone sont coupés 3 à 5 minutes. Une seule demande par tranche de 10 minutes, inscrite au journal.
+- **Redémarrage** : après confirmation. Internet, le Wi-Fi et le téléphone sont coupés 3 à 5 minutes. Une seule demande par tranche de 10 minutes, inscrite au journal. Mire constate ensuite le redémarrage, ou son absence, d'après la durée de fonctionnement du modem.
 
 ![Page Modem, modem en mode routeur](images/modem.png)
 

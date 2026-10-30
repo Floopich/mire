@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -58,8 +59,9 @@ func TestRestauration(t *testing.T) {
 	if got := canalRestaure(t, dir); got != 7 {
 		t.Fatalf("canal %d, attendu 7", got)
 	}
-	if info, err := os.Stat(filepath.Join(dir, "mire.db")); err != nil || info.Mode().Perm() != 0o600 {
-		t.Errorf("droits de la base : %v, %v", info.Mode().Perm(), err)
+	// Windows n'a pas de droits Unix : seule la presence se verifie.
+	if info, err := os.Stat(filepath.Join(dir, "mire.db")); err != nil || (runtime.GOOS != "windows" && info.Mode().Perm() != 0o600) {
+		t.Errorf("droits de la base : %v, %v", info, err)
 	}
 
 	// Une seconde restauration garde la base remplacee a cote.
@@ -103,8 +105,8 @@ func TestRestaurationRefusee(t *testing.T) {
 }
 
 func TestDossierNonAccessible(t *testing.T) {
-	if os.Getuid() == 0 {
-		t.Skip("root écrit partout : le refus ne se constate pas")
+	if os.Getuid() == 0 || runtime.GOOS == "windows" {
+		t.Skip("root écrit partout, et Windows ignore les droits Unix : le refus ne se constate pas")
 	}
 	dir := t.TempDir()
 	if err := os.Chmod(dir, 0o500); err != nil {

@@ -78,7 +78,7 @@ func TestModemInjoignablePuisRetrouve(t *testing.T) {
 	r.Recorded(ctx, snap)
 	list = journal(t, db)
 	if len(list) != 2 || list[0].Kind != KindModemUp || list[0].Message != "Le modem répond de nouveau, après 45 min sans relevé." {
-		t.Errorf("journal %+v", list)
+		t.Errorf("journal %q", fmt.Sprint(list))
 	}
 }
 
@@ -89,7 +89,7 @@ func TestUnRefusDIdentificationEstDistingue(t *testing.T) {
 	r.Failed(ctx, modem.ErrAuth)
 	list := journal(t, db)
 	if len(list) != 1 || list[0].Level != int(analyze.Warning) {
-		t.Errorf("journal %+v", list)
+		t.Errorf("journal %q", fmt.Sprint(list))
 	}
 }
 
@@ -105,6 +105,112 @@ func TestLeJournalCompareAuReleveEnregistrePrecedent(t *testing.T) {
 	}
 	list := journal(t, db)
 	if len(list) != 1 || list[0].Message != "Canaux descendants perdus : 5 et 6." {
-		t.Errorf("journal %+v", list)
+		t.Errorf("journal %q", fmt.Sprint(list))
 	}
+}
+
+// tempsDeMarche joue le temps de fonctionnement lu sur le modem.
+type tempsDeMarche struct{ up time.Duration }
+
+func (m *tempsDeMarche) Info(context.Context) (modem.Info, error) {
+	return modem.Info{Uptime: m.up}, nil
+}
+
+func TestUnRedemarrageDemandeSeConstate(t *testing.T) {
+	ctx := context.Background()
+	demande := func(t *testing.T, db *sql.DB, at time.Time, level analyze.Level) {
+		t.Helper()
+		e := store.Event{Time: at, Kind: KindRestartAsked, Level: int(level), Message: "Redémarrage du modem demandé depuis Mire."}
+		if err := store.SaveEvents(ctx, db, []store.Event{e}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	releve := func(t *testing.T, r *Recorder, db *sql.DB, at time.Time, compteur int64) {
+		t.Helper()
+		snap := ligne(at, 4, compteur, 0)
+		if _, err := store.SaveSnapshot(ctx, db, snap); err != nil {
+			t.Fatal(err)
+		}
+		r.Recorded(ctx, snap)
+	}
+	suivi := func(db *sql.DB) []store.Event {
+		var out []store.Event
+		for _, e := range journal(t, db) {
+			if e.Kind != KindRestartAsked {
+				out = append(out, e)
+			}
+		}
+		return out
+	}
+
+	t.Run("temps de fonctionnement remis à zéro", func(t *testing.T) {
+		r, db, _ := recorder(t)
+		m := &tempsDeMarche{up: 50 * time.Hour}
+		r.Modem = m
+		releve(t, r, db, t0, 100)
+		demande(t, db, t0.Add(time.Minute), analyze.Good)
+		m.up = 3 * time.Minute
+		releve(t, r, db, t0.Add(5*time.Minute), 120)
+		releve(t, r, db, t0.Add(6*time.Minute), 130)
+		list := suivi(db)
+		if len(list) != 1 || list[0].Kind != KindRestart || list[0].Level != int(analyze.Good) ||
+			list[0].Message != "Redémarrage du modem confirmé, 4\u00a0min après la demande." {
+			t.Errorf("journal %q", fmt.Sprint(list))
+		}
+	})
+
+	t.Run("compteurs remis à zéro : un seul redémarrage inscrit", func(t *testing.T) {
+		r, db, _ := recorder(t)
+		r.Modem = &tempsDeMarche{up: 2 * time.Minute}
+		releve(t, r, db, t0, 100)
+		demande(t, db, t0.Add(time.Minute), analyze.Good)
+		releve(t, r, db, t0.Add(4*time.Minute), 0)
+		list := suivi(db)
+		if len(list) != 1 || list[0].Kind != KindRestart || list[0].Level != int(analyze.Good) {
+			t.Errorf("journal %q", fmt.Sprint(list))
+		}
+	})
+
+	t.Run("le modem n'a pas redémarré", func(t *testing.T) {
+		r, db, _ := recorder(t)
+		r.Modem = &tempsDeMarche{up: 50 * time.Hour}
+		releve(t, r, db, t0, 100)
+		demande(t, db, t0.Add(time.Minute), analyze.Good)
+		releve(t, r, db, t0.Add(4*time.Minute), 110)
+		if list := suivi(db); len(list) != 0 {
+			t.Fatalf("trop tôt pour conclure : %+v", list)
+		}
+		releve(t, r, db, t0.Add(12*time.Minute), 120)
+		releve(t, r, db, t0.Add(13*time.Minute), 130)
+		list := suivi(db)
+		if len(list) != 1 || list[0].Kind != KindRestartMissed || list[0].Message != "Le modem n'a pas redémarré : en marche depuis 2\u00a0j." {
+			t.Errorf("journal %q", fmt.Sprint(list))
+		}
+	})
+
+	t.Run("demande refusée", func(t *testing.T) {
+		r, db, _ := recorder(t)
+		r.Modem = &tempsDeMarche{up: 50 * time.Hour}
+		releve(t, r, db, t0, 100)
+		demande(t, db, t0.Add(time.Minute), analyze.Warning)
+		releve(t, r, db, t0.Add(12*time.Minute), 120)
+		if list := suivi(db); len(list) != 0 {
+			t.Errorf("journal %q", fmt.Sprint(list))
+		}
+	})
+
+	t.Run("sans temps de fonctionnement, les compteurs suffisent", func(t *testing.T) {
+		r, db, _ := recorder(t)
+		releve(t, r, db, t0, 100)
+		demande(t, db, t0.Add(time.Minute), analyze.Good)
+		releve(t, r, db, t0.Add(20*time.Minute), 120)
+		if list := suivi(db); len(list) != 0 {
+			t.Fatalf("rien ne permet de conclure : %+v", list)
+		}
+		releve(t, r, db, t0.Add(25*time.Minute), 0)
+		list := suivi(db)
+		if len(list) != 1 || list[0].Message != "Redémarrage du modem confirmé, 24\u00a0min après la demande." {
+			t.Errorf("journal %q", fmt.Sprint(list))
+		}
+	})
 }

@@ -29,6 +29,9 @@ type Recorder struct {
 	// Analyze qualifie un releve avec les reglages en vigueur.
 	Analyze func(context.Context, docsis.Snapshot) (analyze.Health, error)
 	Logger  *slog.Logger
+	// Modem lit le temps de fonctionnement, qui confirme un redemarrage
+	// demande ; facultatif.
+	Modem modem.InfoReader
 	// Now est injectable pour les tests.
 	Now func() time.Time
 
@@ -106,7 +109,73 @@ func (r *Recorder) recorded(ctx context.Context, snap docsis.Snapshot) error {
 			Message: "Le modem répond de nouveau, après " + Duration(snap.Timestamp.Sub(modemLast.Time)) + " sans relevé."})
 	}
 	out = append(out, Detect(in)...)
+	if out, err = r.settleRestart(ctx, snap.Timestamp, out); err != nil {
+		return err
+	}
 	return store.SaveEvents(ctx, r.DB, out)
+}
+
+const (
+	// RestartWindow est le delai au-dela duquel un modem qui n'a pas
+	// redemarre ne le fera plus : il redemarre d'ordinaire dans la minute.
+	RestartWindow = 10 * time.Minute
+	// RestartFollow borne le suivi d'une demande : au-dela, un redemarrage
+	// n'a plus de lien avec elle.
+	RestartFollow = time.Hour
+	// uptimeSlack absorbe les secondes entre le releve et la lecture du
+	// temps de fonctionnement.
+	uptimeSlack = time.Minute
+)
+
+// settleRestart conclut une demande de redemarrage encore ouverte : le
+// temps de fonctionnement remis a zero, ou a defaut les compteurs, la
+// confirment ; un temps de fonctionnement qui court toujours apres
+// RestartWindow dit que le modem n'a pas redemarre. Un redemarrage
+// confirme remplace celui que les compteurs ont signale.
+func (r *Recorder) settleRestart(ctx context.Context, at time.Time, out []store.Event) ([]store.Event, error) {
+	ask, ok, err := store.LastEvent(ctx, r.DB, KindRestartAsked)
+	if err != nil || !ok || ask.Level != int(analyze.Good) {
+		return out, err
+	}
+	elapsed := at.Sub(ask.Time)
+	if elapsed <= 0 || elapsed > RestartFollow {
+		return out, nil
+	}
+	if last, ok, err := store.LastEvent(ctx, r.DB, KindRestart, KindRestartMissed); err != nil {
+		return out, err
+	} else if ok && last.Time.After(ask.Time) {
+		return out, nil
+	}
+	counted := -1
+	for i, e := range out {
+		if e.Kind == KindRestart {
+			counted = i
+		}
+	}
+	var up time.Duration
+	if r.Modem != nil {
+		info, err := r.Modem.Info(ctx)
+		if err != nil {
+			r.logger().Debug("temps de fonctionnement du modem illisible", "erreur", err)
+		}
+		up = info.Uptime
+	}
+	switch {
+	case counted >= 0 || (up > 0 && up < elapsed+uptimeSlack):
+		e := store.Event{Time: at, Kind: KindRestart, Level: int(analyze.Good),
+			Message: "Redémarrage du modem confirmé, " + Duration(elapsed) + " après la demande."}
+		if counted >= 0 {
+			out[counted] = e
+		} else {
+			out = append(out, e)
+		}
+		r.logger().Info("redémarrage du modem confirmé", "apres", Duration(elapsed))
+	case up > 0 && elapsed >= RestartWindow:
+		out = append(out, store.Event{Time: at, Kind: KindRestartMissed, Level: int(analyze.Warning),
+			Message: "Le modem n'a pas redémarré : en marche depuis " + Duration(up) + "."})
+		r.logger().Warn("le modem n'a pas redémarré", "en_marche_depuis", Duration(up))
+	}
+	return out, nil
 }
 
 // Failed compte un releve manque.

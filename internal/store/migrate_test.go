@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -156,7 +157,7 @@ func TestUneBaseEstCopieeAvantSaMigration(t *testing.T) {
 	_ = db.Close()
 	copie := fmt.Sprintf("%s.avant-v%d", path, latest-1)
 	info, err := os.Stat(copie)
-	if err != nil || info.Mode().Perm() != 0o600 {
+	if err != nil || (runtime.GOOS != "windows" && info.Mode().Perm() != 0o600) {
 		t.Fatalf("copie avant migration : %v %v", info, err)
 	}
 	if _, err := os.Stat(path + ".avant-v1"); !os.IsNotExist(err) {

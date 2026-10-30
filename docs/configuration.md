@@ -182,4 +182,10 @@ L'installation demande une adresse en HTTPS.
 - Image sans shell, utilisateur non root ; le `compose.yaml` fourni ajoute un système de fichiers en lecture seule, sans aucun privilège (`read_only`, `cap_drop: ALL`, `no-new-privileges`).
 - Valeur supprimée effacée du fichier de la base (`secure_delete`).
 - Failles connues des dépendances vérifiées à chaque modification et chaque semaine (`govulncheck`).
+- Images et binaires accompagnés d'une attestation de provenance : elle prouve qu'ils ont été construits par ce dépôt, depuis son code publié. Vérification, avec [GitHub CLI](https://cli.github.com) connecté :
+
+  ```bash
+  gh attestation verify oci://ghcr.io/floopich/mire:latest -R floopich/mire
+  gh attestation verify mire-linux-amd64 -R floopich/mire
+  ```
 - Ne sort du réseau local que ce que vous activez (notifications, MQTT, météo, débit) et les connexions de la sonde vers ses cibles.

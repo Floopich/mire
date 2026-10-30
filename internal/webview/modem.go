@@ -68,7 +68,10 @@ type modemView struct {
 	RouterErr   string
 	CanRestart  bool
 	LastAsked   time.Time
-	Notice      *restartNotice
+	// AskResult dit ce qu'il est advenu de la derniere demande, vide tant
+	// que rien n'est constate.
+	AskResult string
+	Notice    *restartNotice
 	// Reading est la lecture en cours.
 	Reading *pending
 	// Confirm affiche la demande de confirmation du redemarrage ; TooSoon
@@ -94,6 +97,13 @@ func (s *Server) modemViewFor(r *http.Request, st service.State) modemView {
 	}
 	if e, ok, err := store.LastEvent(r.Context(), s.db, events.KindRestartAsked); err == nil && ok {
 		v.LastAsked = e.Time
+		last, ok, err := store.LastEvent(r.Context(), s.db, events.KindRestart, events.KindRestartMissed)
+		if err == nil && ok && last.Time.After(e.Time) && last.Time.Sub(e.Time) <= events.RestartFollow {
+			v.AskResult = "redémarrage confirmé"
+			if last.Kind == events.KindRestartMissed {
+				v.AskResult = "le modem n'a pas redémarré"
+			}
+		}
 	}
 	return v
 }
