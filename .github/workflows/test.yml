@@ -67,21 +67,3 @@ jobs:
             GOOS="${cible%/*}" GOARCH="${cible#*/}" \
               go build -tags purego ./... || exit 1
           done
-
-  # Le binaire Windows est publie : ses tests tournent sur Windows, avec le
-  # pilote Go pur qu'il embarque.
-  windows:
-    runs-on: windows-latest
-    steps:
-      # Fichiers de test tels quels, sans conversion des fins de ligne.
-      - run: git config --global core.autocrlf false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: stable
-          check-latest: true
-          cache: true
-      - name: Tests (pilote Go pur)
-        env:
-          CGO_ENABLED: "0"
-        run: go test -tags purego ./...

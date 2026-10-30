@@ -45,6 +45,8 @@ jobs:
           else
             echo "valeur=${GITHUB_REF_NAME//\//-}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           fi
+          # Nom de l'image en minuscules, pour l'attestation de provenance.
+          echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/mire" >> "$GITHUB_OUTPUT"
 
       - id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
