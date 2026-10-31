@@ -10,8 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/floopich/mire/internal/auth"
-	"github.com/floopich/mire/internal/settings"
+	"github.com/floopich/mire/internal/backup"
 	"github.com/floopich/mire/internal/store"
 )
 
@@ -65,8 +64,17 @@ func (s *Server) handleBackup(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// BackupSecretKeys sont les cles retirees d'une sauvegarde sans secrets :
-// reglages secrets et empreinte du mot de passe de l'interface.
-func BackupSecretKeys() []string {
-	return append(settings.SecretKeys(), auth.KeyPasswordHash)
+// BackupSecretKeys sont les cles retirees d'une sauvegarde sans secrets.
+func BackupSecretKeys() []string { return backup.SecretKeys() }
+
+// backups resume les copies automatiques du dossier des donnees.
+func (s *Server) backups() *backupsView {
+	v := &backupsView{Dir: filepath.Join(s.opts.DataDir, backup.Dir)}
+	copies, err := backup.List(s.opts.DataDir)
+	if err != nil || len(copies) == 0 {
+		return v
+	}
+	v.Count, v.Last = len(copies), copies[0].Time
+	v.Size = strconv.FormatFloat(float64(copies[0].Size)/(1<<20), 'f', 1, 64) + "\u00a0Mo"
+	return v
 }

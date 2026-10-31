@@ -61,9 +61,9 @@ jobs:
         env:
           CGO_ENABLED: "0"
         run: |
-          # Memes cibles que la publication (release.yml), Windows compris :
+          # Memes cibles que la publication (release.yml) :
           # une cible cassee se voit ici, pas le jour du tag.
-          for cible in linux/arm64 linux/arm linux/amd64 windows/amd64; do
+          for cible in linux/arm64 linux/arm linux/amd64; do
             GOOS="${cible%/*}" GOARCH="${cible#*/}" \
               go build -tags purego ./... || exit 1
           done

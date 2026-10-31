@@ -59,7 +59,7 @@ volumes:
 
 - **Mettre à jour** : `docker compose pull && docker compose up -d`.
 - **Démo seule** : `docker run --rm -p 1340:1340 -e MIRE_DEMO=true ghcr.io/floopich/mire:latest`.
-- **Sans Docker** : binaires Linux et Windows dans les [Releases](https://github.com/floopich/mire/releases), voir [Installation sans Docker](docs/configuration.md#installation-sans-docker).
+- **Sans Docker** : binaires Linux dans les [Releases](https://github.com/floopich/mire/releases), voir [Installation sans Docker](docs/configuration.md#installation-sans-docker).
 
 ## Modems et opérateurs
 

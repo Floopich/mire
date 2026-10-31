@@ -95,6 +95,8 @@ Ouvrez une demande **« Nouvel opérateur »**, ou proposez un fichier `internal
 
 Modèle : `voo.json`.
 
+Pour vérifier des seuils sur une ligne réelle : demande **« Relevés pour le calibrage »**, avec l'archive anonymisée de la page Rapport.
+
 ## Ajouter un réglage
 
 Déclaration unique dans `internal/settings/groups.go` : clé, variable, type, défaut, libellé, aide, validation. La page, l'environnement et le verrouillage en découlent.

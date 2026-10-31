@@ -17,7 +17,8 @@ Chaque rubrique est résumée en une ligne. Un changement s'applique aussitôt, 
 | Métriques | publication sur `/metrics`, jeton d'accès |
 | Home Assistant | serveur MQTT, identifiant, préfixe de découverte, bouton de redémarrage, essai |
 | Journal | niveau de détail, dernières lignes du service, téléchargement |
-| Sécurité, Sauvegarde | mot de passe de l'interface, copie de la base |
+| Sauvegarde | copie automatique chaque jour, nombre de copies gardées, téléchargement d'une copie |
+| Sécurité | mot de passe de l'interface |
 
 ![Page Réglages](images/reglages.png)
 
@@ -42,6 +43,8 @@ Facultatives. Une variable définie **verrouille** le réglage dans la page. À 
 | `MIRE_SONDE_CIBLES` | `1.1.1.1:443 8.8.8.8:443 9.9.9.9:443` | cibles de la sonde, `hôte:port` séparés par des espaces, cinq au plus |
 | `MIRE_SONDE_INTERVALLE` | `30s` | délai entre deux tentatives, de 10 secondes à 10 minutes |
 | `MIRE_JOURNAL` | `normal` | niveau du journal : `erreurs`, `normal` ou `detaille` (une ligne par relevé) |
+| `MIRE_SAUVEGARDE` | `true` | copie automatique chaque jour, dans `sauvegardes` |
+| `MIRE_SAUVEGARDE_COPIES` | `7` | copies automatiques gardées, de 1 à 365 |
 
 Notifications :
 
@@ -98,7 +101,7 @@ Sinon, Mire ne démarre pas et `docker compose logs mire` indique la commande à
 
 ## Installation sans Docker
 
-Binaires Linux (amd64, arm64, armv7) et Windows dans les [Releases](https://github.com/floopich/mire/releases). Pour un essai : `./mire -donnees ./donnees`, puis `http://<machine>:1340`.
+Binaires Linux (amd64, arm64, armv7) dans les [Releases](https://github.com/floopich/mire/releases). Pour un essai : `./mire -donnees ./donnees`, puis `http://<machine>:1340`.
 
 Service systemd sous Linux, en root :
 
@@ -134,7 +137,9 @@ Avec Docker : `docker compose exec -it mire mire mot-de-passe`, ou `docker compo
 
 ## Sauvegarde
 
-Sans arrêter la collecte :
+**Automatique**, activée par défaut : une copie par jour, sans mots de passe ni jetons, dans le sous-dossier `sauvegardes` des données (`/data/sauvegardes` dans l'image). Les 7 dernières sont gardées. Ce dossier reste sur la même machine : copiez-le ailleurs avec votre propre sauvegarde (Hyper Backup, restic…).
+
+**À la demande**, sans arrêter la collecte :
 
 - dans l'interface : **Réglages, Sauvegarde**, « Sauvegarde complète » ou « Sans mots de passe ni jetons » ;
 - en ligne de commande, par exemple chaque nuit :
@@ -154,6 +159,8 @@ La copie ne remplace jamais un fichier existant. Complète, elle contient le mot
 # Docker
 docker compose stop mire
 docker compose run --rm -T mire restauration - < mire-2026-10-27.db
+# ou une copie automatique, déjà dans le volume
+docker compose run --rm mire restauration /data/sauvegardes/mire-20261027-031200-sans-secrets.db
 docker compose start mire
 # Sans Docker, service arrêté
 mire restauration /chemin/mire-sauvegarde.db

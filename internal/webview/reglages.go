@@ -73,11 +73,8 @@ type navItem struct {
 	Attention bool
 }
 
-// Rubriques hors registre des reglages.
-const (
-	sectionSecurity = "securite"
-	sectionBackup   = "sauvegarde"
-)
+// Rubrique hors registre des reglages.
+const sectionSecurity = "securite"
 
 type reglagesView struct {
 	common
@@ -101,6 +98,16 @@ type reglagesView struct {
 	// pas disponibles (demonstration).
 	Log   []logLine
 	NoLog bool
+	// Backups decrit les copies automatiques, pour la rubrique Sauvegarde.
+	Backups *backupsView
+}
+
+// backupsView resume les copies automatiques.
+type backupsView struct {
+	Dir   string
+	Count int
+	Last  time.Time
+	Size  string
 }
 
 // logLine est une ligne du journal du service, telle que la page l'affiche.
@@ -223,7 +230,7 @@ func buildGroup(g settings.Group, values settings.Values, input map[string]strin
 var sectionIcons = map[string]string{
 	"modem": "modem", "collecte": "collecte", "analyse": "analyse", "sonde": "connexion",
 	"notifications": "notifications", "metriques": "metriques", "domotique": "maison", "meteo": "meteo", "abonnement": "abonnement", "debit": "debit", "journal": "note",
-	sectionSecurity: "verrou", sectionBackup: "telecharger",
+	"sauvegarde": "telecharger", sectionSecurity: "verrou",
 }
 
 // nav construit la liste des rubriques.
@@ -236,9 +243,7 @@ func (s *Server) nav(ctx context.Context, st service.State, current string) []na
 	}
 	out = append(out,
 		navItem{ID: sectionSecurity, Title: "Sécurité", Summary: "Mot de passe de cette interface",
-			Icon: sectionIcons[sectionSecurity], Current: current == sectionSecurity},
-		navItem{ID: sectionBackup, Title: "Sauvegarde", Summary: "Copie de la base",
-			Icon: sectionIcons[sectionBackup], Current: current == sectionBackup})
+			Icon: sectionIcons[sectionSecurity], Current: current == sectionSecurity})
 	return out
 }
 
@@ -345,6 +350,11 @@ func (s *Server) summary(ctx context.Context, id string, st service.State) (stri
 		default:
 			return "Connexion à " + mqttHost(v.String(settings.MQTTServer)) + " en cours", false
 		}
+	case "sauvegarde":
+		if !v.Bool(settings.BackupOn) {
+			return "Manuelle", false
+		}
+		return "Chaque jour, " + plural(v.Int(settings.BackupKeep), "copie gardée", "copies gardées"), false
 	case "journal":
 		return "Niveau " + strings.ToLower(optionLabel(settings.LogLevel, v.String(settings.LogLevel))), false
 	case "abonnement":
@@ -403,7 +413,7 @@ func optionLabel(key, value string) string {
 
 // knownSection dit si une rubrique existe pour l'operateur choisi.
 func knownSection(st service.State, id string) (settings.Group, bool, bool) {
-	if id == sectionSecurity || id == sectionBackup {
+	if id == sectionSecurity {
 		return settings.Group{}, false, true
 	}
 	for _, g := range visibleGroups(st) {
@@ -479,6 +489,9 @@ func (s *Server) reglagesView(r *http.Request, section string, explicit bool, in
 		}
 		if g.ID == "analyse" {
 			s.addObservedOFDMA(r.Context(), &gv)
+		}
+		if g.ID == "sauvegarde" && !s.opts.Demo {
+			v.Backups = s.backups()
 		}
 		if g.ID == "journal" {
 			if s.opts.Journal == nil {

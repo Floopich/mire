@@ -177,6 +177,7 @@ func serve(args []string) error {
 	mgr := service.New(db, cfg.Forced, logger)
 	mgr.Version = currentVersion()
 	mgr.Journal = jr
+	mgr.DataDir = cfg.DataDir
 	if err := mgr.Start(ctx); err != nil {
 		return err
 	}

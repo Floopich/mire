@@ -153,6 +153,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /tendance", s.requireAuth(s.handleTrend))
 	mux.HandleFunc("GET /rapport", s.requireAuth(s.handleReport))
 	mux.HandleFunc("GET /rapport/donnees/{fichier}", s.requireAuth(s.handleExport))
+	mux.HandleFunc("GET /rapport/calibrage.zip", s.requireAuth(s.handleCalibration))
 	mux.HandleFunc("GET /modem", s.requireAuth(s.handleModem))
 	mux.HandleFunc("GET /modem/redemarrer", s.requireAuth(s.handleRestartConfirm))
 	mux.HandleFunc("POST /modem/redemarrer", s.requireAuth(s.handleRestart))

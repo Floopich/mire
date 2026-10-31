@@ -74,6 +74,9 @@ const (
 	MQTTRestart  = "mqtt.redemarrage"
 
 	LogLevel = "journal.niveau"
+
+	BackupOn   = "sauvegarde.auto"
+	BackupKeep = "sauvegarde.copies"
 )
 
 // Sources des mesures de debit.
@@ -311,6 +314,18 @@ func Groups() []Group {
 					}},
 			},
 		},
+		{
+			ID:     "sauvegarde",
+			Title:  "Sauvegarde",
+			Help:   "Copie de la base, à garder à l'abri.",
+			Toggle: BackupOn,
+			Defs: []Def{
+				{Key: BackupOn, Env: "MIRE_SAUVEGARDE", Kind: Bool, Default: "true", Label: "Sauvegarde automatique",
+					Help: "Une copie par jour, sans mots de passe ni jetons, dans le dossier sauvegardes des données."},
+				{Key: BackupKeep, Env: "MIRE_SAUVEGARDE_COPIES", Kind: Integer, Default: "7", Label: "Copies gardées",
+					Help: "Les plus anciennes sont supprimées.", Check: checkCopies},
+			},
+		},
 	}
 }
 
@@ -396,6 +411,14 @@ func checkInterval(v string) error {
 		// Le firmware met une dizaine de secondes a assembler ses tables :
 		// en dessous d'une minute, les releves se chevaucheraient.
 		return errors.New("une minute au minimum")
+	}
+	return nil
+}
+
+func checkCopies(v string) error {
+	n, err := strconv.Atoi(strings.TrimSpace(v))
+	if err != nil || n < 1 || n > 365 {
+		return errors.New("entre 1 et 365")
 	}
 	return nil
 }

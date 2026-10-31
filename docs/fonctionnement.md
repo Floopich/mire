@@ -67,3 +67,5 @@ Le bilan d'une période, à imprimer ou à enregistrer en PDF (Ctrl+P) :
 Avec une **date d'intervention**, le rapport compare les 7, 14 ou 30 jours avant et après.
 
 Chaque tableau se télécharge en CSV : heure locale ISO 8601, virgule entre les colonnes, point décimal ; les erreurs sont celles survenues depuis le relevé précédent.
+
+**Archive de calibrage** : les canaux, les coupures et le journal de la période, sans adresse, identifiant, secret, numéro de série, débit ni notes. Jointe à une demande « Relevés pour le calibrage », elle aide à vérifier les seuils de l'opérateur.

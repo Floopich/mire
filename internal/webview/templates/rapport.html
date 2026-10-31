@@ -21,6 +21,7 @@
 <section class="card report-part no-print" aria-labelledby="donnees-titre">
  <h2 class="title-m" id="donnees-titre">Données de la période</h2>
  <div class="shortcuts">{{range .}}<a class="btn tonal" href="{{.URL}}" download>{{icon "telecharger"}}{{.Label}}</a>{{end}}</div>
+ {{with $.Calibration}}<p class="hint body-m">Pour aider à régler les seuils de votre opérateur : <a href="{{.}}" download>archive anonymisée</a>, à joindre à une <a href="{{$.CalibrationIssue}}" rel="noopener noreferrer" target="_blank">demande sur GitHub</a>.</p>{{end}}
 </section>
 {{end}}
 

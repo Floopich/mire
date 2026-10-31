@@ -81,6 +81,18 @@
    {{else}}<p class="body-m muted">Aucun modem trouvé : saisissez son adresse.</p>{{end}}
   </div>
   {{end}}
+  {{if eq .ID "sauvegarde"}}
+  <div class="service-log">
+   {{with $.Backups}}<p class="help body-m">{{if .Count}}Dernière copie : {{fmtTime .Last}}, {{.Size}} · {{.Count}} dans <code>{{.Dir}}</code>.{{else}}Aucune copie automatique pour l'instant.{{end}}</p>{{end}}
+   <h3 class="title-m">Télécharger une copie</h3>
+   <div class="form-actions">
+    <a class="btn filled" href="/reglages/sauvegarde/telecharger" download>{{icon "telecharger"}}Sauvegarde complète</a>
+    <a class="btn tonal" href="/reglages/sauvegarde/telecharger?secrets=non" download>{{icon "telecharger"}}Sans mots de passe ni jetons</a>
+   </div>
+   <p class="help body-m">Complète : mots de passe et jetons compris. Sans mots de passe : à ressaisir après restauration, celui de l'interface compris.</p>
+   <p class="help body-m">Restaurer : <code>mire restauration FICHIER</code>, Mire arrêté.</p>
+  </div>
+  {{end}}
   {{if eq .ID "journal"}}
   <div class="service-log">
    {{if $.NoLog}}<p class="body-m muted">Indisponible en démonstration.</p>{{else}}
@@ -107,19 +119,6 @@
    </div>
    <div class="form-actions"><button type="submit" class="btn filled">Changer le mot de passe</button></div>
   </form>
- </section>
- {{else if eq .Section "sauvegarde"}}
- <section class="card settings-panel" aria-labelledby="titre-rubrique">
-  <header class="panel-head">
-   <h2 id="titre-rubrique" class="title-l">Sauvegarde</h2>
-   <p class="body-m muted">Copie de la base, à garder à l'abri.</p>
-  </header>
-  <div class="form-actions">
-   <a class="btn filled" href="/reglages/sauvegarde/telecharger" download>{{icon "telecharger"}}Sauvegarde complète</a>
-   <a class="btn tonal" href="/reglages/sauvegarde/telecharger?secrets=non" download>{{icon "telecharger"}}Sans mots de passe ni jetons</a>
-  </div>
-  <p class="help body-m">Complète : mots de passe et jetons compris. Sans mots de passe : à ressaisir après restauration, celui de l'interface compris.</p>
-  <p class="help body-m">Restaurer : <code>mire restauration FICHIER</code>, Mire arrêté.</p>
  </section>
  {{end}}
  </div>

@@ -24,6 +24,13 @@ func TestSanteRepondSansSessionEtSansDetailDeLaLigne(t *testing.T) {
 	if body["statut"] != "ok" || body["collecte"] != "a_jour" || body["version"] != "v9" {
 		t.Errorf("reponse inattendue: %v", body)
 	}
+	// Les mots-cles de la supervision (docs/integrations.md) s'ecrivent
+	// sans espace.
+	for _, motCle := range []string{`"statut":"ok"`, `"collecte":"a_jour"`} {
+		if !strings.Contains(rec.Body.String(), motCle) {
+			t.Errorf("%s absent de %s", motCle, rec.Body.String())
+		}
+	}
 	for _, fuite := range []string{"dBmV", "QAM", "canal"} {
 		if strings.Contains(rec.Body.String(), fuite) {
 			t.Errorf("la sonde publie %q", fuite)

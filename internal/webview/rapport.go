@@ -233,6 +233,8 @@ type reportView struct {
 	Compare              *comparison
 	// Exports sont les tableaux de la periode a telecharger.
 	Exports []exportLink
+	// Calibration est l'archive anonymisee de la periode, vide sans releve.
+	Calibration, CalibrationIssue string
 }
 
 type exportLink struct {
@@ -409,6 +411,9 @@ func (s *Server) handleReport(w http.ResponseWriter, r *http.Request) {
 		if has[e.Name] {
 			v.Exports = append(v.Exports, exportLink{Label: e.Label, URL: "/rapport/donnees/" + e.Name + ".csv?" + period})
 		}
+	}
+	if v.HasData {
+		v.Calibration, v.CalibrationIssue = "/rapport/calibrage.zip?"+period, CalibrationIssueURL
 	}
 
 	// Comparaison avant/apres.

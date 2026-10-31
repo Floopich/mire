@@ -112,3 +112,14 @@ Sujets MQTT : `mire/etat`, `mire/disponibilite`, `mire/commande/redemarrer`. Un 
 ```
 
 `collecte` vaut `a_jour`, `en_retard` (aucun relevé depuis trois intervalles), `en_attente` ou `inactive`. Une sonde HTTP sur le mot-clé `a_jour` alerte dès que le modem ne répond plus.
+
+### Uptime Kuma
+
+Deux sondes **HTTP(s) - Mot-clé** sur `http://<machine>:1340/sante` :
+
+| Sonde | Mot-clé | Intervalle | Alerte quand |
+|---|---|---|---|
+| Mire | `"statut":"ok"` | 60 s | Mire ne répond plus, ou sa base est illisible |
+| Collecte | `"collecte":"a_jour"` | 5 min | le modem ne donne plus de relevés |
+
+Le mot-clé s'écrit sans espace, comme la réponse. Derrière un proxy avec authentification, laissez `/sante` accessible sans connexion.

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/floopich/mire/internal/analyze"
+	"github.com/floopich/mire/internal/backup"
 	"github.com/floopich/mire/internal/collect"
 	"github.com/floopich/mire/internal/docsis"
 	"github.com/floopich/mire/internal/events"
@@ -71,6 +72,9 @@ type Manager struct {
 	Version string
 	// Journal recoit le niveau de detail choisi dans les reglages.
 	Journal *journal.Journal
+	// DataDir est le dossier des donnees, ou vont les sauvegardes
+	// automatiques ; vide, il n'y en a pas.
+	DataDir string
 
 	db     *sql.DB
 	forced settings.Source
@@ -298,6 +302,16 @@ func (m *Manager) Reload(ctx context.Context) error {
 				"intervalle", st.Interval.String())
 			if err := collector.Run(runCtx); err != nil && !errors.Is(err, context.Canceled) {
 				m.logger.Error("collecte arrêtée", "erreur", err)
+			}
+		}()
+	}
+	if st.Values.Bool(settings.BackupOn) && m.DataDir != "" {
+		keeper := &backup.Keeper{DB: m.db, DataDir: m.DataDir, Keep: st.Values.Int(settings.BackupKeep), Logger: m.logger}
+		m.wg.Add(1)
+		go func() {
+			defer m.wg.Done()
+			if err := keeper.Run(runCtx); err != nil && !errors.Is(err, context.Canceled) {
+				m.logger.Error("sauvegardes automatiques arrêtées", "erreur", err)
 			}
 		}()
 	}

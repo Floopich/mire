@@ -1,0 +1,37 @@
+name: Relevés pour le calibrage
+description: Partager une archive anonymisée de relevés, pour vérifier les seuils d'un opérateur.
+labels: ["calibrage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Archive : page **Rapport**, période choisie, lien « archive anonymisée ». Son contenu est décrit dans `lisez-moi.txt`.
+  - type: input
+    id: operateur
+    attributes:
+      label: Opérateur
+      placeholder: Telenet, VOO, Orange…
+    validations:
+      required: true
+  - type: dropdown
+    id: ligne
+    attributes:
+      label: Votre ligne sur la période
+      options:
+        - Sans problème
+        - Problèmes ressentis (coupures, lenteurs)
+        - Intervention d'un technicien pendant la période
+    validations:
+      required: true
+  - type: textarea
+    id: archive
+    attributes:
+      label: Archive
+      description: Glissez ici le fichier mire-calibrage-….zip.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Précisions
+      description: Facultatif. Ce que le technicien a constaté ou changé, ce que vous avez ressenti.
