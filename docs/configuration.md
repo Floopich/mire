@@ -2,7 +2,7 @@
 
 ## Réglages
 
-Chaque rubrique est résumée en une ligne. Un changement s'applique aussitôt, sans redémarrer.
+Un changement s'applique aussitôt, sans redémarrer.
 
 | Rubrique | Contenu |
 |---|---|
@@ -181,18 +181,4 @@ L'installation demande une adresse en HTTPS.
 
 ## Sécurité
 
-- Aucun mot de passe par défaut : il est choisi à la première visite.
-- Mot de passe de l'interface conservé sous forme d'empreinte. Celui du modem est enregistré dans la base, jamais réaffiché : protégez le dossier de données, ou passez-le par `MIRE_MODEM_MOT_DE_PASSE` dans un `.env` en `chmod 600`.
-- Sessions de 30 jours ; cookie `HttpOnly` et `SameSite=Strict`.
-- Formulaires refusés depuis une autre origine.
-- Aucun script ni ressource externe.
-- Image sans shell, utilisateur non root ; le `compose.yaml` fourni ajoute un système de fichiers en lecture seule, sans aucun privilège (`read_only`, `cap_drop: ALL`, `no-new-privileges`).
-- Valeur supprimée effacée du fichier de la base (`secure_delete`).
-- Failles connues des dépendances vérifiées à chaque modification et chaque semaine (`govulncheck`).
-- Images et binaires accompagnés d'une attestation de provenance : elle prouve qu'ils ont été construits par ce dépôt, depuis son code publié. Vérification, avec [GitHub CLI](https://cli.github.com) connecté :
-
-  ```bash
-  gh attestation verify oci://ghcr.io/floopich/mire:latest -R floopich/mire
-  gh attestation verify mire-linux-amd64 -R floopich/mire
-  ```
-- Ne sort du réseau local que ce que vous activez (notifications, MQTT, météo, débit) et les connexions de la sonde vers ses cibles.
+Voir [SECURITY.md](../SECURITY.md) : ce qui est protégé, ce qui ne l'est pas, et comment vérifier une image ou un binaire.

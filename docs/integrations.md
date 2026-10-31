@@ -108,7 +108,7 @@ Sujets MQTT : `mire/etat`, `mire/disponibilite`, `mire/commande/redemarrer`. Un 
 `GET /sante` répond sans authentification :
 
 ```json
-{"statut": "ok", "collecte": "a_jour", "dernier_releve": "2026-10-25T19:50:05Z", "modem": "Technicolor CGA4233 (firmware VOO)", "version": "v1.0.1"}
+{"collecte":"a_jour","dernier_releve":"2026-10-31T21:43:27Z","modem":"Technicolor CGA4233 (firmware VOO)","statut":"ok","version":"v1.4.0"}
 ```
 
 `collecte` vaut `a_jour`, `en_retard` (aucun relevé depuis trois intervalles), `en_attente` ou `inactive`. Une sonde HTTP sur le mot-clé `a_jour` alerte dès que le modem ne répond plus.
@@ -122,4 +122,4 @@ Deux sondes **HTTP(s) - Mot-clé** sur `http://<machine>:1340/sante` :
 | Mire | `"statut":"ok"` | 60 s | Mire ne répond plus, ou sa base est illisible |
 | Collecte | `"collecte":"a_jour"` | 5 min | le modem ne donne plus de relevés |
 
-Le mot-clé s'écrit sans espace, comme la réponse. Derrière un proxy avec authentification, laissez `/sante` accessible sans connexion.
+Derrière un proxy avec authentification, laissez `/sante` accessible sans connexion.

@@ -2,14 +2,6 @@
 
 Mire suit **Material 3 Expressive**.
 
-## Principes
-
-1. **L'état d'abord** : le verdict ouvre la page.
-2. **Couleur et forme** : chaque niveau a sa couleur et sa silhouette.
-3. **Une absence n'est pas un zéro** : une mesure manquante s'affiche « — », une courbe s'interrompt.
-4. **Rien d'extérieur** : police embarquée, aucun script, aucune ressource tierce.
-5. **Le français courant** des interfaces grand public.
-
 ## Logo
 
 Cinq barres de niveau en V ; celle du centre, plus courte et corail, passe sous un seuil corail en pointillés.
@@ -61,43 +53,11 @@ Régénérer : `cd tools/couleurs && npm install && npm run schema`, puis report
 - Échelle Material 3 : display (36 à 45 px, accentuée : graisse 640, chasse 112 %), headline small 24, title large 22, title medium 16, body 16 et 14, label 14 et 12.
 - Chiffres tabulaires partout. Nombres à la française : virgule, vrai signe moins, espace insécable avant l'unité, espace fine pour les milliers.
 
-## Mouvement
-
-Ressorts Material 3 Expressive en courbes CSS `linear()` : *fast spatial* pour les morphoses, *slow spatial* pour l'entrée du badge, *fast effects* pour les couches d'état. Coupés si le système demande moins d'animations.
-
-## Composants
-
-| Composant Material 3 Expressive | Dans Mire |
-|---|---|
-| Barre d'application | logo, nom, accès à Internet, aux événements et aux réglages, bouton tonal « Se déconnecter » ; icônes seules sur téléphone |
-| Conteneur coloré, forme expressive | verdict |
-| Indicateur de progression ondulé | attente du prochain relevé |
-| Groupe de boutons connectés | choix de la période |
-| Liste groupée (éléments séparés, coins du groupe arrondis) | canaux, alignés en colonnes sur grand écran |
-| Cartes | bande de canaux, chiffres clés, graphiques |
-| Champ de saisie avec libellé flottant, bouton plein large | connexion, assistant |
-| Liste d'événements : forme du niveau, heure, phrase | journal, derniers événements, événements d'un canal |
-| Barres empilées | erreurs d'un canal : corrigées en gris (`outline`), non corrigées en rouge critique ; tentatives de la sonde sans réponse, en rouge critique |
-| Courbe partant de zéro | latence de la sonde |
-| Liste à deux lignes (titre, résumé), volet liste-détail | rubriques des réglages : côte à côte sur grand écran, l'une puis l'autre sur téléphone |
-| Formulaire sur une colonne | une rubrique des réglages |
-| Interrupteur principal (barre teintée) | active l'option d'une rubrique et dévoile ses champs |
-| Interrupteur (piste et pouce qui grandit) | réglage oui ou non, à droite de son libellé |
-| Menu déroulant à contour | choix du modèle, du profil, puis du service d'une option |
-| Indicateur d'étapes | assistant de premier démarrage |
-| Boutons radio en cartes | adresse du modem détectée |
+## Pages
 
 Sans script : la vue d'ensemble se recharge par `meta refresh`, les champs d'une option se dévoilent avec `:has()`. Un champ imposé par une variable est grisé et nomme sa variable.
 
-## Rédaction
-
-- Phrases courtes, sans explication superflue.
-- Un problème dit ce qui se passe et quoi faire.
-- Une action garde le même nom partout : « Enregistrer », « Enregistrer et tester ».
-- Le détail technique d'un échec va au journal, pas à l'écran.
-- Un événement tient en une phrase qui nomme la cause : « Ligne à surveiller : canal descendant 22, puissance descendante 8,7 dBmV. »
-
-### Vocabulaire
+## Vocabulaire
 
 | Terme | Sens |
 |---|---|
@@ -111,7 +71,6 @@ Sans script : la vue d'ensemble se recharge par `meta refresh`, les champs d'une
 | plage nominale | l'intervalle de valeurs que l'opérateur juge normal |
 | seuil | la limite basse d'une mesure, comme le SNR |
 | non qualifié | mesure absente ou profil sans seuils : Mire ne juge pas |
-
 
 ## Licences des ressources
 

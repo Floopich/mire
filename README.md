@@ -20,7 +20,8 @@ Mire relève les mesures du modem câble, les conserve et juge chaque canal selo
 - **Modem** : informations, réseau domestique, redémarrage.
 - **Notifications** : ntfy, Gotify, Discord, Telegram, Slack, mail, webhook.
 - **Intégrations** : métriques Prometheus, Home Assistant par MQTT.
-- **Léger** : un binaire ou une image Docker, une base SQLite ; installable comme application.
+- **Sauvegarde** : une copie de la base chaque jour, sans mots de passe.
+- **Sur téléphone** : installable comme une application.
 
 ## Aperçu
 
