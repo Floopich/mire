@@ -66,4 +66,7 @@ jobs:
             echo
             echo "Image Docker : \`ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/mire:${GITHUB_REF_NAME#v}\`"
           } > notes.md
-          gh release create "${GITHUB_REF_NAME}" dist/* --title "Mire ${GITHUB_REF_NAME#v}" --notes-file notes.md --verify-tag "$genre"
+          # Brouillon d'abord : une version publiee est immuable et ne recoit
+          # plus de fichiers. Elle n'est publiee qu'une fois les binaires joints.
+          gh release create "${GITHUB_REF_NAME}" dist/* --draft --title "Mire ${GITHUB_REF_NAME#v}" --notes-file notes.md --verify-tag
+          gh release edit "${GITHUB_REF_NAME}" --draft=false "$genre"

@@ -1,8 +1,8 @@
 /* Mire, en Material 3 Expressive.
    Couleurs : schema M3 (specification 2025, variante Tonal Spot) genere par
    material-color-utilities depuis la couleur source #E8817F ; couleurs d'etat
-   independantes de la source, pour rester distinctes entre elles. Voir docs/charte.md. Aucune valeur en dur hors
-   des jetons. */
+   independantes de la source, pour rester distinctes entre elles. Aucune valeur en dur
+   hors des jetons. */
 
 @layer jetons, base, composants;
 

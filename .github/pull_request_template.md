@@ -6,6 +6,6 @@
 
 - [ ] `gofmt -l .` ne liste rien, `go vet ./...` passe
 - [ ] `go test ./...` et `go test -tags purego ./...` passent
-- [ ] Les textes de l'interface reprennent le vocabulaire de `docs/charte.md`
+- [ ] Les textes de l'interface reprennent le vocabulaire de CONTRIBUTING.md
 - [ ] Un réglage, une variable ou une commande ajoutés sont décrits dans `docs/` (et `.env.exemple` pour une variable)
 - [ ] Les relevés de modem joints sont anonymisés : ni adresse MAC, ni numéro de série, ni mot de passe

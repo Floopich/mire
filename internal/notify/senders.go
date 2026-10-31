@@ -196,7 +196,7 @@ func (g *gotify) Send(ctx context.Context, m Message) error {
 	return post(ctx, g.client, "Gotify", strings.TrimRight(g.server, "/")+"/message", h, payload)
 }
 
-// Couleurs des niveaux, celles de la charte, pour les services qui en
+// Couleurs des niveaux, celles de l'interface, pour les services qui en
 // affichent une : Discord et Slack.
 var levelColor = map[analyze.Level]int{
 	analyze.Good: 0x1B6D24, analyze.Tolerated: 0x005EB5, analyze.Warning: 0x7B5800, analyze.Critical: 0xB91D20,
