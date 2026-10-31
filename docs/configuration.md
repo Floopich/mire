@@ -137,7 +137,7 @@ Avec Docker : `docker compose exec -it mire mire mot-de-passe`, ou `docker compo
 
 ## Sauvegarde
 
-**Automatique**, activée par défaut : une copie par jour, sans mots de passe ni jetons, dans le sous-dossier `sauvegardes` des données (`/data/sauvegardes` dans l'image). Les 7 dernières sont gardées. Ce dossier reste sur la même machine : copiez-le ailleurs avec votre propre sauvegarde (Hyper Backup, restic…).
+**Automatique**, activée par défaut : une copie par jour, sans mots de passe ni jetons, dans le sous-dossier `sauvegardes` des données (`/data/sauvegardes` dans l'image). Les 7 dernières sont gardées. Ce dossier reste sur la même machine : incluez-le dans votre sauvegarde habituelle pour en garder une copie ailleurs.
 
 **À la demande**, sans arrêter la collecte :
 

@@ -1,1 +1,8 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
+contact_links:
+  - name: Signaler une faille de sécurité
+    url: https://github.com/floopich/mire/security/advisories/new
+    about: En privé, jamais dans une demande publique.
+  - name: Documentation
+    url: https://github.com/floopich/mire/tree/main/docs
+    about: Installation, réglages, intégrations.

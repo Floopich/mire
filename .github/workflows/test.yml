@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       # Derniere version stable de Go, correctifs de securite compris : go.mod
       # ne fixe que la version minimale.
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -56,6 +58,12 @@ jobs:
 
       - name: Failles connues (govulncheck)
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 -tags purego ./...
+
+      # Workflows : jetons trop larges, injections, actions vulnerables.
+      - name: Securite des workflows (zizmor)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: pipx run zizmor==1.31.1 --format=github .github/workflows
 
       - name: Compilation croisee du binaire distribue
         env:
