@@ -93,7 +93,6 @@ func Models() []Model {
 	return out
 }
 
-// Lookup renvoie le modele demande.
 func Lookup(id string) (Model, error) {
 	id = strings.ToLower(strings.TrimSpace(id))
 	registry.RLock()

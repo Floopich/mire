@@ -74,7 +74,6 @@ func (l *Line) spike() span           { return span{l.day(-6, 19, 0), l.day(-6, 
 // scriptedRestart est le redemarrage de la coupure de nuit.
 func (l *Line) scriptedRestart() time.Time { return l.day(-20, 3, 12) }
 
-// outages sont les coupures de la sonde.
 func (l *Line) outages() []struct {
 	kind string
 	span span
@@ -140,7 +139,6 @@ func round1(v float64) float64 { return math.Round(v*10) / 10 }
 
 const dsChannels = 16
 
-// At rend le releve de l'instant t.
 func (l *Line) At(t time.Time) docsis.RawSnapshot {
 	snap := docsis.RawSnapshot{DOCSIS: "3.1"}
 	since := t.Sub(l.lastRestart(t)).Minutes()

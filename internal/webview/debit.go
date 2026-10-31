@@ -15,7 +15,6 @@ import (
 // Le debit vient de Speedtest Tracker ou d'une passerelle UniFi. La page
 // Internet et le rapport en donnent la mediane.
 
-// speedView resume les mesures de debit d'une periode.
 type speedView struct {
 	// Shown dit si la section a lieu d'etre : la lecture est active, ou des
 	// mesures sont en base.

@@ -73,7 +73,6 @@ func (u *UniFi) unreachable() error {
 	return fmt.Errorf("la passerelle ne répond pas à %s", u.URL)
 }
 
-// errAuth signale un acces refuse.
 var errAuth = errors.New("accès refusé")
 
 func (u *UniFi) login(ctx context.Context) error {

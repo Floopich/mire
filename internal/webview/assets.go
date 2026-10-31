@@ -34,7 +34,6 @@ func fingerprint(b []byte) string {
 	return hex.EncodeToString(h[:])[:12]
 }
 
-// assetVersions calcule l'empreinte de chaque ressource versionnee.
 func assetVersions(generated map[string][]byte) map[string]string {
 	v := map[string]string{}
 	for _, p := range versionedPaths {
@@ -50,7 +49,6 @@ func assetVersions(generated map[string][]byte) map[string]string {
 	return v
 }
 
-// assetURL rend l'adresse versionnee d'une ressource.
 func (s *Server) assetURL(path string) string {
 	if v, ok := s.versions[path]; ok {
 		return path + "?v=" + v

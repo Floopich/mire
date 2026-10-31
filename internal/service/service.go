@@ -235,14 +235,12 @@ func (st State) Analyze(ctx context.Context, db *sql.DB, snap docsis.Snapshot) (
 	return analyze.SnapshotWith(snap, st.Profile, opts), nil
 }
 
-// State renvoie la configuration en vigueur.
 func (m *Manager) State() State {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.state
 }
 
-// Start lance les taches de fond.
 func (m *Manager) Start(ctx context.Context) error {
 	return m.Reload(ctx)
 }

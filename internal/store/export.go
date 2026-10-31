@@ -16,7 +16,6 @@ import (
 // Format : horodatage ISO 8601 avec le decalage horaire local, nombres a
 // point decimal, cellule vide pour une valeur absente.
 
-// Export est un tableau exportable.
 type Export struct {
 	// Name nomme le fichier et l'adresse : minuscules, sans espace.
 	Name string
@@ -59,7 +58,6 @@ func Exports() []Export {
 	}
 }
 
-// ExportByName renvoie le tableau demande.
 func ExportByName(name string) (Export, bool) {
 	for _, e := range Exports() {
 		if e.Name == name {

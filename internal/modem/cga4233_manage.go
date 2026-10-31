@@ -88,7 +88,6 @@ func (m *CGA4233) fetchBody(ctx context.Context, path string) ([]byte, error) {
 	return body, err
 }
 
-// fetchFields lit une reponse enveloppee et rend ses champs.
 func (m *CGA4233) fetchFields(ctx context.Context, path string) (map[string]json.RawMessage, error) {
 	body, err := m.fetchBody(ctx, path)
 	if err != nil {

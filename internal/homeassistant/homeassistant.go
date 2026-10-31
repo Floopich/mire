@@ -48,7 +48,6 @@ const (
 	retryMax     = 5 * time.Minute
 )
 
-// Config regle la publication.
 type Config struct {
 	Server, User, Password string
 	// Prefix est le prefixe de decouverte de Home Assistant.
@@ -72,7 +71,6 @@ type Publisher struct {
 	connected bool
 }
 
-// New prepare un publicateur.
 func New(cfg Config, read func(context.Context) (status.Status, error), logger *slog.Logger) *Publisher {
 	if logger == nil {
 		logger = slog.Default()
@@ -335,7 +333,6 @@ func stamp(t time.Time) *string {
 	return &v
 }
 
-// clip borne un texte a n caracteres.
 func clip(s string, n int) string {
 	r := []rune(s)
 	if len(r) <= n {
@@ -353,7 +350,6 @@ func round(v *float64) *float64 {
 	return &r
 }
 
-// entity decrit un capteur pour la decouverte.
 type entity struct {
 	component, id, name string
 	extra               map[string]any

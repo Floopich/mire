@@ -12,7 +12,6 @@ import (
 	"github.com/floopich/mire/internal/store"
 )
 
-// eventRow est une entree du journal telle qu'affichee.
 type eventRow struct {
 	Time    time.Time
 	Level   analyze.Level
@@ -26,7 +25,6 @@ type eventRow struct {
 	Deletable bool
 }
 
-// eventDay regroupe les entrees d'une meme journee.
 type eventDay struct {
 	Label  string
 	Events []eventRow
@@ -107,7 +105,6 @@ func (s *Server) renderEvents(w http.ResponseWriter, r *http.Request, status int
 // noteTimeLayout est le format d'un champ datetime-local.
 const noteTimeLayout = "2006-01-02T15:04"
 
-// handleAddNote inscrit une note au journal.
 func (s *Server) handleAddNote(w http.ResponseWriter, r *http.Request) {
 	if !sameOrigin(r) {
 		http.Error(w, "origine refusée", http.StatusForbidden)
@@ -143,7 +140,6 @@ func (s *Server) handleAddNote(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/evenements?heures="+strconv.Itoa(hoursParam(r))+"#journal", http.StatusSeeOther)
 }
 
-// handleDeleteNote retire une note du journal.
 func (s *Server) handleDeleteNote(w http.ResponseWriter, r *http.Request) {
 	if !sameOrigin(r) {
 		http.Error(w, "origine refusée", http.StatusForbidden)

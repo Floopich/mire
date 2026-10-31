@@ -40,7 +40,6 @@ type Service interface {
 	Forced() settings.Source
 }
 
-// Options regle l'interface.
 type Options struct {
 	DataDir string
 	Version string
@@ -61,7 +60,6 @@ type Options struct {
 	StartDemo func(ctx context.Context) (http.Handler, func(), error)
 }
 
-// Server sert l'interface.
 type Server struct {
 	db       *sql.DB
 	opts     Options
@@ -72,8 +70,7 @@ type Server struct {
 	// feuilles de style appelees avec leur version.
 	css      string
 	versions map[string]string
-	// reports sont les rapports de modem en cours de preparation.
-	reports reportJobs
+	reports  reportJobs
 	// works sont les actions lentes en cours : essais, lecture du modem.
 	works works
 	// demo est la demonstration ouverte depuis l'accueil.
@@ -213,7 +210,6 @@ func cacheFor(d time.Duration, next http.Handler) http.Handler {
 	})
 }
 
-// window est une fenetre d'affichage proposee a l'utilisateur.
 type window struct {
 	Hours  int
 	Label  string
@@ -737,7 +733,6 @@ func upstreamFamily(modulation string) string {
 	return "sc_qam"
 }
 
-// hoursParam borne la fenetre demandee.
 func hoursParam(r *http.Request) int {
 	h, err := strconv.Atoi(r.URL.Query().Get("heures"))
 	if err != nil || h <= 0 {

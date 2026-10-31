@@ -27,7 +27,6 @@ const (
 	ModeRouter Mode = "routeur"
 )
 
-// Info decrit le modem lui-meme.
 type Info struct {
 	Model        string
 	Manufacturer string
@@ -55,7 +54,6 @@ type Router struct {
 	Missing []string
 }
 
-// Radio decrit un reseau Wi-Fi.
 type Radio struct {
 	Band        string
 	Enabled     bool
@@ -76,7 +74,6 @@ type Host struct {
 	Active bool
 }
 
-// InfoReader lit les informations du modem.
 type InfoReader interface {
 	Info(ctx context.Context) (Info, error)
 }
@@ -86,7 +83,6 @@ type RouterReader interface {
 	Router(ctx context.Context) (Router, error)
 }
 
-// Restarter redemarre le modem.
 type Restarter interface {
 	Restart(ctx context.Context) error
 }

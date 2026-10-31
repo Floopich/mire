@@ -144,7 +144,6 @@ const NoteKind = "note"
 // NoteMaxLength borne une note, en caracteres.
 const NoteMaxLength = 500
 
-// AddNote inscrit une note au journal.
 func AddNote(ctx context.Context, db *sql.DB, at time.Time, text string) error {
 	return SaveEvents(ctx, db, []Event{{Time: at, Kind: NoteKind, Message: text}})
 }

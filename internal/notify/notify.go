@@ -31,7 +31,6 @@ type Message struct {
 	Kinds []string
 }
 
-// Sender envoie une notification.
 type Sender interface {
 	Send(ctx context.Context, m Message) error
 }
@@ -222,7 +221,6 @@ func (n *Notifier) logger() *slog.Logger {
 	return slog.Default()
 }
 
-// Test envoie une notification d'essai.
 func Test(ctx context.Context, s Sender, link string) error {
 	m := Compose([]store.Event{{Time: time.Now(), Kind: "essai", Level: int(analyze.Good),
 		Message: "Notification d'essai : Mire peut vous prévenir."}}, link)

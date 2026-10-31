@@ -21,7 +21,6 @@ const (
 	specGapShownAs = 20.0
 )
 
-// spectrumView est la bande de canaux d'une voie, prete a afficher.
 type spectrumView struct {
 	Wide   template.HTML
 	Narrow template.HTML

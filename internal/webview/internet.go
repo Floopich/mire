@@ -17,7 +17,6 @@ import (
 	"github.com/floopich/mire/internal/store"
 )
 
-// outageRow est une coupure telle qu'affichee.
 type outageRow struct {
 	Start    time.Time
 	Duration string
@@ -174,7 +173,6 @@ func (s *Server) handleInternet(w http.ResponseWriter, r *http.Request) {
 	s.render(w, http.StatusOK, "internet", v)
 }
 
-// addProfile ajoute le profil horaire des trente derniers jours.
 func (s *Server) addProfile(r *http.Request, v *internetView, now time.Time) error {
 	samples, err := store.ProbeSamples(r.Context(), s.db, now.AddDate(0, 0, -profileDays), now)
 	if err != nil {

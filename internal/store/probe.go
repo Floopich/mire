@@ -129,7 +129,6 @@ func (o Outage) Duration(now time.Time) time.Duration {
 	return o.End.Sub(o.Start)
 }
 
-// OpenOutage inscrit le debut d'une coupure.
 func OpenOutage(ctx context.Context, db *sql.DB, kind string, start time.Time, detail string) (int64, error) {
 	res, err := db.ExecContext(ctx,
 		`INSERT INTO link_events(started_at, kind, detail) VALUES (?, ?, ?)`, start.Unix(), kind, detail)
@@ -139,7 +138,6 @@ func OpenOutage(ctx context.Context, db *sql.DB, kind string, start time.Time, d
 	return res.LastInsertId()
 }
 
-// CloseOutage inscrit la fin d'une coupure.
 func CloseOutage(ctx context.Context, db *sql.DB, id int64, end time.Time) error {
 	_, err := db.ExecContext(ctx, `UPDATE link_events SET ended_at = ? WHERE id = ?`, end.Unix(), id)
 	return err

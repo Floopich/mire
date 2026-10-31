@@ -465,7 +465,6 @@ func takeFlag(args []string, name string) (bool, []string) {
 	return found, out
 }
 
-// writeBackup ecrit une sauvegarde complete, ou sans secrets.
 func writeBackup(ctx context.Context, db *sql.DB, path string, clean bool) error {
 	if clean {
 		return store.BackupWithout(ctx, db, path, webview.BackupSecretKeys())
@@ -526,7 +525,6 @@ func healthURL(listen string) (string, error) {
 	return "http://127.0.0.1:" + port + "/sante", nil
 }
 
-// listModels affiche les modems pris en charge.
 func listModels(w io.Writer) {
 	fmt.Fprintln(w, "Modems pris en charge (MIRE_MODELE) :")
 	for _, m := range modem.Models() {

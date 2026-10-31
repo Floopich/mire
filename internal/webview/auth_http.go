@@ -103,7 +103,6 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-// openSession cree une session et pose son cookie.
 func (s *Server) openSession(w http.ResponseWriter, r *http.Request) error {
 	token, err := s.sessions.Create(r.Context())
 	if err != nil {

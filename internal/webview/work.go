@@ -28,7 +28,6 @@ const (
 	workRefresh = 2
 )
 
-// work est une action en cours ou terminee.
 type work struct {
 	started time.Time
 	done    chan struct{}

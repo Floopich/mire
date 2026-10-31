@@ -173,7 +173,6 @@ func normalize(modulation string) string {
 	return s
 }
 
-// Load renvoie le profil demande.
 func Load(id string) (Profile, error) {
 	data, err := profileFS.ReadFile("profiles/" + id + ".json")
 	if err != nil {

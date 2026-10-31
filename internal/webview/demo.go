@@ -27,8 +27,7 @@ type demoState struct {
 	mu      sync.Mutex
 	handler http.Handler
 	close   func()
-	// work est la preparation en cours.
-	work string
+	work    string
 }
 
 // demoHandler renvoie la demonstration en cours, nil sans demonstration.
@@ -139,7 +138,6 @@ func stateOf(wk *work) (string, any, bool) {
 	return wk.state()
 }
 
-// handleDemoWait suit la preparation, puis ouvre la demonstration.
 func (s *Server) handleDemoWait(w http.ResponseWriter, r *http.Request) {
 	wk := s.works.get(r.URL.Query().Get("preparation"))
 	if wk == nil || s.opts.StartDemo == nil {
@@ -165,7 +163,6 @@ func (s *Server) handleDemoWait(w http.ResponseWriter, r *http.Request) {
 	s.render(w, http.StatusOK, "setup", v)
 }
 
-// handleDemoQuit quitte la demonstration pour installer Mire.
 func (s *Server) handleDemoQuit(w http.ResponseWriter, r *http.Request) {
 	if !sameOrigin(r) {
 		http.Error(w, "origine refusée", http.StatusForbidden)

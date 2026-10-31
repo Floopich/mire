@@ -58,7 +58,6 @@ func Start(t *testing.T) *Broker {
 // URL est l'adresse du serveur, en mqtt://.
 func (b *Broker) URL() string { return "mqtt://" + b.ln.Addr().String() }
 
-// Connects renvoie les connexions recues.
 func (b *Broker) Connects() []Connect {
 	b.mu.Lock()
 	defer b.mu.Unlock()

@@ -43,7 +43,6 @@ func DownstreamChannels(ctx context.Context, db *sql.DB, since time.Time) ([]Cha
 	return out, rows.Err()
 }
 
-// ReadingCount compte les releves enregistres.
 func ReadingCount(ctx context.Context, db *sql.DB) (int, error) {
 	var n int
 	err := db.QueryRowContext(ctx, `SELECT count(*) FROM readings`).Scan(&n)

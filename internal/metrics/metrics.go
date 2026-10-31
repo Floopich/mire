@@ -19,7 +19,6 @@ import (
 // ContentType est le type du format texte de Prometheus.
 const ContentType = "text/plain; version=0.0.4; charset=utf-8"
 
-// Info decrit l'instance.
 type Info struct {
 	Version string
 	Modem   string
@@ -28,7 +27,6 @@ type Info struct {
 
 const levels = "0 non qualifié, 1 bon, 2 toléré, 3 à surveiller, 4 critique"
 
-// Write ecrit les metriques de l'etat present.
 func Write(w io.Writer, s status.Status, info Info) error {
 	m := &writer{w: w}
 	m.family("mire_info", "gauge", "Instance de Mire : version, modem et profil d'opérateur.")

@@ -18,7 +18,6 @@ import (
 	"time"
 )
 
-// Message est une publication.
 type Message struct {
 	Topic   string
 	Payload []byte
@@ -28,7 +27,6 @@ type Message struct {
 	Retain bool
 }
 
-// Options regle la connexion.
 type Options struct {
 	// Server est l'adresse du serveur : mqtt://hote:1883 ou mqtts://hote:8883.
 	Server   string
@@ -112,7 +110,6 @@ func Dial(ctx context.Context, o Options) (*Client, error) {
 	return c, nil
 }
 
-// listen lit les paquets du serveur jusqu'a la fin de la connexion.
 func (c *Client) listen() {
 	_ = c.conn.SetReadDeadline(time.Time{})
 	for {

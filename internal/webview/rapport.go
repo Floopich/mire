@@ -30,7 +30,6 @@ const (
 
 var compareChoices = []int{7, 14, 30}
 
-// periodReport resume une periode.
 type periodReport struct {
 	From, To time.Time // To exclu
 	Line     store.PeriodLine

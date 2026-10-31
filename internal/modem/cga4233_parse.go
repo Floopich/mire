@@ -67,7 +67,6 @@ type errRow struct {
 	Uncorrectables docsis.FlexFloat `json:"Uncorrectables"`
 }
 
-// parsePayload convertit une reponse du modem en releve brut.
 func parsePayload(raw []byte) (docsis.RawSnapshot, error) {
 	var p payload
 	if err := json.Unmarshal(raw, &p); err != nil {

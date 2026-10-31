@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// SpeedTest est une mesure de debit.
 type SpeedTest struct {
 	Time time.Time
 	// Debits en megabits par seconde.

@@ -54,7 +54,6 @@ type Status struct {
 	Now time.Time
 }
 
-// Config regle la lecture.
 type Config struct {
 	Analyze Analyzer
 	// Interval est le delai entre deux releves : un releve plus vieux que
@@ -70,7 +69,6 @@ func StaleAfter(interval time.Duration) time.Duration {
 	return max(3*interval, 30*time.Minute)
 }
 
-// Read lit l'etat present.
 func Read(ctx context.Context, db *sql.DB, cfg Config) (Status, error) {
 	now := time.Now()
 	if cfg.Now != nil {

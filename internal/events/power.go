@@ -85,7 +85,6 @@ func decimal(v float64) string {
 	return strings.Replace(s, "-", "−", 1)
 }
 
-// signed ajoute le signe plus a un ecart positif.
 func signed(v float64) string {
 	if v > 0 {
 		return "+" + decimal(v)

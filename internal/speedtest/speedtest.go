@@ -46,13 +46,11 @@ type Client struct {
 	HTTP  *http.Client
 }
 
-// NewClient prepare un client.
 func NewClient(address, token string) Client {
 	return Client{URL: strings.TrimRight(strings.TrimSpace(address), "/"), Token: strings.TrimSpace(token),
 		HTTP: &http.Client{Timeout: 20 * time.Second}}
 }
 
-// result est une mesure telle que l'API la rend.
 type result struct {
 	Download  *float64 `json:"download"` // octets par seconde
 	Upload    *float64 `json:"upload"`

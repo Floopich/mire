@@ -46,7 +46,6 @@ type calibrationInfo struct {
 	Au         string `json:"au"`
 }
 
-// handleCalibration sert l'archive de calibrage de la periode demandee.
 func (s *Server) handleCalibration(w http.ResponseWriter, r *http.Request) {
 	from, to, msg := reportPeriod(r.URL.Query(), midnight(s.opts.Now()))
 	if msg != "" {

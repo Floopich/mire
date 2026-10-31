@@ -24,7 +24,6 @@ const (
 	KindInternet = "internet"
 )
 
-// Config regle la sonde.
 type Config struct {
 	// Targets sont les cibles hote:port interrogees a chaque tentative.
 	Targets []string
@@ -70,7 +69,6 @@ func (c *Config) normalize() {
 	}
 }
 
-// Prober fait tourner la sonde.
 type Prober struct {
 	db  *sql.DB
 	cfg Config
@@ -81,7 +79,6 @@ type Prober struct {
 	open      *store.Outage
 }
 
-// New prepare une sonde.
 func New(db *sql.DB, cfg Config) *Prober {
 	cfg.normalize()
 	return &Prober{db: db, cfg: cfg}
@@ -240,7 +237,6 @@ func (p *Prober) logErr(err error) {
 	}
 }
 
-// aggregate cumule les tentatives d'une tranche.
 type aggregate struct {
 	start          time.Time
 	rounds, failed int

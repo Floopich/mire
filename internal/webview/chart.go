@@ -40,7 +40,6 @@ func Samples(points []store.Point, value func(store.Point) *float64) []Sample {
 	return out
 }
 
-// Series est une courbe a tracer.
 type Series struct {
 	Label  string
 	Points []Sample

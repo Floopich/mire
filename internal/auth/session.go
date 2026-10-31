@@ -64,7 +64,6 @@ func (s *Sessions) Valid(ctx context.Context, token string) error {
 	return nil
 }
 
-// Revoke ferme une session.
 func (s *Sessions) Revoke(ctx context.Context, token string) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM sessions WHERE token_hash = ?`, digest(token))
 	return err
@@ -76,7 +75,6 @@ func (s *Sessions) RevokeAll(ctx context.Context) error {
 	return err
 }
 
-// Prune retire les sessions expirees.
 func (s *Sessions) Prune(ctx context.Context) error {
 	_, err := s.db.ExecContext(ctx,
 		`DELETE FROM sessions WHERE expires_at <= ?`, s.now().UTC().Unix())

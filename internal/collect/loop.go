@@ -17,7 +17,6 @@ type Source interface {
 	Snapshot(ctx context.Context) (docsis.RawSnapshot, error)
 }
 
-// Options regle la boucle.
 type Options struct {
 	Interval  time.Duration
 	Retention store.Retention
@@ -107,7 +106,6 @@ func (c *Collector) Run(ctx context.Context) error {
 	}
 }
 
-// delay renvoie l'attente avant le prochain releve.
 func (c *Collector) delay(ctx context.Context) time.Duration {
 	if c.opts.Pace != nil {
 		if d := c.opts.Pace(ctx); d > 0 {

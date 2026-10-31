@@ -137,7 +137,6 @@ func (s *Server) handleModem(w http.ResponseWriter, r *http.Request) {
 	s.render(w, http.StatusOK, "modem", v)
 }
 
-// modemRead est ce que la page Modem a lu.
 type modemRead struct {
 	Info      modem.Info
 	InfoErr   error
@@ -169,7 +168,6 @@ func (s *Server) readModem(ctx context.Context, st service.State, wk *work) mode
 	return out
 }
 
-// apply remplit la page avec la lecture.
 func (v *modemView) apply(rd modemRead, st service.State, s *Server) {
 	if rd.InfoErr != nil {
 		v.ReadErr = readError(rd.InfoErr, st.Address)
@@ -192,7 +190,6 @@ func readError(err error, address string) string {
 	return "Le modem ne répond pas à " + address + "."
 }
 
-// docsisStates traduit l'etat annonce par le modem.
 var docsisStates = map[string]string{
 	"operational": "En service",
 	"online":      "En service",

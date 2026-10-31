@@ -245,7 +245,6 @@ func count(n int64) string {
 	return s
 }
 
-// modulation qualifie la modulation montante.
 func modulation(m string, limits operator.ModulationLimits) (Finding, bool) {
 	qam := qamOrder(m)
 	if qam == 0 {
@@ -291,7 +290,6 @@ func qamOrder(m string) int {
 	return n
 }
 
-// kind distingue les familles de canaux montants.
 func kind(m string) string {
 	if strings.Contains(strings.ToLower(m), "ofdma") {
 		return "ofdma"

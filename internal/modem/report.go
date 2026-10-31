@@ -36,7 +36,6 @@ const IssueURL = "https://github.com/floopich/mire/issues/new?template=nouveau-m
 // l'emporterait sur le texte fourni, et l'application ignore les formulaires.
 const reportIssueURL = "https://github.com/floopich/mire/issues/new?"
 
-// Report est le rapport d'un modem.
 type Report struct {
 	Mire    string `json:"mire"`
 	Date    string `json:"date"`

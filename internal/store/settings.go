@@ -18,7 +18,6 @@ func Setting(ctx context.Context, db *sql.DB, key, fallback string) (string, err
 	return v, nil
 }
 
-// SetSetting enregistre un reglage.
 func SetSetting(ctx context.Context, db *sql.DB, key, value string) error {
 	_, err := db.ExecContext(ctx,
 		`INSERT INTO settings(key, value) VALUES (?, ?)

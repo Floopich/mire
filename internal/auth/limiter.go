@@ -45,7 +45,6 @@ func (l *Limiter) Wait(key string) time.Duration {
 	return 0
 }
 
-// Fail enregistre un echec.
 func (l *Limiter) Fail(key string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()

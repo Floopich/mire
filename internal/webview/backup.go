@@ -67,7 +67,6 @@ func (s *Server) handleBackup(w http.ResponseWriter, r *http.Request) {
 // BackupSecretKeys sont les cles retirees d'une sauvegarde sans secrets.
 func BackupSecretKeys() []string { return backup.SecretKeys() }
 
-// backups resume les copies automatiques du dossier des donnees.
 func (s *Server) backups() *backupsView {
 	v := &backupsView{Dir: filepath.Join(s.opts.DataDir, backup.Dir)}
 	copies, err := backup.List(s.opts.DataDir)

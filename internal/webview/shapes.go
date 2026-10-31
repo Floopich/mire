@@ -93,7 +93,6 @@ func icon(name string) template.HTML {
 	return template.HTML(`<svg class="icon" viewBox="0 -960 960 960" aria-hidden="true"><path d="` + d + `"/></svg>`)
 }
 
-// levelIcon choisit le pictogramme d'un niveau.
 func levelIcon(l analyze.Level) template.HTML {
 	switch l {
 	case analyze.Good, analyze.Tolerated:

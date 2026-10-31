@@ -46,7 +46,6 @@ func SecretKeys() []string {
 	return append(settings.SecretKeys(), auth.KeyPasswordHash)
 }
 
-// Copy est une copie automatique.
 type Copy struct {
 	Path string
 	Time time.Time

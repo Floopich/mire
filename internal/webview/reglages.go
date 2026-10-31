@@ -24,7 +24,6 @@ import (
 	"github.com/floopich/mire/internal/store"
 )
 
-// fieldView est un champ de la page Reglages.
 type fieldView struct {
 	settings.Def
 	ID      string
@@ -102,7 +101,6 @@ type reglagesView struct {
 	Backups *backupsView
 }
 
-// backupsView resume les copies automatiques.
 type backupsView struct {
 	Dir   string
 	Count int
@@ -110,7 +108,6 @@ type backupsView struct {
 	Size  string
 }
 
-// logLine est une ligne du journal du service, telle que la page l'affiche.
 type logLine struct {
 	Time, Level, Class, Message, Attrs string
 }
@@ -129,7 +126,6 @@ func logLevel(l slog.Level) (label, class string) {
 	}
 }
 
-// logLimit borne le nombre de lignes affichees.
 const logLimit = 200
 
 func (s *Server) logLines() []logLine {
@@ -145,7 +141,6 @@ func (s *Server) logLines() []logLine {
 	return out
 }
 
-// handleLogDownload rend tout le journal garde en memoire, en texte.
 func (s *Server) handleLogDownload(w http.ResponseWriter, r *http.Request) {
 	if s.opts.Journal == nil {
 		http.NotFound(w, r)
@@ -233,7 +228,6 @@ var sectionIcons = map[string]string{
 	"sauvegarde": "telecharger", sectionSecurity: "verrou",
 }
 
-// nav construit la liste des rubriques.
 func (s *Server) nav(ctx context.Context, st service.State, current string) []navItem {
 	var out []navItem
 	for _, g := range visibleGroups(st) {
@@ -366,7 +360,6 @@ func (s *Server) summary(ctx context.Context, id string, st service.State) (stri
 	return "", false
 }
 
-// mqttHost rend l'hote d'une adresse de serveur MQTT.
 func mqttHost(server string) string {
 	if u, err := url.Parse(server); err == nil && u.Host != "" {
 		return u.Host
@@ -399,7 +392,6 @@ func retentionSummary(v settings.Values) string {
 	return age + ", " + strings.Replace(strconv.FormatFloat(gb, 'f', -1, 64), ".", ",", 1) + nbsp + "Go au plus"
 }
 
-// optionLabel renvoie le libelle d'un choix de liste.
 func optionLabel(key, value string) string {
 	if d, ok := settings.Lookup(key); ok && d.Options != nil {
 		for _, o := range d.Options() {
@@ -537,7 +529,6 @@ func (s *Server) handleReglages(w http.ResponseWriter, r *http.Request) {
 	s.render(w, http.StatusOK, "reglages", s.reglagesView(r, "modem", false, nil))
 }
 
-// handleSection affiche une rubrique.
 func (s *Server) handleSection(w http.ResponseWriter, r *http.Request) {
 	section := r.PathValue("rubrique")
 	if _, _, ok := knownSection(s.opts.Service.State(), section); !ok {
@@ -562,7 +553,6 @@ func (s *Server) handleSection(w http.ResponseWriter, r *http.Request) {
 	s.render(w, http.StatusOK, "reglages", v)
 }
 
-// handleSaveGroup enregistre les champs d'un groupe.
 func (s *Server) handleSaveGroup(w http.ResponseWriter, r *http.Request) {
 	if !sameOrigin(r) {
 		http.Error(w, "origine refusée", http.StatusForbidden)
@@ -617,7 +607,6 @@ func (s *Server) saveGroup(w http.ResponseWriter, r *http.Request, g settings.Gr
 // L'essai tourne en tache de fond ; au-dela d'un instant, la page suit son
 // avancement.
 
-// groupTest decrit l'essai d'un groupe.
 type groupTest struct {
 	group, step string
 	run         func(s *Server, ctx context.Context) *testResult
@@ -663,7 +652,6 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 // detectTimeout borne la recherche du modem sur les adresses usuelles.
 const detectTimeout = 10 * time.Second
 
-// detect cherche le modem sur les adresses usuelles.
 func (s *Server) detect(ctx context.Context, _ *work) any {
 	st := s.opts.Service.State()
 	return cableModems(modem.Detect(ctx, modem.Hosts(st.Values.String(settings.ModemURL), st.Profile.DefaultModemURL)))
@@ -750,7 +738,6 @@ func (s *Server) testSpeed(ctx context.Context) *testResult {
 	}
 }
 
-// speedSourceName nomme la source des mesures de debit.
 func speedSourceName(v settings.Values) string {
 	if v.String(settings.SpeedSource) == settings.SpeedUniFi {
 		return "La passerelle UniFi"
@@ -808,7 +795,6 @@ func (s *Server) testModem(ctx context.Context) *testResult {
 		len(raw.Downstream), len(raw.Upstream), st.Address)}
 }
 
-// handlePassword change le mot de passe de l'interface.
 func (s *Server) handlePassword(w http.ResponseWriter, r *http.Request) {
 	if !sameOrigin(r) {
 		http.Error(w, "origine refusée", http.StatusForbidden)

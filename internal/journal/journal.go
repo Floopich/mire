@@ -22,7 +22,6 @@ const (
 	Detailed = "detaille"
 )
 
-// Entry est une ligne du journal.
 type Entry struct {
 	Time    time.Time
 	Level   slog.Level

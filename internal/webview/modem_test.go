@@ -18,7 +18,6 @@ import (
 	"github.com/floopich/mire/internal/store"
 )
 
-// fauxPilote joue un modem gerable.
 type fauxPilote struct {
 	info         modem.Info
 	router       modem.Router

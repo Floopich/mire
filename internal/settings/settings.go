@@ -28,13 +28,11 @@ const (
 	Duration
 )
 
-// Option est un choix d'une liste deroulante.
 type Option struct {
 	Value string
 	Label string
 }
 
-// Def declare un reglage.
 type Def struct {
 	Key string
 	Env string
@@ -145,7 +143,6 @@ func Fixed(given map[string]string) Values {
 // donnees internes de la table settings (empreinte du mot de passe...).
 func key(k string) string { return "reglage." + k }
 
-// String renvoie une valeur texte.
 func (v Values) String(k string) string { return v.values[k] }
 
 // Bool renvoie une valeur booleenne, faux si illisible.
@@ -295,7 +292,6 @@ func validate(d Def, value string) error {
 	return nil
 }
 
-// Lookup renvoie la declaration d'un reglage.
 func Lookup(k string) (Def, bool) {
 	for _, g := range Groups() {
 		for _, d := range g.Defs {
@@ -307,7 +303,6 @@ func Lookup(k string) (Def, bool) {
 	return Def{}, false
 }
 
-// GroupByID renvoie un groupe.
 func GroupByID(id string) (Group, bool) {
 	for _, g := range Groups() {
 		if g.ID == id {
