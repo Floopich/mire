@@ -18,6 +18,7 @@ Un changement s'applique aussitôt, sans redémarrer.
 | Home Assistant | serveur MQTT, identifiant, préfixe de découverte, bouton de redémarrage, essai |
 | Journal | niveau de détail, dernières lignes du service, téléchargement |
 | Sauvegarde | copie automatique chaque jour, nombre de copies gardées, téléchargement d'une copie |
+| Nouvelles versions | avis d'une nouvelle version, désactivé par défaut |
 | Sécurité | mot de passe de l'interface |
 
 ![Page Réglages](images/reglages.png)
@@ -45,6 +46,7 @@ Facultatives. Une variable définie **verrouille** le réglage dans la page. À 
 | `MIRE_JOURNAL` | `normal` | niveau du journal : `erreurs`, `normal` ou `detaille` (une ligne par relevé) |
 | `MIRE_SAUVEGARDE` | `true` | copie automatique chaque jour, dans `sauvegardes` |
 | `MIRE_SAUVEGARDE_COPIES` | `7` | copies automatiques gardées, de 1 à 365 |
+| `MIRE_AVIS_VERSION` | `false` | signale une nouvelle version : une fois par jour, Mire demande à GitHub le numéro de la dernière |
 
 Notifications :
 
@@ -90,6 +92,8 @@ Image pour `amd64`, `arm64` et `armv7`.
 | `main` | version en développement |
 
 Mettre à jour : `docker compose pull && docker compose up -d`. Les données sont conservées et la base est mise à jour au démarrage ; avant de la modifier, Mire en garde une copie à côté, `mire.db.avant-vN` (la plus récente seulement).
+
+Être prévenu d'une nouvelle version : **Réglages, Nouvelles versions**, ou les notifications de GitHub (Watch, Custom, Releases).
 
 **Dossier des données.** Pour un dossier sur la machine plutôt que le volume `mire-data`, remplacez `mire-data:/data` par `./data:/data` et attribuez-le à l'utilisateur du conteneur (65532) avant le premier démarrage :
 

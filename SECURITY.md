@@ -16,7 +16,7 @@ Mire est prévu pour un réseau local, derrière un pare-feu.
 - L'interface : mot de passe choisi à la première visite, conservé sous forme d'empreinte ; sessions de 30 jours ; tentatives de connexion ralenties ; formulaires refusés depuis une autre origine ; aucun script ni ressource externe.
 - Les secrets (mot de passe du modem, jetons, mots de passe MQTT et mail) : jamais réaffichés, absents du journal, des erreurs, des métriques et du rapport du modem. Une valeur effacée ne reste pas dans le fichier de la base.
 - Le conteneur : système de fichiers en lecture seule, aucun privilège, utilisateur non root, image sans shell.
-- Les connexions sortantes : seulement ce que vous activez (notifications, Home Assistant, météo, débit) et la sonde Internet vers ses cibles.
+- Les connexions sortantes : seulement ce que vous activez (notifications, Home Assistant, météo, débit, avis de nouvelle version) et la sonde Internet vers ses cibles.
 
 **Non protégé**
 - La base `mire.db` et les sauvegardes complètes contiennent les secrets en clair : quiconque lit le dossier de données les lit. Protégez ce dossier, ou utilisez une sauvegarde « sans mots de passe ni jetons ».

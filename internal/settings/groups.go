@@ -77,6 +77,8 @@ const (
 
 	BackupOn   = "sauvegarde.auto"
 	BackupKeep = "sauvegarde.copies"
+
+	UpdateCheck = "versions.avis"
 )
 
 // Sources des mesures de debit.
@@ -324,6 +326,15 @@ func Groups() []Group {
 					Help: "Une copie par jour, sans mots de passe ni jetons, dans le dossier sauvegardes des données."},
 				{Key: BackupKeep, Env: "MIRE_SAUVEGARDE_COPIES", Kind: Integer, Default: "7", Label: "Copies gardées",
 					Help: "Les plus anciennes sont supprimées.", Check: checkCopies},
+			},
+		},
+		{
+			ID:     "versions",
+			Title:  "Nouvelles versions",
+			Help:   "Une fois par jour, Mire demande à GitHub le numéro de la dernière version. Rien d'autre n'est envoyé.",
+			Toggle: UpdateCheck,
+			Defs: []Def{
+				{Key: UpdateCheck, Env: "MIRE_AVIS_VERSION", Kind: Bool, Default: "false", Label: "Signaler les nouvelles versions"},
 			},
 		},
 	}

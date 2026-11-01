@@ -28,6 +28,7 @@ import (
 	"github.com/floopich/mire/internal/speedtest"
 	"github.com/floopich/mire/internal/status"
 	"github.com/floopich/mire/internal/store"
+	"github.com/floopich/mire/internal/update"
 	"github.com/floopich/mire/internal/weather"
 )
 
@@ -64,6 +65,8 @@ type State struct {
 	// pourquoi la lecture ne peut pas commencer.
 	Speed    *speedtest.Fetcher
 	SpeedErr error
+	// Update verifie les nouvelles versions quand c'est active.
+	Update *update.Checker
 }
 
 // Manager porte l'etat et les taches de fond.
@@ -376,6 +379,17 @@ func (m *Manager) Reload(ctx context.Context) error {
 				}
 			}()
 		}
+	}
+	if st.Values.Bool(settings.UpdateCheck) {
+		c := update.New(m.db, m.Version, m.logger)
+		st.Update = c
+		m.wg.Add(1)
+		go func() {
+			defer m.wg.Done()
+			if err := c.Run(runCtx); err != nil && !errors.Is(err, context.Canceled) {
+				m.logger.Error("vérification des versions arrêtée", "erreur", err)
+			}
+		}()
 	}
 	if st.Values.Bool(settings.WeatherOn) {
 		if f := st.WeatherFetcher(m.db, m.logger); f.Position == "" {

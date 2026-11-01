@@ -57,6 +57,7 @@ func (s *Server) handleSetupOptions(w http.ResponseWriter, r *http.Request) {
 		{"notifications", "Notifications", "Coupures et ligne dégradée, sur votre téléphone.", vals.Bool(settings.NotifyOn)},
 		{"debit", "Débit", "Mesures de Speedtest Tracker ou d'une passerelle UniFi.", vals.Bool(settings.SpeedOn)},
 		{"metriques", "Métriques", "Prometheus, Grafana.", vals.Bool(settings.MetricsOn)},
+		{"versions", "Nouvelles versions", "Être prévenu quand une nouvelle version paraît.", vals.Bool(settings.UpdateCheck)},
 	}
 	s.render(w, http.StatusOK, "setup", v)
 }

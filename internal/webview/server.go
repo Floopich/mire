@@ -237,6 +237,8 @@ type common struct {
 	Windows []window
 	Path    string
 	Banner  *banner
+	// Update annonce une nouvelle version, sur la vue d'ensemble.
+	Update *banner
 	// Refresh recharge la page apres ce nombre de secondes, zero pour jamais.
 	Refresh int
 	// Demo signale la ligne fictive du mode demonstration ; DemoExit, qu'on
@@ -458,6 +460,11 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	if st.Collecting && v.Banner == nil {
 		v.Next = nextReading(v.Stats.Latest, s.opts.Now(), st.Interval)
+	}
+	if st.Update != nil {
+		if rel, newer, _, _ := st.Update.Status(); newer {
+			v.Update = &banner{Kind: "info", Message: "Mire " + rel.Version + " est disponible.", Link: rel.URL, LinkLabel: "Voir les nouveautés"}
+		}
 	}
 	v.Refresh = s.refreshAfter(st, v.Stats.Latest)
 	s.render(w, http.StatusOK, "index", v)

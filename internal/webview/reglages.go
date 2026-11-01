@@ -99,6 +99,9 @@ type reglagesView struct {
 	NoLog bool
 	// Backups decrit les copies automatiques, pour la rubrique Sauvegarde.
 	Backups *backupsView
+	// Release est la version plus recente annoncee, pour la rubrique
+	// Nouvelles versions.
+	Release *banner
 }
 
 type backupsView struct {
@@ -224,7 +227,7 @@ func buildGroup(g settings.Group, values settings.Values, input map[string]strin
 
 var sectionIcons = map[string]string{
 	"modem": "modem", "collecte": "collecte", "analyse": "analyse", "sonde": "connexion",
-	"notifications": "notifications", "metriques": "metriques", "domotique": "maison", "meteo": "meteo", "abonnement": "abonnement", "debit": "debit", "journal": "note",
+	"notifications": "notifications", "metriques": "metriques", "domotique": "maison", "meteo": "meteo", "abonnement": "abonnement", "debit": "debit", "journal": "note", "versions": "versions",
 	"sauvegarde": "telecharger", sectionSecurity: "verrou",
 }
 
@@ -349,6 +352,19 @@ func (s *Server) summary(ctx context.Context, id string, st service.State) (stri
 			return "Manuelle", false
 		}
 		return "Chaque jour, " + plural(v.Int(settings.BackupKeep), "copie gardée", "copies gardées"), false
+	case "versions":
+		if st.Update == nil {
+			return "Désactivé", false
+		}
+		switch rel, newer, checked, err := st.Update.Status(); {
+		case newer:
+			return "Mire " + rel.Version + " disponible", true
+		case err != nil:
+			return "Vérification impossible : " + err.Error(), false
+		case checked.IsZero():
+			return "Première vérification dans un instant", false
+		}
+		return "À jour", false
 	case "journal":
 		return "Niveau " + strings.ToLower(optionLabel(settings.LogLevel, v.String(settings.LogLevel))), false
 	case "abonnement":
@@ -481,6 +497,11 @@ func (s *Server) reglagesView(r *http.Request, section string, explicit bool, in
 		}
 		if g.ID == "analyse" {
 			s.addObservedOFDMA(r.Context(), &gv)
+		}
+		if g.ID == "versions" && st.Update != nil {
+			if rel, newer, _, _ := st.Update.Status(); newer {
+				v.Release = &banner{Kind: "info", Message: "Mire " + rel.Version + " est disponible.", Link: rel.URL, LinkLabel: "Voir les nouveautés"}
+			}
 		}
 		if g.ID == "sauvegarde" && !s.opts.Demo {
 			v.Backups = s.backups()

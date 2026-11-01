@@ -2,6 +2,7 @@
 
 {{define "content"}}
 {{with .Banner}}<div class="notice {{.Kind}}" role="status">{{if eq .Kind "alerte"}}{{icon "alerte"}}{{else}}{{icon "info"}}{{end}}<p>{{.Message}}{{with .Link}} <a href="{{.}}">{{$.Banner.LinkLabel}}</a>{{end}}</p></div>{{end}}
+{{with .Update}}<div class="notice info" role="status">{{icon "info"}}<p>{{.Message}} <a href="{{.Link}}" rel="noopener noreferrer" target="_blank">{{.LinkLabel}}</a></p></div>{{end}}
 
 <section class="hero {{.Verdict.Level}}" aria-labelledby="verdict-titre">
  {{template "badge" .Verdict.Level}}
