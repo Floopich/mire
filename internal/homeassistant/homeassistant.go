@@ -261,6 +261,7 @@ type state struct {
 	OutageDuration *float64 `json:"duree_derniere_coupure"`
 	Outages24h     int      `json:"coupures_24h"`
 	Outages30d     int      `json:"coupures_30j"`
+	MicroCuts24h   int      `json:"micro_coupures_24h"`
 	LastRestart    *string  `json:"dernier_redemarrage"`
 	Uncorrected24h *int64   `json:"erreurs_non_corrigees_24h"`
 	// Mesures.
@@ -282,7 +283,7 @@ const maxState = 255
 // State rend l'etat publie.
 func State(s status.Status) []byte {
 	out := state{Line: levelLabels[analyze.Unknown], Modem: "OFF", Diagnostic: clip(s.Diagnosis(), maxState),
-		Outages24h: s.Outages24h, Outages30d: s.Outages30d}
+		Outages24h: s.Outages24h, Outages30d: s.Outages30d, MicroCuts24h: s.MicroCuts24h}
 	if s.Fresh {
 		out.Modem = "ON"
 	}
@@ -385,6 +386,9 @@ var entities = []entity{
 	{"sensor", "coupures_30j", "Coupures sur 30 jours", map[string]any{
 		"state_class": "measurement", "icon": "mdi:counter",
 		"value_template": "{{ value_json.coupures_30j }}"}},
+	{"sensor", "micro_coupures_24h", "Micro-coupures sur 24 h", map[string]any{
+		"state_class": "measurement", "icon": "mdi:counter",
+		"value_template": "{{ value_json.micro_coupures_24h }}"}},
 	{"sensor", "dernier_redemarrage", "Dernier redémarrage du modem", map[string]any{
 		"device_class": "timestamp", "icon": "mdi:restart",
 		"value_template": "{{ value_json.dernier_redemarrage }}"}},

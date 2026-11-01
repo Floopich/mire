@@ -19,7 +19,7 @@ const CalibrationIssueURL = "https://github.com/floopich/mire/issues/new?templat
 
 // calibrationTables sont les tableaux repris : les canaux, et ce que Mire en
 // a conclu. Le debit (nom du serveur de mesure) et la sonde n'y sont pas.
-var calibrationTables = []string{"descendant", "montant", "coupures", "journal"}
+var calibrationTables = []string{"descendant", "montant", "coupures", "micro-coupures", "journal"}
 
 const calibrationReadme = `Archive de calibrage Mire
 
@@ -28,7 +28,7 @@ Relevés du modem sur la période, pour vérifier les seuils de l'opérateur.
 Contenu :
 - ligne.json : version de Mire, profil d'opérateur, modèle de modem, période ;
 - descendant.csv, montant.csv : canaux, à chaque relevé ;
-- coupures.csv : coupures vues par la sonde ;
+- coupures.csv, micro-coupures.csv : coupures vues par la sonde ;
 - journal.csv : changements d'état et événements, sans vos notes.
 
 Absent : adresse du modem, identifiant, mots de passe, jetons, numéro de

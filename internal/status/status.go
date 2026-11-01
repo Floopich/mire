@@ -46,6 +46,9 @@ type Status struct {
 	HasLastOutage bool
 	Outages24h    int
 	Outages30d    int
+	// Micro-coupures, hors reseau local, comme les coupures.
+	MicroCuts24h int
+	MicroCuts30d int
 	// LastRestart est l'heure du dernier redemarrage du modem constate.
 	LastRestart time.Time
 	// Uncorrected24h compte les erreurs non corrigees des dernieres 24 h.
@@ -111,6 +114,19 @@ func Read(ctx context.Context, db *sql.DB, cfg Config) (Status, error) {
 		s.Outages30d++
 		if o.Ongoing() || o.End.After(now.Add(-24*time.Hour)) {
 			s.Outages24h++
+		}
+	}
+	micro, err := store.MicroCuts(ctx, db, now.Add(-30*24*time.Hour), now.Add(time.Second))
+	if err != nil {
+		return Status{}, err
+	}
+	for _, m := range micro {
+		if m.Kind == probe.KindLocal {
+			continue
+		}
+		s.MicroCuts30d++
+		if m.Start.After(now.Add(-24 * time.Hour)) {
+			s.MicroCuts24h++
 		}
 	}
 	if e, ok, err := store.LastEvent(ctx, db, events.KindRestart); err != nil {

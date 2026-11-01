@@ -24,14 +24,16 @@ La page **Comprendre la ligne** détaille chaque mesure avec les seuils de l'op�
 | Pic d'erreurs | plus de 1 000 erreurs non corrigées entre deux relevés |
 | Saut de puissance | variation moyenne de plus de 2 dB (voie descendante) ou 3 dB (voie montante) entre deux relevés |
 | Modem injoignable | deux relevés manqués de suite |
+| Micro-coupures répétées | 5 micro-coupures en une heure ; au plus un message par heure |
 
 Vous pouvez ajouter des notes datées : « technicien passé », « connecteur remplacé ». Elles ne sont pas envoyées en notification.
 
 ## Internet
 
-Toutes les 30 secondes, une sonde ouvre une connexion TCP vers `1.1.1.1`, `8.8.8.8` et `9.9.9.9` (port 443), sans rien transmettre.
+Toutes les 5 secondes, une sonde ouvre une connexion TCP vers `1.1.1.1`, `8.8.8.8` et `9.9.9.9` (port 443), sans rien transmettre. Une tentative est manquée quand aucune des trois ne répond.
 
-- **Coupure** : trois tentatives sans réponse de suite, soit environ 90 secondes.
+- **Coupure** : 90 secondes de tentatives manquées de suite.
+- **Micro-coupure** : au moins deux tentatives manquées de suite, sans atteindre 90 secondes. Sa durée est donnée à l'intervalle près, par exemple « entre 5 et 15 s ». Elles ne se voient qu'avec un intervalle de 30 secondes au plus.
 - **Cause** : si le modem répond pendant la coupure, la ligne ; sinon, le réseau local.
 - **Latence et pertes** : par tranches de 5 minutes.
 - **Heure par heure** : 30 jours ramenés sur une journée, disponible après 3 jours.
@@ -59,7 +61,7 @@ Avec la météo activée, la température est relevée toutes les 6 heures aupr�
 
 Le bilan d'une période, à imprimer ou à enregistrer en PDF (Ctrl+P) :
 
-- synthèse : temps passé dans chaque état, coupures, redémarrages, canaux hors plage, erreurs ;
+- synthèse : temps passé dans chaque état, coupures et micro-coupures, redémarrages, canaux hors plage, erreurs ;
 - détail de chaque canal ;
 - débit médian ;
 - coupures, avec la compensation estimée pour un opérateur belge, et journal.

@@ -51,6 +51,43 @@ type internetView struct {
 	ProfileCharts  []template.HTML
 	// Debit, mesure hors de Mire.
 	Speed speedView
+	// Micro-coupures de la periode, les plus recentes d'abord, au plus
+	// maxMicroRows ; MicroOff dit que l'intervalle de la sonde ne permet
+	// pas de les voir.
+	MicroCount int
+	MicroLine  int
+	Micro      []microRow
+	MicroMore  int
+	MicroOff   bool
+	// MicroSince est le debut de la detection, quand la periode commence
+	// avant : rien n'etait mesure jusque-la.
+	MicroSince time.Time
+}
+
+type microRow struct {
+	Start    time.Time
+	Label    string
+	Duration string
+	Level    analyze.Level
+}
+
+const maxMicroRows = 20
+
+var microLabels = map[string]string{
+	probe.KindLine: "Ligne", probe.KindLocal: "Réseau local", probe.KindInternet: "Internet",
+}
+
+// microSpan rend la duree d'une micro-coupure, connue a l'intervalle de
+// la sonde pres : « entre 5 et 15 s ».
+func microSpan(lo, hi time.Duration) string {
+	f := func(d time.Duration) string {
+		sec := int(d / time.Second)
+		if sec < 60 {
+			return strconv.Itoa(sec) + nbsp + "s"
+		}
+		return fmt.Sprintf("%d%smin%s%02d", sec/60, nbsp, nbsp, sec%60)
+	}
+	return "entre " + f(lo) + " et " + f(hi)
 }
 
 var outageLabels = map[string][2]string{
@@ -121,6 +158,32 @@ func (s *Server) handleInternet(w http.ResponseWriter, r *http.Request) {
 	}
 	if down > 0 {
 		v.OutageTotal = events.Duration(down)
+	}
+
+	micro, err := store.MicroCuts(ctx, s.db, from, now)
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	v.MicroCount = len(micro)
+	v.MicroOff = st.Values.Duration(settings.ProbeInterval) > 30*time.Second
+	if since, err := store.MicroSince(ctx, s.db); err == nil && since.After(from) {
+		v.MicroSince = since
+	}
+	for i := len(micro) - 1; i >= 0; i-- {
+		m := micro[i]
+		if m.Kind == probe.KindLine {
+			v.MicroLine++
+		}
+		if len(v.Micro) == maxMicroRows {
+			v.MicroMore++
+			continue
+		}
+		level := analyze.Warning
+		if m.Kind == probe.KindLocal {
+			level = analyze.Tolerated
+		}
+		v.Micro = append(v.Micro, microRow{Start: m.Start, Label: microLabels[m.Kind], Duration: microSpan(m.Min, m.Max), Level: level})
 	}
 	if v.CompensationCount > 0 {
 		v.CompensationTotal = euros(compTotal)

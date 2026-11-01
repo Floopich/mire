@@ -166,8 +166,8 @@ func Groups() []Group {
 				{Key: ProbeTargets, Env: "MIRE_SONDE_CIBLES", Kind: Text, Default: DefaultProbeTargets, Label: "Cibles",
 					Help:        "hôte:port, séparés par des espaces.",
 					Placeholder: DefaultProbeTargets, Check: checkTargets},
-				{Key: ProbeInterval, Env: "MIRE_SONDE_INTERVALLE", Kind: Duration, Default: "30s", Label: "Intervalle",
-					Help: "De 10 secondes à 10 minutes.", Check: checkProbeInterval},
+				{Key: ProbeInterval, Env: "MIRE_SONDE_INTERVALLE", Kind: Duration, Default: "5s", Label: "Intervalle",
+					Help: "De 5 secondes à 10 minutes. Les micro-coupures ne se voient qu'à 30 secondes au plus.", Check: checkProbeInterval},
 			},
 		},
 		{
@@ -460,8 +460,8 @@ func checkProbeInterval(v string) error {
 		return nil
 	}
 	d, err := time.ParseDuration(v)
-	if err == nil && (d < 10*time.Second || d > 10*time.Minute) {
-		return errors.New("entre 10 secondes et 10 minutes")
+	if err == nil && (d < 5*time.Second || d > 10*time.Minute) {
+		return errors.New("entre 5 secondes et 10 minutes")
 	}
 	return nil
 }

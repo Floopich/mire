@@ -201,3 +201,131 @@ func TestUneCoupureInterrompueParUnArretEstRefermee(t *testing.T) {
 		t.Errorf("journal %+v", ev)
 	}
 }
+
+// sondeRapide sonde toutes les 5 secondes, l'intervalle par defaut.
+func sondeRapide(t *testing.T, interval time.Duration) (*Prober, *reseau, *horloge, *sql.DB) {
+	t.Helper()
+	p, r, h, db := sonde(t, "modem:80")
+	p.cfg.Interval = interval
+	p.cfg.Threshold = 0
+	p.cfg.normalize()
+	return p, r, h, db
+}
+
+// suite joue une sequence : true pour une tentative reussie, false sinon.
+func suite(p *Prober, r *reseau, h *horloge, seq ...bool) {
+	for _, ok := range seq {
+		r.set("a:443", ok)
+		r.set("b:443", ok)
+		p.Round(context.Background())
+		h.t = h.t.Add(p.cfg.Interval)
+	}
+}
+
+func repete(v bool, n int) []bool {
+	out := make([]bool, n)
+	for i := range out {
+		out[i] = v
+	}
+	return out
+}
+
+func microCoupures(t *testing.T, db *sql.DB) []store.MicroCut {
+	t.Helper()
+	list, err := store.MicroCuts(context.Background(), db, time.Unix(0, 0), time.Now().Add(24*time.Hour))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return list
+}
+
+func TestMicroCoupures(t *testing.T) {
+	t.Run("seuil de coupure à 90 secondes", func(t *testing.T) {
+		for interval, seuil := range map[time.Duration]int{5 * time.Second: 18, 10 * time.Second: 9, 30 * time.Second: 3, time.Minute: 3} {
+			c := Config{Interval: interval}
+			c.normalize()
+			if c.Threshold != seuil {
+				t.Errorf("%s : seuil %d, attendu %d", interval, c.Threshold, seuil)
+			}
+		}
+	})
+
+	t.Run("une tentative isolée n'est pas une micro-coupure", func(t *testing.T) {
+		p, r, h, db := sondeRapide(t, 5*time.Second)
+		suite(p, r, h, true, false, true, true, false, true)
+		if n := len(microCoupures(t, db)); n != 0 {
+			t.Errorf("%d micro-coupures", n)
+		}
+	})
+
+	t.Run("deux tentatives manquées, avec ses bornes", func(t *testing.T) {
+		p, r, h, db := sondeRapide(t, 5*time.Second)
+		debut := h.t.Add(5 * time.Second)
+		suite(p, r, h, true, false, false, true)
+		list := microCoupures(t, db)
+		if len(list) != 1 {
+			t.Fatalf("%d micro-coupures", len(list))
+		}
+		m := list[0]
+		if !m.Start.Equal(debut) || m.Min != 5*time.Second || m.Max != 15*time.Second || m.Kind != KindLine {
+			t.Errorf("%+v", m)
+		}
+		if len(journal(t, db)) != 0 {
+			t.Error("une micro-coupure isolée n'est pas inscrite au journal")
+		}
+	})
+
+	t.Run("modem muet : réseau local", func(t *testing.T) {
+		p, r, h, db := sondeRapide(t, 5*time.Second)
+		r.set("modem:80", false)
+		suite(p, r, h, true, false, false, false, true)
+		if list := microCoupures(t, db); len(list) != 1 || list[0].Kind != KindLocal || list[0].Min != 10*time.Second || list[0].Max != 20*time.Second {
+			t.Errorf("%+v", list)
+		}
+	})
+
+	t.Run("juste sous la coupure, puis une coupure", func(t *testing.T) {
+		p, r, h, db := sondeRapide(t, 5*time.Second)
+		suite(p, r, h, append(append([]bool{true}, repete(false, 17)...), true)...)
+		list := microCoupures(t, db)
+		if len(list) != 1 || list[0].Min != 80*time.Second || list[0].Max != 90*time.Second {
+			t.Fatalf("%+v", list)
+		}
+		suite(p, r, h, append(repete(false, 18), true)...)
+		if n := len(microCoupures(t, db)); n != 1 {
+			t.Errorf("une coupure ne doit pas compter comme micro-coupure : %d", n)
+		}
+		evs := journal(t, db)
+		if len(evs) != 2 || evs[1].Kind != events.KindOutage {
+			t.Errorf("journal %+v", evs)
+		}
+	})
+
+	t.Run("rafale : un seul message par heure", func(t *testing.T) {
+		p, r, h, db := sondeRapide(t, 5*time.Second)
+		for range MicroBurst + 2 {
+			suite(p, r, h, true, false, false, true)
+			h.t = h.t.Add(5 * time.Minute)
+		}
+		evs := journal(t, db)
+		if len(evs) != 1 || evs[0].Kind != events.KindMicroBurst ||
+			evs[0].Message != "Micro-coupures répétées : 5 en une heure, de la ligne." {
+			t.Errorf("journal %+v", evs)
+		}
+	})
+
+	t.Run("intervalle trop long : pas de micro-coupure", func(t *testing.T) {
+		p, r, h, db := sondeRapide(t, time.Minute)
+		suite(p, r, h, true, false, false, true)
+		if n := len(microCoupures(t, db)); n != 0 {
+			t.Errorf("%d micro-coupures", n)
+		}
+	})
+}
+
+func TestMessageDeRafale(t *testing.T) {
+	cuts := []store.MicroCut{{Kind: KindLine}, {Kind: KindLocal}, {Kind: KindLine}}
+	if got := burstMessage(cuts); got != "Micro-coupures répétées : 3 en une heure (ligne : 2, réseau local : 1)." {
+		t.Error(got)
+	}
+}

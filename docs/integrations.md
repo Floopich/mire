@@ -17,7 +17,7 @@ Services : **ntfy**, **Gotify**, **Discord**, **Telegram**, **Slack**, **mail** 
 
 | Événements envoyés | Contenu |
 |---|---|
-| État de la ligne et coupures (par défaut) | ligne dégradée ou rétablie, coupure d'Internet, modem injoignable, et leur fin |
+| État de la ligne et coupures (par défaut) | ligne dégradée ou rétablie, coupure d'Internet, modem injoignable, et leur fin ; micro-coupures répétées |
 | Alertes critiques seulement | ce qui est critique |
 | Tout le journal | chaque événement |
 
@@ -42,6 +42,7 @@ Format Prometheus sur `GET /metrics`, pour Prometheus, VictoriaMetrics, Grafana 
 | `mire_last_reading_timestamp_seconds`, `mire_info` | heure du dernier relevé ; version, modem et profil |
 | `mire_modem_up` | 1 si le modem répond et que le dernier relevé est récent |
 | `mire_outages{window="24h"\|"30d"}`, `mire_last_outage_start_timestamp_seconds`, `mire_last_outage_duration_seconds` | coupures d'Internet, hors réseau local |
+| `mire_micro_outages{window="24h"\|"30d"}` | micro-coupures, hors réseau local |
 | `mire_modem_last_restart_timestamp_seconds` | dernier redémarrage du modem |
 
 ```yaml
@@ -75,7 +76,7 @@ Mire publie sur un serveur MQTT avec la découverte automatique : un appareil **
 | État de la ligne | sonde | Bon, Toléré, À surveiller, Critique ou Non qualifié |
 | Diagnostic | sonde | la cause en une phrase, comme au journal |
 | Dernière coupure, Durée de la dernière coupure | coupures | début et durée en minutes |
-| Coupures sur 24 h, Coupures sur 30 jours | coupures | hors réseau local |
+| Coupures sur 24 h, Coupures sur 30 jours, Micro-coupures sur 24 h | coupures | hors réseau local |
 | Dernier redémarrage du modem | coupures | heure du dernier redémarrage |
 | Erreurs non corrigées sur 24 h | mesure | données perdues |
 | Canaux à surveiller, Puissance descendante minimale et maximale, SNR le plus bas, Émission la plus forte | mesures | valeurs de la vue d'ensemble |

@@ -32,6 +32,8 @@ const (
 	KindModemUp       = "modem_retrouve"
 	KindOutage        = "coupure"
 	KindOutageEnd     = "coupure_fin"
+	// KindMicroBurst signale des micro-coupures repetees.
+	KindMicroBurst    = "micro_coupures"
 	directionDown     = "descendant"
 	directionUp       = "montant"
 	restartMinOverlap = 3

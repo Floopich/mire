@@ -41,7 +41,7 @@ Facultatives. Une variable définie **verrouille** le réglage dans la page. À 
 | `MIRE_TAILLE_MAX` | `5` | plafond de la base en Go, 0 pour illimité |
 | `MIRE_SONDE` | `true` | sonde Internet active ou non |
 | `MIRE_SONDE_CIBLES` | `1.1.1.1:443 8.8.8.8:443 9.9.9.9:443` | cibles de la sonde, `hôte:port` séparés par des espaces, cinq au plus |
-| `MIRE_SONDE_INTERVALLE` | `30s` | délai entre deux tentatives, de 10 secondes à 10 minutes |
+| `MIRE_SONDE_INTERVALLE` | `5s` | délai entre deux tentatives, de 5 secondes à 10 minutes ; au-delà de 30 secondes, les micro-coupures ne se voient plus |
 | `MIRE_JOURNAL` | `normal` | niveau du journal : `erreurs`, `normal` ou `detaille` (une ligne par relevé) |
 | `MIRE_SAUVEGARDE` | `true` | copie automatique chaque jour, dans `sauvegardes` |
 | `MIRE_SAUVEGARDE_COPIES` | `7` | copies automatiques gardées, de 1 à 365 |

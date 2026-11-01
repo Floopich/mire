@@ -105,6 +105,9 @@ func Write(w io.Writer, s status.Status, info Info) error {
 	m.family("mire_outages", "gauge", "Coupures d'Internet constatées par la sonde, hors réseau local, sur la fenêtre.")
 	m.sample("mire_outages", labels{"window", "24h"}, float64(s.Outages24h))
 	m.sample("mire_outages", labels{"window", "30d"}, float64(s.Outages30d))
+	m.family("mire_micro_outages", "gauge", "Micro-coupures (moins de 90 s) constatées par la sonde, hors réseau local, sur la fenêtre.")
+	m.sample("mire_micro_outages", labels{"window", "24h"}, float64(s.MicroCuts24h))
+	m.sample("mire_micro_outages", labels{"window", "30d"}, float64(s.MicroCuts30d))
 	if s.HasLastOutage {
 		m.one("mire_last_outage_start_timestamp_seconds", "gauge", "Début de la dernière coupure d'Internet, en secondes Unix.",
 			float64(s.LastOutage.Start.Unix()))

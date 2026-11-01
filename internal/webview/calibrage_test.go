@@ -54,7 +54,7 @@ func TestArchiveDeCalibrage(t *testing.T) {
 		noms = append(noms, f.Name)
 	}
 	sort.Strings(noms)
-	if strings.Join(noms, " ") != "coupures.csv descendant.csv journal.csv ligne.json lisez-moi.txt montant.csv" {
+	if strings.Join(noms, " ") != "coupures.csv descendant.csv journal.csv ligne.json lisez-moi.txt micro-coupures.csv montant.csv" {
 		t.Errorf("fichiers : %v", noms)
 	}
 	for nom, texte := range contenu {

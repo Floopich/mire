@@ -123,3 +123,50 @@ func TestCompensationLegaleBelge(t *testing.T) {
 		t.Error("la compensation belge ne concerne qu'un operateur belge")
 	}
 }
+
+func TestMicroCoupuresAffichees(t *testing.T) {
+	db := baseRemplie(t, 3)
+	ctx := context.Background()
+	now := time.Now().UTC()
+	rtt := 12.0
+	if err := store.SaveProbeSample(ctx, db, store.ProbeSample{Start: now.Add(-10 * time.Minute).Truncate(5 * time.Minute),
+		Rounds: 60, Failed: 4, RTTMin: &rtt, RTTAvg: &rtt, RTTMax: &rtt}); err != nil {
+		t.Fatal(err)
+	}
+	for i, kind := range []string{probe.KindLine, probe.KindLocal} {
+		m := store.MicroCut{Start: now.Add(-time.Duration(20+i) * time.Minute), Min: 5 * time.Second, Max: 15 * time.Second, Kind: kind}
+		if err := store.SaveMicroCut(ctx, db, m); err != nil {
+			t.Fatal(err)
+		}
+	}
+	h, _ := monter(t, db, essai{Collecting: true})
+	tok := session(t, db)
+
+	body := html.UnescapeString(get(t, h, tok, "/internet").Body.String())
+	for _, attendu := range []string{"Micro-coupures", "dont 1 de la ligne", "<b>Ligne</b> entre 5 s et 15 s.",
+		"<b>Réseau local</b> entre 5 s et 15 s.", "Mesurées depuis le"} {
+		if !strings.Contains(body, attendu) {
+			t.Errorf("page Internet sans %q", attendu)
+		}
+	}
+
+	// Rapport : la detection ne couvre pas toute la periode, ce qui est dit.
+	body = html.UnescapeString(get(t, h, tok, "/rapport").Body.String())
+	if !strings.Contains(body, "Micro-coupures, de moins de 90 secondes : 2, dont 1 du réseau local (mesurées depuis le") {
+		t.Error("synthèse du rapport sans les micro-coupures")
+	}
+	jour := now.In(time.Local).AddDate(0, 0, -1).Format(time.DateOnly)
+	body = html.UnescapeString(get(t, h, tok, "/rapport?intervention="+jour).Body.String())
+	if !strings.Contains(body, "Micro-coupures</th><td>non mesurées</td>") {
+		t.Error("avant la détection, les micro-coupures sont non mesurées")
+	}
+
+	// Detection couvrant la periode : le compte vaut preuve, zero compris.
+	if err := store.SetMicroSince(ctx, db, now.AddDate(0, 0, -90)); err != nil {
+		t.Fatal(err)
+	}
+	body = html.UnescapeString(get(t, h, tok, "/rapport").Body.String())
+	if !strings.Contains(body, "Micro-coupures, de moins de 90 secondes : 2, dont 1 du réseau local.") {
+		t.Error("synthèse du rapport : mention de la détection en trop")
+	}
+}

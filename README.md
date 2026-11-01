@@ -14,7 +14,7 @@ Mire relève les mesures du modem câble, les conserve et juge chaque canal selo
 
 - **État de la ligne** : chaque canal classé bon, toléré, à surveiller ou critique, avec la cause.
 - **Journal** : changements d'état, redémarrages, canaux perdus, pics d'erreurs, sauts de puissance, notes.
-- **Internet** : coupures, latence heure par heure, débit (Speedtest Tracker ou passerelle UniFi).
+- **Internet** : coupures et micro-coupures, latence heure par heure, débit (Speedtest Tracker ou passerelle UniFi).
 - **Tendance** : évolution sur 30 jours à un an, avec la température extérieure.
 - **Rapport** : bilan d'une période en PDF, comparaison avant et après une intervention, export CSV.
 - **Modem** : informations, réseau domestique, redémarrage.

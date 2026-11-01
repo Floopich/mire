@@ -256,6 +256,37 @@ func (l *Line) speed(t time.Time) store.SpeedTest {
 		Loss: &loss, Server: "Orange Belgium (Bruxelles)"}
 }
 
+// fillMicroCuts ecrit les micro-coupures : chaque soir de la periode
+// degradee, une rafale, puis quelques-unes isolees.
+func (l *Line) fillMicroCuts(ctx context.Context, db *sql.DB, start time.Time) error {
+	if err := store.SetMicroSince(ctx, db, start); err != nil {
+		return err
+	}
+	var cuts []store.MicroCut
+	add := func(t time.Time, kind string) {
+		lo := time.Duration(5*(1+len(cuts)%3)) * time.Second
+		cuts = append(cuts, store.MicroCut{Start: t, Min: lo, Max: lo + 10*time.Second, Kind: kind})
+	}
+	for d := -62; d <= -53; d++ {
+		add(l.day(d, 20, 10+d%7), probe.KindLine)
+		add(l.day(d, 21, 35-d%5), probe.KindLine)
+	}
+	burst := []int{2, 11, 23, 37, 48}
+	for _, m := range burst {
+		add(l.day(-55, 19, m), probe.KindLine)
+	}
+	add(l.day(-30, 21, 15), probe.KindLine)
+	add(l.day(-12, 20, 40), probe.KindLine)
+	add(l.day(-4, 8, 20), probe.KindLocal)
+	for _, c := range cuts {
+		if err := store.SaveMicroCut(ctx, db, c); err != nil {
+			return err
+		}
+	}
+	return store.SaveEvents(ctx, db, []store.Event{{Time: l.day(-55, 19, burst[len(burst)-1]).Add(30 * time.Second),
+		Kind: events.KindMicroBurst, Level: int(analyze.Warning), Message: "Micro-coupures répétées : 5 en une heure, de la ligne."}})
+}
+
 // Fill ecrit l'historique : releves et journal par les chemins de la
 // collecte, sonde, coupures, debit et une note.
 func (l *Line) Fill(ctx context.Context, db *sql.DB, rec *events.Recorder) error {
@@ -276,12 +307,13 @@ func (l *Line) Fill(ctx context.Context, db *sql.DB, rec *events.Recorder) error
 		}
 	}
 
-	// Sonde : une tranche de cinq minutes, dix tentatives.
+	// Sonde : une tranche de cinq minutes, une tentative toutes les cinq
+	// secondes.
 	var samples []store.ProbeSample
 	for t := start; t.Before(l.Origin); t = t.Add(5 * time.Minute) {
-		s := store.ProbeSample{Start: t, Rounds: 10}
+		s := store.ProbeSample{Start: t, Rounds: 60}
 		if l.down(t) {
-			s.Failed = 10
+			s.Failed = 60
 		} else {
 			avg := 11.8 + 0.8*noise(t, 400)
 			if evening(t) {
@@ -315,6 +347,10 @@ func (l *Line) Fill(ctx context.Context, db *sql.DB, rec *events.Recorder) error
 		}); err != nil {
 			return err
 		}
+	}
+
+	if err := l.fillMicroCuts(ctx, db, start); err != nil {
+		return err
 	}
 
 	// Debit : une mesure toutes les deux heures, sauf pendant les coupures.

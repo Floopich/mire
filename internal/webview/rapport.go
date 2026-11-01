@@ -45,11 +45,17 @@ type periodReport struct {
 	Local     int
 	LocalDown time.Duration
 	Probed    bool
-	Restarts  int
-	ModemDown int
-	Lost      int
-	Corrected int64
-	Uncorr    int64
+	// Micro-coupures hors reseau local, et du reseau local. MicroMeasured
+	// dit que la detection couvrait toute la periode : sinon, leur absence
+	// ne prouve rien.
+	Micro, MicroLocal int
+	MicroMeasured     bool
+	MicroSince        time.Time
+	Restarts          int
+	ModemDown         int
+	Lost              int
+	Corrected         int64
+	Uncorr            int64
 	// Debit mesure hors de Mire : medianes et plus bas descendant.
 	SpeedCount         int
 	SpeedDown, SpeedUp float64
@@ -145,6 +151,23 @@ func (s *Server) buildPeriod(ctx context.Context, from, to time.Time) (periodRep
 		return p, err
 	}
 	p.Probed = len(samples) > 0
+
+	micro, err := store.MicroCuts(ctx, s.db, from, to)
+	if err != nil {
+		return p, err
+	}
+	for _, m := range micro {
+		if m.Kind == probe.KindLocal {
+			p.MicroLocal++
+		} else {
+			p.Micro++
+		}
+	}
+	if p.MicroSince, err = store.MicroSince(ctx, s.db); err != nil {
+		return p, err
+	}
+	p.MicroMeasured = p.Probed && !from.Before(p.MicroSince) &&
+		s.opts.Service.State().Values.Duration(settings.ProbeInterval) <= 30*time.Second
 
 	evs, err := store.EventsBetween(ctx, s.db, from, to, events.KindRestart, events.KindModemDown, events.KindChannelsLost)
 	if err != nil {
@@ -404,7 +427,8 @@ func (s *Server) handleReport(w http.ResponseWriter, r *http.Request) {
 
 	// Donnees brutes : seulement les tableaux qui ont des lignes.
 	has := map[string]bool{"descendant": v.HasData, "montant": v.HasData, "internet": p.Probed,
-		"coupures": len(p.Outages) > 0, "debit": p.SpeedCount > 0, "journal": len(evs) > 0}
+		"coupures": len(p.Outages) > 0, "micro-coupures": p.Micro+p.MicroLocal > 0,
+		"debit": p.SpeedCount > 0, "journal": len(evs) > 0}
 	period := url.Values{"du": {v.Du}, "au": {v.Au}}.Encode()
 	for _, e := range store.Exports() {
 		if has[e.Name] {
@@ -497,6 +521,15 @@ func (s *Server) compare(ctx context.Context, day time.Time, n int, limit time.T
 	row = compareRow{Label: "Coupures d'Internet", Before: outageText(before), After: outageText(after)}
 	if before.Probed && after.Probed {
 		row.Verdict, row.Tone = verdict3(sign(float64(before.Down-after.Down)), float64(time.Minute), float64(before.Down), float64(after.Down))
+	}
+	c.Rows = append(c.Rows, row)
+
+	row = compareRow{Label: "Micro-coupures", Before: microText(before), After: microText(after)}
+	if before.MicroMeasured && after.MicroMeasured {
+		// Rapportees a la journee : les deux periodes n'ont pas forcement la
+		// meme duree ; un ecart d'une par jour n'est pas significatif.
+		b, a := float64(before.Micro)/before.days(), float64(after.Micro)/after.days()
+		row.Verdict, row.Tone = verdict3(sign(b-a), 1, b, a)
 	}
 	c.Rows = append(c.Rows, row)
 
@@ -637,6 +670,19 @@ func reportSummary(p periodReport, period string, dsOut, usOut []string, judged 
 		out = append(out, "Le réseau local a été coupé "+plural(p.Local, "fois", "fois")+", "+events.Duration(p.LocalDown)+
 			" au total.")
 	}
+	switch {
+	case p.MicroMeasured && p.Micro+p.MicroLocal == 0:
+		out = append(out, "Aucune micro-coupure.")
+	case p.Micro+p.MicroLocal > 0:
+		m := "Micro-coupures, de moins de 90 secondes : " + FmtCount(p.Micro+p.MicroLocal)
+		if p.MicroLocal > 0 {
+			m += ", dont " + FmtCount(p.MicroLocal) + " du réseau local"
+		}
+		if !p.MicroMeasured {
+			m += " (mesurées depuis le " + FmtTime(p.MicroSince) + ")"
+		}
+		out = append(out, m+".")
+	}
 	var modem []string
 	if p.Restarts > 0 {
 		modem = append(modem, "a redémarré "+plural(p.Restarts, "fois", "fois"))
@@ -733,6 +779,18 @@ func countPtr(v *float64) string {
 		return "—"
 	}
 	return FmtCount(int(math.Round(*v)))
+}
+
+// microText rend les micro-coupures hors reseau local d'une periode, ou
+// dit qu'elles n'etaient pas mesurees.
+func microText(p periodReport) string {
+	switch {
+	case !p.MicroMeasured:
+		return "non mesurées"
+	case p.Micro == 0:
+		return "aucune"
+	}
+	return FmtCount(p.Micro)
 }
 
 func outageText(p periodReport) string {

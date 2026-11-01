@@ -49,6 +49,9 @@ func Exports() []Export {
 		{Name: "coupures", Label: "Coupures",
 			Header: []string{"debut", "fin", "duree_s", "cause", "detail"},
 			rows:   exportOutages},
+		{Name: "micro-coupures", Label: "Micro-coupures",
+			Header: []string{"debut", "duree_min_s", "duree_max_s", "cause"},
+			rows:   exportMicroCuts},
 		{Name: "debit", Label: "Débit",
 			Header: []string{"horodatage", "descendant_mbps", "montant_mbps", "latence_ms", "gigue_ms", "pertes_pct", "serveur"},
 			rows:   exportSpeed},
@@ -175,6 +178,20 @@ func exportOutages(ctx context.Context, db *sql.DB, from, to time.Time, write fu
 			length = strconv.FormatInt(int64(o.End.Sub(o.Start)/time.Second), 10)
 		}
 		if err := write([]string{stamp(o.Start.Unix()), end, length, o.Kind, o.Detail}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func exportMicroCuts(ctx context.Context, db *sql.DB, from, to time.Time, write func([]string) error) error {
+	cuts, err := MicroCuts(ctx, db, from, to)
+	if err != nil {
+		return err
+	}
+	for _, m := range cuts {
+		if err := write([]string{stamp(m.Start.Unix()), strconv.FormatInt(int64(m.Min/time.Second), 10),
+			strconv.FormatInt(int64(m.Max/time.Second), 10), m.Kind}); err != nil {
 			return err
 		}
 	}

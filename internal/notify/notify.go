@@ -46,7 +46,7 @@ const (
 // changent ce que vit l'abonne, et leur fin.
 var stateKinds = map[string]bool{
 	events.KindState: true, events.KindOutage: true, events.KindOutageEnd: true,
-	events.KindModemDown: true, events.KindModemUp: true,
+	events.KindModemDown: true, events.KindModemUp: true, events.KindMicroBurst: true,
 }
 
 // Wanted dit si un evenement passe le filtre.

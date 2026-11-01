@@ -125,7 +125,7 @@ func TestLaSondeSuitSesReglages(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg := st.ProbeConfig(nil)
-	if len(cfg.Targets) != 3 || cfg.Modem != "192.168.0.1:443" || cfg.Interval != 30*time.Second {
+	if len(cfg.Targets) != 3 || cfg.Modem != "192.168.0.1:443" || cfg.Interval != 5*time.Second {
 		t.Errorf("configuration %+v", cfg)
 	}
 	if err := settings.Set(ctx, db, nil, map[string]string{settings.ProbeTargets: "10.0.0.1:53, [2606:4700::1111]:443", settings.ProbeInterval: "1m"}); err != nil {
