@@ -14,6 +14,7 @@
  <h2 class="title-l">Sur la période</h2>
  {{template "windows" .}}
 </div>
+{{template "periode" .}}
 
 {{if .HasSamples}}
 <dl class="figures">
@@ -21,6 +22,7 @@
  <div><dt class="label-l">Coupures</dt><dd>{{.OutageCount}}{{with .OutageTotal}}<span class="since">{{.}} au total</span>{{end}}</dd></div>
  <div><dt class="label-l">Micro-coupures</dt><dd>{{.MicroCount}}{{if and .MicroCount (ne .MicroLine .MicroCount)}}<span class="since">dont {{.MicroLine}} de la ligne</span>{{end}}</dd></div>
  <div><dt class="label-l">Latence moyenne</dt><dd>{{or .Latency "—"}}</dd></div>
+ <div><dt class="label-l">Gigue moyenne</dt><dd>{{or .Jitter "—"}}</dd></div>
  <div><dt class="label-l">Tentatives sans réponse</dt><dd>{{.Loss}}</dd></div>
 </dl>
 

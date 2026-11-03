@@ -123,7 +123,7 @@ func NewServer(db *sql.DB, opts Options) (*Server, error) {
 		"hour":       func(t time.Time) string { return t.Local().Format("15:04") },
 	}
 	pages := map[string]*template.Template{}
-	for _, name := range []string{"index", "channel", "login", "error", "reglages", "setup", "evenements", "internet", "comprendre", "tendance", "rapport", "modem", "proposer"} {
+	for _, name := range []string{"index", "channel", "login", "error", "reglages", "setup", "evenements", "internet", "comprendre", "tendance", "rapport", "modem", "proposer", "chronologie", "releve"} {
 		t, err := template.New("layout.html").Funcs(funcs).
 			ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html")
 		if err != nil {
@@ -160,6 +160,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /installation/operateur", s.requireAuth(s.handleSetupOperatorSave))
 	mux.HandleFunc("GET /comprendre", s.requireAuth(s.handleLearn))
 	mux.HandleFunc("GET /tendance", s.requireAuth(s.handleTrend))
+	mux.HandleFunc("GET /chronologie", s.requireAuth(s.handleChronology))
+	mux.HandleFunc("GET /releve", s.requireAuth(s.handleReleve))
 	mux.HandleFunc("GET /rapport", s.requireAuth(s.handleReport))
 	mux.HandleFunc("GET /rapport/donnees/{fichier}", s.requireAuth(s.handleExport))
 	mux.HandleFunc("GET /rapport/calibrage.zip", s.requireAuth(s.handleCalibration))
@@ -259,7 +261,9 @@ type common struct {
 	Hours   int
 	Windows []window
 	Path    string
-	Banner  *banner
+	// Period est la periode affichee, qui peut finir avant maintenant.
+	Period period
+	Banner *banner
 	// Update annonce une nouvelle version, sur la vue d'ensemble.
 	Update *banner
 	// Refresh recharge la page apres ce nombre de secondes, zero pour jamais.
@@ -381,6 +385,7 @@ func (s *Server) commonFor(r *http.Request, title string) common {
 		Modem: modemName(st),
 		Title: title, Profile: st.Profile, Version: s.opts.Version,
 		Hours: hours, Windows: windowsFor(hours), Path: r.URL.Path, Demo: s.opts.Demo, DemoExit: s.opts.DemoExit,
+		Period: periodFor(r, r.URL.Path, hours, s.opts.Now()),
 	}
 }
 
@@ -713,8 +718,7 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, downstrea
 	v := channelView{common: s.commonFor(r, "Canal "+direction+" "+strconv.Itoa(id)),
 		Direction: direction, Channel: summary, Back: "/?heures="}
 	v.Back += strconv.Itoa(v.Hours)
-	to := s.opts.Now()
-	from := to.Add(-time.Duration(v.Hours) * time.Hour)
+	from, to := v.Period.From, v.Period.To
 	points, err := historyFn(ctx, s.db, id, from, to)
 	if err != nil {
 		s.fail(w, err)
@@ -736,7 +740,7 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, downstrea
 		v.PowerBand = strings.TrimPrefix(rangeText(operator.Range{Min: powerBand[0], Max: powerBand[1]}, "dBmV"), "de ")
 	}
 	v.Charts = append(v.Charts, template.HTML(SVG(Series{
-		Label: "Puissance du canal " + strconv.Itoa(id), Unit: "dBmV", Band: powerBand,
+		Label: "Puissance du canal " + strconv.Itoa(id), Unit: "dBmV", Band: powerBand, From: from, To: to, Link: releveLink(to.Sub(from)),
 		Points: Samples(points, func(p store.Point) *float64 { return p.Power }),
 	})))
 
@@ -748,7 +752,7 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, downstrea
 			v.SNRFloor = short(f) + nbsp + "dB"
 		}
 		v.Charts = append(v.Charts, template.HTML(SVG(Series{
-			Label: "SNR du canal " + strconv.Itoa(id), Unit: "dB", Floor: floor,
+			Label: "SNR du canal " + strconv.Itoa(id), Unit: "dB", Floor: floor, From: from, To: to, Link: releveLink(to.Sub(from)),
 			Points: Samples(points, func(p store.Point) *float64 { return p.SNR }),
 		})))
 

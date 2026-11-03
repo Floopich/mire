@@ -44,7 +44,7 @@ func Exports() []Export {
 			Header: []string{"horodatage", "canal", "frequence_mhz", "modulation", "multiplexage", "puissance_dbmv"},
 			rows:   exportUpstream},
 		{Name: "internet", Label: "Sonde Internet",
-			Header: []string{"debut_tranche", "tentatives", "echecs", "latence_min_ms", "latence_moy_ms", "latence_max_ms"},
+			Header: []string{"debut_tranche", "tentatives", "echecs", "latence_min_ms", "latence_moy_ms", "latence_max_ms", "gigue_moy_ms"},
 			rows:   exportProbe},
 		{Name: "coupures", Label: "Coupures",
 			Header: []string{"debut", "fin", "duree_s", "cause", "detail"},
@@ -144,8 +144,9 @@ func exportUpstream(ctx context.Context, db *sql.DB, from, to time.Time, write f
 
 func exportProbe(ctx context.Context, db *sql.DB, from, to time.Time, write func([]string) error) error {
 	rows, err := db.QueryContext(ctx,
-		`SELECT ts, rounds, failed, rtt_min, rtt_avg, rtt_max FROM probe_samples
-		 WHERE ts >= ? AND ts < ? ORDER BY ts`, from.Unix(), to.Unix())
+		`SELECT p.ts, p.rounds, p.failed, p.rtt_min, p.rtt_avg, p.rtt_max, j.avg_ms
+		 FROM probe_samples p LEFT JOIN probe_jitter j ON j.ts = p.ts
+		 WHERE p.ts >= ? AND p.ts < ? ORDER BY p.ts`, from.Unix(), to.Unix())
 	if err != nil {
 		return err
 	}
@@ -153,11 +154,11 @@ func exportProbe(ctx context.Context, db *sql.DB, from, to time.Time, write func
 	for rows.Next() {
 		var ts int64
 		var rounds, failed int
-		var lo, avg, hi sql.NullFloat64
-		if err := rows.Scan(&ts, &rounds, &failed, &lo, &avg, &hi); err != nil {
+		var lo, avg, hi, jitter sql.NullFloat64
+		if err := rows.Scan(&ts, &rounds, &failed, &lo, &avg, &hi, &jitter); err != nil {
 			return err
 		}
-		if err := write([]string{stamp(ts), strconv.Itoa(rounds), strconv.Itoa(failed), num(lo), num(avg), num(hi)}); err != nil {
+		if err := write([]string{stamp(ts), strconv.Itoa(rounds), strconv.Itoa(failed), num(lo), num(avg), num(hi), num(jitter)}); err != nil {
 			return err
 		}
 	}

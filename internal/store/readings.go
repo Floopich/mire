@@ -107,6 +107,13 @@ func SnapshotBefore(ctx context.Context, db *sql.DB, t time.Time) (docsis.Snapsh
 		`SELECT id, ts, docsis FROM readings WHERE ts < ? ORDER BY ts DESC, id DESC LIMIT 1`, t.Unix())
 }
 
+// SnapshotAfter relit le premier releve strictement posterieur a t, ou
+// sql.ErrNoRows.
+func SnapshotAfter(ctx context.Context, db *sql.DB, t time.Time) (docsis.Snapshot, error) {
+	return snapshotWhere(ctx, db,
+		`SELECT id, ts, docsis FROM readings WHERE ts > ? ORDER BY ts, id LIMIT 1`, t.Unix())
+}
+
 func snapshotWhere(ctx context.Context, db *sql.DB, query string, args ...any) (docsis.Snapshot, error) {
 	var id int64
 	var ts int64

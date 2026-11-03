@@ -33,3 +33,12 @@ Chaque image et chaque binaire publié porte une attestation de provenance : ell
 gh attestation verify oci://ghcr.io/floopich/mire:latest -R floopich/mire
 gh attestation verify mire-linux-amd64 -R floopich/mire
 ```
+
+## Liste des composants
+
+Chaque image porte la liste des bibliothèques qu'elle contient (SBOM), lue par les scanners de failles. Chaque binaire contient la sienne, comme tout programme Go :
+
+```bash
+docker buildx imagetools inspect ghcr.io/floopich/mire:latest --format '{{ json .SBOM }}'
+go version -m mire-linux-amd64
+```

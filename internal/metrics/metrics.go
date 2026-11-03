@@ -130,6 +130,10 @@ func Write(w io.Writer, s status.Status, info Info) error {
 			m.one("mire_probe_latency_seconds", "gauge", "Latence moyenne de la dernière tranche de la sonde, en secondes.",
 				*s.Probe.RTTAvg/1000)
 		}
+		if s.Probe.Jitter != nil {
+			m.one("mire_probe_jitter_seconds", "gauge", "Gigue moyenne de la dernière tranche de la sonde : variation de la latence d'une tentative à la suivante, en secondes.",
+				*s.Probe.Jitter/1000)
+		}
 		if loss, ok := s.Loss(); ok {
 			m.one("mire_probe_loss_ratio", "gauge", "Part des tentatives perdues de la dernière tranche de la sonde, de 0 à 1.",
 				loss/100)

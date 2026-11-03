@@ -321,6 +321,11 @@ func (l *Line) Fill(ctx context.Context, db *sql.DB, rec *events.Recorder) error
 			}
 			lo, hi := avg-2.1, avg+4.2+2*math.Abs(noise(t, 402))
 			s.RTTMin, s.RTTAvg, s.RTTMax = &lo, &avg, &hi
+			j := 1.2 + 0.4*math.Abs(noise(t, 403))
+			if evening(t) {
+				j += 2.1
+			}
+			s.Jitter, s.JitterPairs = &j, 59
 		}
 		samples = append(samples, s)
 	}

@@ -87,7 +87,10 @@ type Prober struct {
 	db  *sql.DB
 	cfg Config
 
-	agg       aggregate
+	agg aggregate
+	// last est la latence de la derniere tentative reussie, zero apres un
+	// echec : la gigue ne se mesure qu'entre deux reussites consecutives.
+	last      time.Duration
 	failures  int
 	firstFail time.Time
 	lastFail  time.Time
@@ -159,6 +162,7 @@ func (p *Prober) Round(ctx context.Context) {
 		p.flush(ctx)
 	}
 	p.agg.add(bucket, ok, rtt)
+	p.jitter(ok, rtt)
 
 	micro := p.cfg.Interval <= microMaxInterval
 	if ok {
@@ -332,6 +336,30 @@ type aggregate struct {
 	rounds, failed int
 	sum, lo, hi    float64
 	successes      int
+	jitter         float64
+	pairs          int
+}
+
+// jitter compte l'ecart de latence avec la tentative precedente, si les
+// deux ont reussi.
+func (p *Prober) jitter(ok bool, rtt time.Duration) {
+	if !ok {
+		p.last = 0
+		return
+	}
+	if p.last > 0 {
+		p.agg.pair(rtt - p.last)
+	}
+	p.last = rtt
+}
+
+// pair compte l'ecart de latence entre deux tentatives reussies consecutives.
+func (a *aggregate) pair(d time.Duration) {
+	if d < 0 {
+		d = -d
+	}
+	a.jitter += float64(d.Microseconds()) / 1000
+	a.pairs++
 }
 
 func (a *aggregate) add(bucket time.Time, ok bool, rtt time.Duration) {
@@ -358,6 +386,10 @@ func (a aggregate) sample() store.ProbeSample {
 		avg := a.sum / float64(a.successes)
 		lo, hi := a.lo, a.hi
 		s.RTTMin, s.RTTAvg, s.RTTMax = &lo, &avg, &hi
+	}
+	if a.pairs > 0 {
+		j := a.jitter / float64(a.pairs)
+		s.Jitter, s.JitterPairs = &j, a.pairs
 	}
 	return s
 }

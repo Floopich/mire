@@ -1,0 +1,28 @@
+{{define "actions"}}{{template "logout" .}}{{end}}
+
+{{define "content"}}
+<div class="page-head">
+ <a class="btn text icon-btn" href="/" aria-label="Revenir à la vue d'ensemble">{{icon "retour"}}</a>
+ <h1 class="headline-s">Chronologie</h1>
+</div>
+<p class="intro body-l muted">Tout ce que Mire mesure, sur la même période. Cliquez sur une courbe pour ouvrir le relevé de ce moment.</p>
+
+<div class="toolbar">
+ <h2 class="title-l">Période</h2>
+ {{template "windows" .}}
+</div>
+{{template "periode" .}}
+
+{{if .HasData}}
+{{range .Lanes}}
+<section class="card chart-card lane-card">
+ <h3 class="title-m">{{.Title}}</h3>
+ {{with .Hint}}<p class="hint body-m">{{.}}</p>{{end}}
+ {{.Chart}}
+ {{with .Legend}}<ul class="legend label-m">{{range .}}<li><span class="key {{.Class}}"></span>{{.Label}}</li>{{end}}</ul>{{end}}
+</section>
+{{end}}
+{{else}}
+<p class="empty-state">Aucune mesure sur cette période.</p>
+{{end}}
+{{end}}

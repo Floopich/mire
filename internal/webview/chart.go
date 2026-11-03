@@ -23,6 +23,10 @@ type frame struct {
 var (
 	wideFrame   = frame{width: 720, height: 240, padLeft: 52, padRight: 14, padTop: 14, padBottom: 30, class: "chart wide"}
 	narrowFrame = frame{width: 360, height: 200, padLeft: 40, padRight: 8, padTop: 12, padBottom: 26, class: "chart narrow"}
+	// Cadres plus bas, pour les bandes de la chronologie : memes marges, pour
+	// que les bandes empilees partagent le meme axe du temps.
+	laneWide   = frame{width: 720, height: 150, padLeft: 52, padRight: 14, padTop: 10, padBottom: 26, class: "chart wide lane"}
+	laneNarrow = frame{width: 360, height: 140, padLeft: 40, padRight: 8, padTop: 10, padBottom: 24, class: "chart narrow lane"}
 )
 
 // Sample est un point d'une courbe ; Value nil marque un trou de mesure.
@@ -51,10 +55,25 @@ type Series struct {
 	Band *[2]float64
 	// Floor est un plancher : tout ce qui passe dessous est hors norme.
 	Floor *float64
+	// Second est une seconde courbe, dessinee plus discretement sur la meme
+	// echelle : la puissance la plus haute sous la plus basse, la gigue sous
+	// la latence.
+	Second []Sample
+	// From et To fixent l'axe du temps ; sans eux, il va du premier au
+	// dernier point.
+	From, To time.Time
+	// Lane dessine un graphique bas, pour la chronologie.
+	Lane bool
+	// Link rend le lien d'une tranche de temps : un clic sur le graphique
+	// ouvre le releve de ce moment.
+	Link func(at time.Time) (href, title string)
 }
 
 // SVG assemble un graphique. Les points sans valeur interrompent le trace.
 func SVG(s Series) string {
+	if s.Lane {
+		return draw(s, laneWide) + draw(s, laneNarrow)
+	}
 	return draw(s, wideFrame) + draw(s, narrowFrame)
 }
 
@@ -64,6 +83,11 @@ func draw(s Series, f frame) string {
 		f.width, f.height, escape(s.Label), f.class)
 
 	known := knownValues(s)
+	for _, p := range s.Second {
+		if p.Value != nil {
+			known = append(known, *p.Value)
+		}
+	}
 	if len(known) < 2 {
 		fmt.Fprintf(&b, `<text x="%d" y="%d" class="empty" text-anchor="middle">Pas encore assez de mesures.</text></svg>`,
 			f.width/2, f.height/2)
@@ -84,8 +108,15 @@ func draw(s Series, f frame) string {
 		lo = 0
 	}
 	lo, hi, step := niceScale(lo, hi)
-	t0 := s.Points[0].Time.Unix()
-	t1 := s.Points[len(s.Points)-1].Time.Unix()
+	var t0, t1 int64
+	switch {
+	case !s.From.IsZero() && !s.To.IsZero():
+		t0, t1 = s.From.Unix(), s.To.Unix()
+	case len(s.Points) > 0:
+		t0, t1 = s.Points[0].Time.Unix(), s.Points[len(s.Points)-1].Time.Unix()
+	default:
+		t0, t1 = s.Second[0].Time.Unix(), s.Second[len(s.Second)-1].Time.Unix()
+	}
 	if t1 == t0 {
 		t1 = t0 + 1
 	}
@@ -111,18 +142,24 @@ func draw(s Series, f frame) string {
 		fmt.Fprintf(&b, `<text x="%d" y="%.1f" class="tick" text-anchor="end">%s</text>`, f.padLeft-7, y+4, tickText(v, step))
 	}
 
-	var path strings.Builder
-	pen := "M"
-	for _, p := range s.Points {
-		v := p.Value
-		if v == nil {
-			pen = "M" // trou de mesure : on leve le crayon
-			continue
+	trace := func(points []Sample, class string) {
+		var path strings.Builder
+		pen := "M"
+		for _, p := range points {
+			v := p.Value
+			if v == nil {
+				pen = "M" // trou de mesure : on leve le crayon
+				continue
+			}
+			fmt.Fprintf(&path, "%s%.1f %.1f ", pen, f.x(p.Time.Unix(), t0, t1), f.y(*v, lo, hi))
+			pen = "L"
 		}
-		fmt.Fprintf(&path, "%s%.1f %.1f ", pen, f.x(p.Time.Unix(), t0, t1), f.y(*v, lo, hi))
-		pen = "L"
+		if path.Len() > 0 {
+			fmt.Fprintf(&b, `<path d="%s" class="%s"/>`, strings.TrimSpace(path.String()), class)
+		}
 	}
-	fmt.Fprintf(&b, `<path d="%s" class="line"/>`, strings.TrimSpace(path.String()))
+	trace(s.Second, "line second")
+	trace(s.Points, "line")
 
 	// Trois reperes horaires : debut, milieu, fin.
 	span := time.Duration(t1-t0) * time.Second
@@ -131,8 +168,31 @@ func draw(s Series, f frame) string {
 		fmt.Fprintf(&b, `<text x="%.1f" y="%d" class="tick" text-anchor="%s">%s</text>`,
 			f.x(ts, t0, t1), f.height-8, anchor, escape(timeTick(time.Unix(ts, 0), span)))
 	}
+	hits(&b, f, t0, t1, s.Link)
 	b.WriteString(`</svg>`)
 	return b.String()
+}
+
+// hits pose des zones cliquables sur toute la hauteur du graphique, une par
+// tranche de temps : un clic ouvre le releve de ce moment.
+func hits(b *strings.Builder, f frame, t0, t1 int64, link func(time.Time) (string, string)) {
+	if link == nil {
+		return
+	}
+	n := 48
+	if f.width < 500 {
+		n = 24
+	}
+	w := float64(f.width-f.padLeft-f.padRight) / float64(n)
+	for i := range n {
+		at := time.Unix(t0+(t1-t0)*int64(2*i+1)/int64(2*n), 0)
+		href, title := link(at)
+		if href == "" {
+			continue
+		}
+		fmt.Fprintf(b, `<a href="%s"><rect x="%.1f" y="%d" width="%.1f" height="%d" class="hit"><title>%s</title></rect></a>`,
+			escape(href), float64(f.padLeft)+w*float64(i), f.padTop, w, f.height-f.padTop-f.padBottom, escape(title))
+	}
 }
 
 // timeTick adapte la precision a la fenetre : l'heure sur une journee, la

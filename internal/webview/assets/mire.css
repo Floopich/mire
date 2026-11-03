@@ -316,6 +316,19 @@
   .page-head { display: flex; align-items: center; gap: 8px; margin: 4px 0 4px -8px; }
   .page-head .btn.text { color: var(--md-sys-color-on-surface-variant); }
   .chart-card { margin-top: 12px; }
+  /* Chronologie : bandes empilees sur le meme axe du temps. */
+  .lane-card { margin-top: 8px; padding-block: 14px; }
+  .chart .line.second { stroke: var(--md-sys-color-tertiary); stroke-width: 2; opacity: .85; }
+  .chart .hit { fill: transparent; cursor: pointer; }
+  .chart .hit:hover { fill: color-mix(in oklab, var(--md-sys-color-primary) 12%, transparent); }
+  .chart.state rect, .chart.strip rect, .chart.strip circle { fill: var(--ton); }
+  .chart.strip circle.note { fill: var(--md-sys-color-secondary); }
+  .legend .key { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; background: var(--ton, var(--md-sys-color-primary)); }
+  .legend .key.line { height: 3px; vertical-align: 3px; background: var(--md-sys-color-primary); }
+  .legend .key.line.second { background: var(--md-sys-color-tertiary); }
+  .legend .key.note { background: var(--md-sys-color-secondary); }
+  .periode { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 8px; }
+  .periode .label-l { color: var(--md-sys-color-on-surface-variant); }
   .chart-card h3 { margin-bottom: 4px; }
   .hint { color: var(--md-sys-color-on-surface-variant); max-width: 70ch; margin: 2px 0 10px; }
   .chart { width: 100%; height: auto; display: block; }

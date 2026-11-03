@@ -59,6 +59,10 @@ func span(from, to time.Time) (int64, int64) {
 // ErrorBars dessine les erreurs d'un canal : corrigees en bas, non corrigees
 // au-dessus.
 func ErrorBars(label string, points []store.ErrorPoint, from, to time.Time) string {
+	return errorBarsFrames(label, points, from, to, wideFrame, narrowFrame)
+}
+
+func errorBarsFrames(label string, points []store.ErrorPoint, from, to time.Time, wide, narrow frame) string {
 	build := func(n int) []bar {
 		t0, t1 := span(from, to)
 		bars := make([]bar, n)
@@ -81,8 +85,8 @@ func ErrorBars(label string, points []store.ErrorPoint, from, to time.Time) stri
 	if len(points) == 0 {
 		style.empty = "Pas encore assez de relevés."
 	}
-	return renderBars(label, build(96), from, to, wideFrame, style) +
-		renderBars(label, build(48), from, to, narrowFrame, style)
+	return renderBars(label, build(96), from, to, wide, style) +
+		renderBars(label, build(48), from, to, narrow, style)
 }
 
 // LossBars dessine la part de tentatives de la sonde restees sans reponse.

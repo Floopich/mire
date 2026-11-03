@@ -35,11 +35,13 @@ type internetView struct {
 	HasSamples   bool
 	Availability string
 	Latency      string
-	Loss         string
-	OutageCount  int
-	OutageTotal  string
-	Outages      []outageRow
-	Charts       []template.HTML
+	// Jitter est la gigue moyenne de la periode, vide avant sa mesure.
+	Jitter      string
+	Loss        string
+	OutageCount int
+	OutageTotal string
+	Outages     []outageRow
+	Charts      []template.HTML
 	// Compensation legale belge : affichee pour un operateur belge.
 	CompensationShown bool
 	CompensationCount int
@@ -112,8 +114,8 @@ func toOutageRow(o store.Outage, now time.Time) outageRow {
 func (s *Server) handleInternet(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	v := internetView{common: s.commonFor(r, "Internet"), Probing: s.opts.Service.State().Probing}
-	now := s.opts.Now()
-	from := now.Add(-time.Duration(v.Hours) * time.Hour)
+	// now est la fin de la periode affichee : maintenant, ou plus tot.
+	now, from := v.Period.To, v.Period.From
 
 	samples, err := store.ProbeSamples(ctx, s.db, from, now)
 	if err != nil {
@@ -151,6 +153,9 @@ func (s *Server) handleInternet(w http.ResponseWriter, r *http.Request) {
 		}
 		if start.Before(from) {
 			start = from
+		}
+		if end.After(now) {
+			end = now
 		}
 		if end.After(start) {
 			down += end.Sub(start)
@@ -199,8 +204,8 @@ func (s *Server) handleInternet(w http.ResponseWriter, r *http.Request) {
 		if covered := now.Sub(start); covered > 0 {
 			v.Availability = percent(100*(1-float64(down)/float64(covered)), 2)
 		}
-		var rounds, failed, ok int
-		var sum float64
+		var rounds, failed, ok, pairs int
+		var sum, jsum float64
 		latency := make([]Sample, 0, len(samples))
 		const bucket = 5 * time.Minute
 		for i, sm := range samples {
@@ -216,6 +221,13 @@ func (s *Server) handleInternet(w http.ResponseWriter, r *http.Request) {
 				sum += *sm.RTTAvg * float64(n)
 				ok += n
 			}
+			if sm.Jitter != nil {
+				jsum += *sm.Jitter * float64(sm.JitterPairs)
+				pairs += sm.JitterPairs
+			}
+		}
+		if pairs > 0 {
+			v.Jitter = dec(jsum/float64(pairs)) + nbsp + "ms"
 		}
 		if ok > 0 {
 			v.Latency = strconv.Itoa(int(math.Round(sum/float64(ok)))) + nbsp + "ms"

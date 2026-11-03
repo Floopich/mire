@@ -38,7 +38,7 @@ Format Prometheus sur `GET /metrics`, pour Prometheus, VictoriaMetrics, Grafana 
 | `mire_downstream_corrected_total`, `mire_downstream_uncorrected_total` | compteurs d'erreurs du modem, remis à zéro à son redémarrage : à lire avec `rate()` ou `increase()` |
 | `mire_downstream_level`, `mire_upstream_level` | état par canal, même échelle que `mire_line_level` |
 | `mire_upstream_power_dbmv`, `mire_upstream_frequency_mhz` | par canal montant |
-| `mire_internet_up`, `mire_probe_latency_seconds`, `mire_probe_loss_ratio` | sonde Internet |
+| `mire_internet_up`, `mire_probe_latency_seconds`, `mire_probe_jitter_seconds`, `mire_probe_loss_ratio` | sonde Internet |
 | `mire_last_reading_timestamp_seconds`, `mire_info` | heure du dernier relevé ; version, modem et profil |
 | `mire_modem_up` | 1 si le modem répond et que le dernier relevé est récent |
 | `mire_outages{window="24h"\|"30d"}`, `mire_last_outage_start_timestamp_seconds`, `mire_last_outage_duration_seconds` | coupures d'Internet, hors réseau local |

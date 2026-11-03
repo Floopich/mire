@@ -56,6 +56,7 @@ func Purge(ctx context.Context, db *sql.DB, r Retention, now time.Time) (PurgeRe
 			// suivent que la duree de conservation.
 			`DELETE FROM probe_samples WHERE ts < ?`,
 			`DELETE FROM micro_cuts WHERE ts < ?`,
+			`DELETE FROM probe_jitter WHERE ts < ?`,
 			`DELETE FROM speed_tests WHERE ts < ?`,
 			`DELETE FROM link_events WHERE ended_at IS NOT NULL AND ended_at < ?`,
 		} {

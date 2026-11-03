@@ -60,7 +60,14 @@
 </nav>{{end}}
 
 {{define "windows"}}<nav class="group" aria-label="Période affichée">
- {{range .Windows}}<a href="{{$.Path}}?heures={{.Hours}}"{{if .Active}} aria-current="true"{{end}}>{{.Label}}</a>{{end}}
+ {{range .Windows}}<a href="{{$.Path}}?heures={{.Hours}}{{with $.Period.Fin}}&amp;fin={{.}}{{end}}"{{if .Active}} aria-current="true"{{end}}>{{.Label}}</a>{{end}}
+</nav>{{end}}
+
+{{define "periode"}}<nav class="periode" aria-label="Remonter dans le temps">
+ <a class="btn tonal" href="{{.Period.Prev}}">{{icon "retour"}}Période précédente</a>
+ {{if not .Period.Live}}<span class="label-l">{{.Period.Label}}</span>
+ <a class="btn tonal" href="{{.Period.Next}}">Période suivante{{icon "suivant"}}</a>
+ <a class="btn text" href="{{.Period.Now}}">Revenir à maintenant</a>{{end}}
 </nav>{{end}}
 
 {{define "event"}}<li class="event {{if .Note}}note{{else}}{{.Level}}{{end}}">
@@ -76,3 +83,15 @@
 </li>{{end}}
 
 {{define "badge"}}<div class="badge {{.}}"><svg class="shape" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .}}"/></svg>{{levelIcon .}}</div>{{end}}
+
+{{define "count"}}{{.}} {{if gt . 1}}canaux{{else}}canal{{end}}{{end}}
+
+{{define "row"}}<li><a class="row {{.Level}}" href="{{.Href}}">
+ <span class="chip"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .Level}}"/></svg><b><span class="sr">Canal </span>{{.ID}}</b></span>
+ <span class="main"><span class="title-m">{{fmtMHz .Freq}}</span><small>{{or .Modulation "—"}}</small></span>
+ <span class="value"><small>Puissance</small>{{fmtValue .Power "dBmV"}}</span>
+ {{if .SNRColumn}}<span class="value"><small>SNR</small>{{fmtValue .SNR "dB"}}</span>{{end}}
+ <span class="state"><span class="tag">{{levelIcon .Level}}{{label .Level}}</span>{{with .Note}}<span class="note">{{.}}</span>{{end}}</span>
+</a></li>{{end}}
+
+{{define "count-more"}}{{if eq . 1}}Et une autre mesure hors plage, sur la page du canal.{{else}}Et {{.}} autres mesures hors plage, sur la page de chaque canal.{{end}}{{end}}

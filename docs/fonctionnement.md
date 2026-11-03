@@ -38,6 +38,7 @@ Toutes les 5 secondes, une sonde ouvre une connexion TCP vers `1.1.1.1`, `8.8.8.
 - **Micro-coupure** : au moins deux tentatives manquées de suite, sans atteindre 90 secondes. Sa durée est donnée à l'intervalle près, par exemple « entre 5 et 15 s ». Elles ne se voient qu'avec un intervalle de 30 secondes au plus.
 - **Cause** : si le modem répond pendant la coupure, la ligne ; sinon, le réseau local.
 - **Latence et pertes** : par tranches de 5 minutes.
+- **Gigue** : variation moyenne de la latence d'une tentative réussie à la suivante. Elle gêne les appels vidéo et les jeux, souvent avant le débit.
 - **Heure par heure** : 30 jours ramenés sur une journée, disponible après 3 jours.
 - **Compensation légale (Belgique)** : pour une coupure de plus de 8 heures, 1 € dès 8 heures, 2 € dès 24 heures, puis 0,50 € par jour, ou un trentième de l'abonnement par jour entamé si c'est plus (loi du 13 juin 2005, article 113/2).
 - **Débit** : voir [Intégrations](integrations.md#débit).
@@ -52,6 +53,14 @@ Modèle, version du logiciel, état de la ligne câble, durée de fonctionnement
 - **Redémarrage** : après confirmation. Internet, le Wi-Fi et le téléphone sont coupés 3 à 5 minutes. Une seule demande par tranche de 10 minutes, inscrite au journal. Mire constate ensuite le redémarrage, ou son absence, d'après la durée de fonctionnement du modem.
 
 ![Page Modem, modem en mode routeur](images/modem.png)
+
+## Chronologie
+
+Tout ce que Mire mesure, sur une même période et le même axe du temps : état de la ligne, coupures, micro-coupures et événements, puissance descendante (la plus basse et la plus haute), SNR le plus bas, émission la plus forte, erreurs non corrigées, latence et gigue, débit et température quand ils sont mesurés. Ce qui arrive en même temps se lit d'un regard.
+
+Un clic sur une courbe ouvre le **relevé** de ce moment : son verdict, jugé avec les seuils actuels, et chaque canal, avec les relevés précédent et suivant.
+
+Les pages Chronologie, Internet et celles des canaux remontent dans le temps : « Période précédente », « Période suivante », « Revenir à maintenant ». L'adresse de la page garde la période affichée et se partage telle quelle.
 
 ## Tendance et météo
 

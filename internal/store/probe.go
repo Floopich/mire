@@ -14,7 +14,31 @@ type ProbeSample struct {
 	Failed int
 	// Latences en millisecondes des tentatives reussies ; nil sans reussite.
 	RTTMin, RTTAvg, RTTMax *float64
+	// Jitter est la variation moyenne de la latence entre deux tentatives
+	// reussies consecutives, en millisecondes ; nil sans paire mesuree.
+	Jitter      *float64
+	JitterPairs int
 }
+
+// saveJitter complete la gigue d'une tranche, ponderee par les paires.
+func saveJitter(ctx context.Context, x interface {
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+}, s ProbeSample) error {
+	if s.Jitter == nil || s.JitterPairs == 0 {
+		return nil
+	}
+	_, err := x.ExecContext(ctx, `
+		INSERT INTO probe_jitter(ts, avg_ms, pairs) VALUES (?, ?, ?)
+		ON CONFLICT(ts) DO UPDATE SET
+			avg_ms = (avg_ms * pairs + excluded.avg_ms * excluded.pairs) / (pairs + excluded.pairs),
+			pairs  = pairs + excluded.pairs`,
+		s.Start.Unix(), *s.Jitter, s.JitterPairs)
+	return err
+}
+
+// probeColumns relit une tranche avec sa gigue.
+const probeColumns = `p.ts, p.rounds, p.failed, p.rtt_min, p.rtt_avg, p.rtt_max, j.avg_ms, coalesce(j.pairs, 0)
+	FROM probe_samples p LEFT JOIN probe_jitter j ON j.ts = p.ts`
 
 // SaveProbeSample enregistre une tranche, ou la complete si elle existe
 // deja : apres un redemarrage du service au milieu d'une tranche, les deux
@@ -35,7 +59,10 @@ func SaveProbeSample(ctx context.Context, db *sql.DB, s ProbeSample) error {
 					/ ((rounds - failed) + (excluded.rounds - excluded.failed))
 			END`,
 		s.Start.Unix(), s.Rounds, s.Failed, s.RTTMin, s.RTTAvg, s.RTTMax)
-	return err
+	if err != nil {
+		return err
+	}
+	return saveJitter(ctx, db, s)
 }
 
 // SaveProbeSamples enregistre des tranches nouvelles d'un coup, en une
@@ -56,6 +83,9 @@ func SaveProbeSamples(ctx context.Context, db *sql.DB, samples []ProbeSample) er
 		if _, err := stmt.ExecContext(ctx, s.Start.Unix(), s.Rounds, s.Failed, s.RTTMin, s.RTTAvg, s.RTTMax); err != nil {
 			return err
 		}
+		if err := saveJitter(ctx, tx, s); err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
 }
@@ -63,8 +93,7 @@ func SaveProbeSamples(ctx context.Context, db *sql.DB, samples []ProbeSample) er
 // ProbeSamples renvoie les tranches commencees entre from et to.
 func ProbeSamples(ctx context.Context, db *sql.DB, from, to time.Time) ([]ProbeSample, error) {
 	rows, err := db.QueryContext(ctx,
-		`SELECT ts, rounds, failed, rtt_min, rtt_avg, rtt_max FROM probe_samples
-		 WHERE ts >= ? AND ts <= ? ORDER BY ts`, from.Unix(), to.Unix())
+		`SELECT `+probeColumns+` WHERE p.ts >= ? AND p.ts <= ? ORDER BY p.ts`, from.Unix(), to.Unix())
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +102,7 @@ func ProbeSamples(ctx context.Context, db *sql.DB, from, to time.Time) ([]ProbeS
 	for rows.Next() {
 		var s ProbeSample
 		var ts int64
-		if err := rows.Scan(&ts, &s.Rounds, &s.Failed, &s.RTTMin, &s.RTTAvg, &s.RTTMax); err != nil {
+		if err := rows.Scan(&ts, &s.Rounds, &s.Failed, &s.RTTMin, &s.RTTAvg, &s.RTTMax, &s.Jitter, &s.JitterPairs); err != nil {
 			return nil, err
 		}
 		s.Start = time.Unix(ts, 0).UTC()
@@ -96,8 +125,8 @@ func LastProbeSample(ctx context.Context, db *sql.DB) (time.Time, error) {
 func LatestProbeSample(ctx context.Context, db *sql.DB) (s ProbeSample, ok bool, err error) {
 	var ts int64
 	err = db.QueryRowContext(ctx,
-		`SELECT ts, rounds, failed, rtt_min, rtt_avg, rtt_max FROM probe_samples ORDER BY ts DESC LIMIT 1`).
-		Scan(&ts, &s.Rounds, &s.Failed, &s.RTTMin, &s.RTTAvg, &s.RTTMax)
+		`SELECT `+probeColumns+` ORDER BY p.ts DESC LIMIT 1`).
+		Scan(&ts, &s.Rounds, &s.Failed, &s.RTTMin, &s.RTTAvg, &s.RTTMax, &s.Jitter, &s.JitterPairs)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ProbeSample{}, false, nil
 	}
