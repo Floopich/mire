@@ -6,6 +6,8 @@
   "time_zone": "Europe/Brussels",
   "default_modem_url": "http://192.168.100.1",
   "calibrated": true,
+  "validated": false,
+  "basis": "Telenet ne publie pas de seuils : ce sont ceux de la spécification DOCSIS et des références de l'industrie, encore à confirmer par des relevés du réseau Telenet",
   "source": "https://broadbandlibrary.com/cable-modem-transmit-power/",
   "notes": "Vaut pour les abonnés Telenet et Orange raccordés au réseau câble Telenet (Flandre, une partie de Bruxelles). Telenet ne publie pas de seuils : ceux-ci reprennent la spécification DOCSIS et les références de terrain de l'industrie, pas des tolérances propres au réseau. Voie descendante : plage d'entrée du modem de −15 à +15 dBmV (CableLabs), idéal entre −10 et +10 dBmV (Brady Volpe, The Volpe Firm). SNR : minimums opérationnels de 27 dB en 64QAM et 31 dB en 256QAM (Ron Hranac, SCTE, Cablefax, 2009 ; Brady Volpe) ; planchers OFDM, 1024QAM et 4096QAM selon CableLabs DOCSIS 3.1 PHY (CM-SP-PHYv3.1). Voie montante : 40 à 47 dBmV typiques et 50 dBmV au plus par canal avec quatre canaux liés, au-delà de 52 dBmV le signal n'atteint plus le CMTS (Ron Hranac, Broadband Library ; Brady Volpe) ; une émission basse n'est signalée que sous 35 dBmV. Ces seuils sont à affiner avec des relevés de lignes Telenet : signalez un écart par une demande « Nouvel opérateur ».",
   "thresholds": {

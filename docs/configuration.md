@@ -81,6 +81,19 @@ Service, hors de la page Réglages :
 
 Chaque variable a son option en ligne de commande (`mire -h`), sauf le mot de passe du modem. Les données tiennent dans un fichier SQLite, `mire.db`.
 
+**Secrets dans un fichier (facultatif).** Chaque mot de passe ou jeton peut aussi se lire dans un fichier, en ajoutant `_FICHIER` au nom de sa variable : `MIRE_MODEM_MOT_DE_PASSE_FICHIER=/run/secrets/modem`. Le secret n'apparaît alors ni dans `docker inspect` ni dans l'environnement du conteneur. Les deux formes à la fois pour un même secret empêchent le démarrage, comme un fichier vide ou illisible. Avec les secrets Docker :
+
+```yaml
+services:
+  mire:
+    environment:
+      MIRE_MODEM_MOT_DE_PASSE_FICHIER: /run/secrets/modem
+    secrets: [modem]
+secrets:
+  modem:
+    file: ./modem.secret
+```
+
 ## Docker
 
 Image pour `amd64`, `arm64` et `armv7`.

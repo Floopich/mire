@@ -92,6 +92,51 @@ func FromEnv(getenv func(string) string) Source {
 	return s
 }
 
+// FileSuffix termine la variable qui donne un secret par fichier, comme les
+// secrets Docker : MIRE_MODEM_MOT_DE_PASSE_FICHIER=/run/secrets/modem.
+const FileSuffix = "_FICHIER"
+
+// maxSecretFile borne la lecture d'un fichier de secret.
+const maxSecretFile = 64 << 10
+
+// SecretFiles lit les secrets passes par fichier. C'est une possibilite, pas
+// une obligation : la variable directe et les Reglages restent valables. Les
+// deux formes a la fois pour un meme secret sont refusees, plutot que de
+// choisir en silence.
+func SecretFiles(getenv func(string) string, read func(string) ([]byte, error)) (Source, error) {
+	s := Source{}
+	for _, g := range Groups() {
+		for _, d := range g.Defs {
+			if d.Kind != Password || d.Env == "" {
+				continue
+			}
+			path := strings.TrimSpace(getenv(d.Env + FileSuffix))
+			if path == "" {
+				continue
+			}
+			if strings.TrimSpace(getenv(d.Env)) != "" {
+				return nil, fmt.Errorf("%s et %s : choisissez l'un ou l'autre", d.Env, d.Env+FileSuffix)
+			}
+			b, err := read(path)
+			if err != nil {
+				return nil, fmt.Errorf("%s : fichier %s illisible", d.Env+FileSuffix, path)
+			}
+			if len(b) > maxSecretFile {
+				return nil, fmt.Errorf("%s : fichier %s trop gros pour un secret", d.Env+FileSuffix, path)
+			}
+			v := strings.TrimSpace(string(b))
+			if v == "" {
+				return nil, fmt.Errorf("%s : fichier %s vide", d.Env+FileSuffix, path)
+			}
+			if d.Normalize != nil {
+				v = d.Normalize(v)
+			}
+			s[d.Key] = v
+		}
+	}
+	return s, nil
+}
+
 // Values est l'ensemble des valeurs effectives a un instant donne.
 type Values struct {
 	values map[string]string

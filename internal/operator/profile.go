@@ -122,40 +122,66 @@ type Profile struct {
 	DefaultModemURL string `json:"default_modem_url"`
 	// DefaultModem est l'identifiant du pilote a utiliser quand l'abonne n'en
 	// choisit pas : le modem fourni par l'operateur.
-	DefaultModem string     `json:"default_modem,omitempty"`
-	Calibrated   bool       `json:"calibrated"`
-	Source       string     `json:"source,omitempty"`
-	Notes        string     `json:"notes,omitempty"`
-	Thresholds   Thresholds `json:"thresholds"`
+	DefaultModem string `json:"default_modem,omitempty"`
+	Calibrated   bool   `json:"calibrated"`
+	// Validated dit que les seuils ont ete confrontes a des releves de ce
+	// reseau ; sinon, ils ne sont que des references a confirmer.
+	Validated bool `json:"validated,omitempty"`
+	// Basis dit en une phrase d'ou viennent les seuils.
+	Basis      string     `json:"basis,omitempty"`
+	Source     string     `json:"source,omitempty"`
+	Notes      string     `json:"notes,omitempty"`
+	Thresholds Thresholds `json:"thresholds"`
 }
 
 // DownstreamPowerFor renvoie les bandes de puissance descendante applicables.
 func (t Thresholds) DownstreamPowerFor(modulation string) (PowerBands, bool) {
-	return lookup(t.DownstreamPower, modulation, t.DownstreamDefault)
+	b, _, ok := lookup(t.DownstreamPower, modulation, t.DownstreamDefault)
+	return b, ok
 }
 
 // UpstreamPowerFor renvoie les bandes de puissance montante applicables.
 func (t Thresholds) UpstreamPowerFor(modulation string) (PowerBands, bool) {
-	return lookup(t.UpstreamPower, modulation, t.UpstreamDefault)
+	b, _, ok := lookup(t.UpstreamPower, modulation, t.UpstreamDefault)
+	return b, ok
 }
 
 // SNRFor renvoie les planchers de SNR applicables.
 func (t Thresholds) SNRFor(modulation string) (SNRBands, bool) {
-	return lookup(t.SNR, modulation, t.SNRDefault)
+	b, _, ok := lookup(t.SNR, modulation, t.SNRDefault)
+	return b, ok
 }
 
-func lookup[T any](table map[string]T, key, fallback string) (T, bool) {
+// DownstreamPowerKey, UpstreamPowerKey et SNRKey disent quelle ligne du
+// tableau s'applique : la modulation du canal, ou celle par defaut quand le
+// profil ne la connait pas.
+func (t Thresholds) DownstreamPowerKey(modulation string) string {
+	_, k, _ := lookup(t.DownstreamPower, modulation, t.DownstreamDefault)
+	return k
+}
+
+func (t Thresholds) UpstreamPowerKey(modulation string) string {
+	_, k, _ := lookup(t.UpstreamPower, modulation, t.UpstreamDefault)
+	return k
+}
+
+func (t Thresholds) SNRKey(modulation string) string {
+	_, k, _ := lookup(t.SNR, modulation, t.SNRDefault)
+	return k
+}
+
+func lookup[T any](table map[string]T, key, fallback string) (T, string, bool) {
 	var zero T
 	if len(table) == 0 {
-		return zero, false
+		return zero, "", false
 	}
 	if v, ok := table[normalize(key)]; ok {
-		return v, true
+		return v, normalize(key), true
 	}
 	if v, ok := table[fallback]; ok {
-		return v, true
+		return v, fallback, true
 	}
-	return zero, false
+	return zero, "", false
 }
 
 // normalize ramene les ecritures de modulation ("256QAM", "256 QAM",

@@ -73,10 +73,10 @@ func implausibleOFDMPower(c docsis.Downstream, power Finding, ref slope, hasRef 
 	case gap < implausibleGap && gap > -implausibleGap:
 		return Finding{}, false
 	}
-	return Finding{Warning, "puissance descendante", fmt.Sprintf(
+	return found(Warning, "puissance descendante", fmt.Sprintf(
 		"%s dBmV publiés pour %s attendus d'après les canaux SC-QAM, avec une réception excellente : "+
 			"mesure probablement erronée du modem, à vérifier en le redémarrant",
-		num(*c.PowerDBmV), num(expected))}, true
+		num(*c.PowerDBmV), num(expected)), "écart de plus de 10\u00a0dB avec la pente des canaux SC-QAM voisins"), true
 }
 
 func isOFDM(m string) bool {

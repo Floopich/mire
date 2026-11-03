@@ -12,7 +12,7 @@ Mire relève les mesures du modem câble, les conserve et juge chaque canal selo
 
 ## Fonctionnalités
 
-- **État de la ligne** : chaque canal classé bon, toléré, à surveiller ou critique, avec la cause.
+- **État de la ligne** : chaque canal classé bon, toléré, à surveiller ou critique, avec la mesure en cause, le seuil franchi et depuis quand.
 - **Journal** : changements d'état, redémarrages, canaux perdus, pics d'erreurs, sauts de puissance, notes.
 - **Internet** : coupures et micro-coupures, latence heure par heure, débit (Speedtest Tracker ou passerelle UniFi).
 - **Tendance** : évolution sur 30 jours à un an, avec la température extérieure.

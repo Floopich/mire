@@ -188,6 +188,9 @@ func (s *Server) Routes() http.Handler {
 	return s.withDemo(securityHeaders(mux))
 }
 
+// maxRequestBody borne le corps d'une requete d'ecriture.
+const maxRequestBody = 1 << 20
+
 // securityHeaders pose les en-tetes de protection sur chaque reponse : la
 // politique de contenu n'autorise que les ressources de l'instance.
 func securityHeaders(next http.Handler) http.Handler {
@@ -198,6 +201,14 @@ func securityHeaders(next http.Handler) http.Handler {
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("Referrer-Policy", "same-origin")
 		h.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+		// Aucune autre origine ne lit les reponses ni ne partage la fenetre.
+		h.Set("Cross-Origin-Opener-Policy", "same-origin")
+		h.Set("Cross-Origin-Resource-Policy", "same-origin")
+		// Les formulaires tiennent en quelques kilo-octets : un envoi plus
+		// gros est refuse avant d'etre lu.
+		if r.Body != nil && r.Method != http.MethodGet && r.Method != http.MethodHead {
+			r.Body = http.MaxBytesReader(w, r.Body, maxRequestBody)
+		}
 		next.ServeHTTP(w, r)
 	})
 }
@@ -332,6 +343,12 @@ type indexView struct {
 	Legend     []analyze.Level
 	// Events sont les derniers evenements, les plus recents d'abord.
 	Events []eventRow
+	// Reasons expliquent le verdict : mesures hors plage, seuil, depuis
+	// quand ; ReasonsMore compte celles qui ne sont pas listees.
+	Reasons     []reason
+	ReasonsMore int
+	// Basis dit d'ou viennent les seuils.
+	Basis string
 }
 
 // recentEvents borne les evenements repris sur la vue d'ensemble.
@@ -446,6 +463,16 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v.Verdict = verdictFor(st.Profile, v.HasData, health)
+	if v.HasData {
+		if v.Reasons, err = s.explain(ctx, st, snap, health, v.Hours); err != nil {
+			s.fail(w, err)
+			return
+		}
+		if n := len(v.Reasons); n > maxReasons {
+			v.Reasons, v.ReasonsMore = v.Reasons[:maxReasons], n-maxReasons
+		}
+		v.Basis = basisText(st.Profile)
+	}
 	if !v.HasData && !st.Collecting {
 		v.Verdict.Title, v.Verdict.Detail = "Aucun relevé", "Renseignez le modem pour commencer."
 	}
@@ -631,6 +658,10 @@ type channelView struct {
 	Errors      template.HTML
 	ErrorTotals store.ErrorCount
 	Events      []eventRow
+	// State juge le canal au dernier releve : chaque mesure, son seuil et,
+	// hors plage, depuis quand. Vide si le canal n'y figure pas.
+	State []reason
+	Basis string
 }
 
 func (s *Server) handleDownstream(w http.ResponseWriter, r *http.Request) {
@@ -690,7 +721,7 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, downstrea
 		powerBand = &[2]float64{b.Good.Min, b.Good.Max}
 	}
 	if powerBand != nil {
-		v.PowerBand = dec(powerBand[0]) + " à " + dec(powerBand[1]) + nbsp + "dBmV"
+		v.PowerBand = strings.TrimPrefix(rangeText(operator.Range{Min: powerBand[0], Max: powerBand[1]}, "dBmV"), "de ")
 	}
 	v.Charts = append(v.Charts, template.HTML(SVG(Series{
 		Label: "Puissance du canal " + strconv.Itoa(id), Unit: "dBmV", Band: powerBand,
@@ -702,7 +733,7 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, downstrea
 		if b, ok := t.SNRFor(summary.Modulation); ok && profile.Calibrated {
 			f := b.GoodMin
 			floor = &f
-			v.SNRFloor = dec(f) + nbsp + "dB"
+			v.SNRFloor = short(f) + nbsp + "dB"
 		}
 		v.Charts = append(v.Charts, template.HTML(SVG(Series{
 			Label: "SNR du canal " + strconv.Itoa(id), Unit: "dB", Floor: floor,
@@ -719,6 +750,14 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, downstrea
 			v.ErrorTotals.Uncorrected += e.Uncorrected
 		}
 		v.Errors = template.HTML(ErrorBars("Erreurs du canal "+strconv.Itoa(id), errs, from, to))
+	}
+
+	if v.State, err = s.channelState(ctx, direction, id, v.Hours); err != nil {
+		s.fail(w, err)
+		return
+	}
+	if len(v.State) > 0 {
+		v.Basis = basisText(profile)
 	}
 
 	list, err := store.Events(ctx, s.db, store.EventFilter{From: from, To: to, Direction: direction, ChannelID: id, Limit: 50})

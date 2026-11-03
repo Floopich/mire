@@ -13,6 +13,20 @@
  <div><dt class="label-l">Dernier relevé</dt><dd>{{ago .Channel.LastSeen}}</dd></div>
 </dl>
 
+{{if .State}}
+<section class="card why" aria-labelledby="etat-canal">
+ <h2 id="etat-canal" class="title-m">État au dernier relevé</h2>
+ <ul class="reasons">
+  {{range .State}}<li class="{{.Level}}"><svg class="pip" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .Level}}"/></svg><div>
+   <p class="body-l">{{.Headline}}</p>
+   {{with .Limit}}<p class="body-m muted">Seuil : {{.}}.</p>{{end}}
+   {{with .Since}}<p class="body-m muted">Constaté {{.}}.</p>{{end}}
+  </div></li>{{end}}
+ </ul>
+ {{with .Basis}}<p class="basis body-m">{{.}} <a href="/comprendre#seuils">Les seuils et leurs limites</a></p>{{end}}
+</section>
+{{end}}
+
 <div class="toolbar">
  <h2 class="title-l">Historique</h2>
  {{template "windows" .}}

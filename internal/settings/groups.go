@@ -282,7 +282,7 @@ func Groups() []Group {
 			Defs: []Def{
 				{Key: MetricsOn, Env: "MIRE_METRIQUES", Kind: Bool, Default: "false", Label: "Publier les métriques"},
 				{Key: MetricsToken, Env: "MIRE_METRIQUES_JETON", Kind: Password, Label: "Jeton d'accès",
-					Help: "Facultatif : Authorization: Bearer."},
+					Help: "Facultatif, conseillé : sans jeton, tout appareil du réseau peut lire les métriques. Prometheus l'envoie en Authorization: Bearer."},
 			},
 		},
 		{

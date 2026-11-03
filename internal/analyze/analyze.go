@@ -53,6 +53,9 @@ type Finding struct {
 	Level   Level
 	Metric  string
 	Message string
+	// Limit dit le seuil applique, en clair : « plage nominale de −8 à
+	// +8 dBmV, limites de −15 à +15 dBmV, en 256QAM ».
+	Limit string
 }
 
 // ChannelHealth est le verdict porte sur un canal.
@@ -100,10 +103,7 @@ func SnapshotWith(snap docsis.Snapshot, profile operator.Profile, opts Options) 
 	if !profile.Calibrated {
 		return h
 	}
-	t := profile.Thresholds
-	if f := opts.OFDMAFloor; f > 0 {
-		t.UpstreamOFDMA = operator.ModulationLimits{CriticalMaxQAM: f / 4, WarningMaxQAM: f / 2, Usual: f}
-	}
+	t := Effective(profile.Thresholds, opts)
 	ref, hasRef := scqamSlope(snap.Downstream)
 	for _, c := range snap.Downstream {
 		ch := downstream(c, t, opts.Errors, ref, hasRef)
@@ -118,11 +118,51 @@ func SnapshotWith(snap docsis.Snapshot, profile operator.Profile, opts Options) 
 	return h
 }
 
+// found construit un constat ; son seuil est renseigne par l'appelant.
+func found(l Level, metric, msg string, limit ...string) Finding {
+	f := Finding{Level: l, Metric: metric, Message: msg}
+	if len(limit) > 0 {
+		f.Limit = limit[0]
+	}
+	return f
+}
+
+// Effective renvoie les seuils appliques, apres les declarations de
+// l'abonne.
+func Effective(t operator.Thresholds, opts Options) operator.Thresholds {
+	if f := opts.OFDMAFloor; f > 0 {
+		t.UpstreamOFDMA = operator.ModulationLimits{CriticalMaxQAM: f / 4, WarningMaxQAM: f / 2, Usual: f}
+	}
+	return t
+}
+
+// DownstreamMetric rejuge une seule mesure d'un canal descendant, sans les
+// erreurs ni la vraisemblance, qui demandent le releve entier : de quoi
+// dater le debut d'un constat dans l'historique.
+func DownstreamMetric(c docsis.Downstream, t operator.Thresholds, metric string) (Level, bool) {
+	return levelOf(downstream(c, t, nil, slope{}, false), metric)
+}
+
+// UpstreamMetric rejuge une seule mesure d'un canal montant.
+func UpstreamMetric(c docsis.Upstream, t operator.Thresholds, metric string) (Level, bool) {
+	return levelOf(upstream(c, t), metric)
+}
+
+func levelOf(ch ChannelHealth, metric string) (Level, bool) {
+	for _, f := range ch.Findings {
+		if f.Metric == metric {
+			return f.Level, true
+		}
+	}
+	return Unknown, false
+}
+
 func downstream(c docsis.Downstream, t operator.Thresholds, errs map[int]ErrorCount, ref slope, hasRef bool) ChannelHealth {
 	out := ChannelHealth{ChannelID: c.ChannelID}
 
 	if bands, ok := t.DownstreamPowerFor(c.Modulation); ok && c.PowerDBmV != nil {
 		f := power(*c.PowerDBmV, bands, "puissance descendante")
+		f.Limit = powerLimit(bands, t.DownstreamPowerKey(c.Modulation))
 		if doubt, ok := implausibleOFDMPower(c, f, ref, hasRef, t); ok {
 			f = doubt
 		}
@@ -131,11 +171,13 @@ func downstream(c docsis.Downstream, t operator.Thresholds, errs map[int]ErrorCo
 	}
 	if bands, ok := t.SNRFor(c.Modulation); ok && c.SNRDB != nil {
 		f := snr(*c.SNRDB, bands)
+		f.Limit = snrLimit(bands, t.SNRKey(c.Modulation))
 		out.Findings = append(out.Findings, f)
 		out.Level = worst(out.Level, f.Level)
 	}
 	if e, known := errs[c.ChannelID]; known {
 		f := errors(e, t.Errors)
+		f.Limit = errorLimit(t.Errors)
 		out.Findings = append(out.Findings, f)
 		out.Level = worst(out.Level, f.Level)
 	}
@@ -151,6 +193,7 @@ func upstream(c docsis.Upstream, t operator.Thresholds) ChannelHealth {
 	}
 	if bands, ok := t.UpstreamPowerFor(family); ok && c.PowerDBmV != nil {
 		f := power(*c.PowerDBmV, bands, "puissance montante")
+		f.Limit = powerLimit(bands, t.UpstreamPowerKey(family))
 		out.Findings = append(out.Findings, f)
 		out.Level = worst(out.Level, f.Level)
 	}
@@ -165,6 +208,7 @@ func upstream(c docsis.Upstream, t operator.Thresholds) ChannelHealth {
 		}
 	}
 	if f, ok := modulation(label, limits); ok {
+		f.Limit = modulationLimit(limits)
 		out.Findings = append(out.Findings, f)
 		out.Level = worst(out.Level, f.Level)
 	}
@@ -175,26 +219,26 @@ func upstream(c docsis.Upstream, t operator.Thresholds) ChannelHealth {
 func power(v float64, b operator.PowerBands, label string) Finding {
 	switch {
 	case b.Good.Contains(v):
-		return Finding{Good, label, fmt.Sprintf("%s\u00a0dBmV, dans la plage nominale", num(v))}
+		return found(Good, label, fmt.Sprintf("%s\u00a0dBmV, dans la plage nominale", num(v)))
 	case b.Warning.Contains(v):
-		return Finding{Warning, label, fmt.Sprintf("%s\u00a0dBmV, hors de la plage nominale", num(v))}
+		return found(Warning, label, fmt.Sprintf("%s\u00a0dBmV, hors de la plage nominale", num(v)))
 	case b.Critical.Contains(v):
-		return Finding{Critical, label, fmt.Sprintf("%s\u00a0dBmV, proche des limites", num(v))}
+		return found(Critical, label, fmt.Sprintf("%s\u00a0dBmV, proche des limites", num(v)))
 	default:
-		return Finding{Critical, label, fmt.Sprintf("%s\u00a0dBmV, hors limites", num(v))}
+		return found(Critical, label, fmt.Sprintf("%s\u00a0dBmV, hors limites", num(v)))
 	}
 }
 
 func snr(v float64, b operator.SNRBands) Finding {
 	switch {
 	case v >= b.GoodMin:
-		return Finding{Good, "SNR", fmt.Sprintf("%s\u00a0dB", num(v))}
+		return found(Good, "SNR", fmt.Sprintf("%s\u00a0dB", num(v)))
 	case v >= b.WarningMin:
-		return Finding{Warning, "SNR", fmt.Sprintf("%s\u00a0dB, sous le seuil nominal", num(v))}
+		return found(Warning, "SNR", fmt.Sprintf("%s\u00a0dB, sous le seuil nominal", num(v)))
 	case v >= b.CriticalMin:
-		return Finding{Critical, "SNR", fmt.Sprintf("%s\u00a0dB, dégradé", num(v))}
+		return found(Critical, "SNR", fmt.Sprintf("%s\u00a0dB, dégradé", num(v)))
 	default:
-		return Finding{Critical, "SNR", fmt.Sprintf("%s\u00a0dB, très dégradé", num(v))}
+		return found(Critical, "SNR", fmt.Sprintf("%s\u00a0dB, très dégradé", num(v)))
 	}
 }
 
@@ -209,25 +253,25 @@ func errors(e ErrorCount, limits operator.ErrorLimits) Finding {
 	total := e.Corrected + e.Uncorrected
 	switch {
 	case total == 0:
-		return Finding{Good, "erreurs", "aucune erreur sur " + window}
+		return found(Good, "erreurs", "aucune erreur sur "+window)
 	case e.Uncorrected == 0:
-		return Finding{Good, "erreurs", fmt.Sprintf("%s corrigées sur %s, aucune perdue", count(total), window)}
+		return found(Good, "erreurs", fmt.Sprintf("%s corrigées sur %s, aucune perdue", count(total), window))
 	case total < limits.MinVolume():
-		return Finding{Good, "erreurs", fmt.Sprintf("%s sur %s, dont %s non corrigées",
-			count(total), window, count(e.Uncorrected))}
+		return found(Good, "erreurs", fmt.Sprintf("%s sur %s, dont %s non corrigées",
+			count(total), window, count(e.Uncorrected)))
 	}
 	pct := float64(e.Uncorrected) / float64(total) * 100
 	msg := fmt.Sprintf("%s non corrigées sur %s en %s (%s\u202f%%)",
 		count(e.Uncorrected), count(total), window, num(pct))
 	switch {
 	case e.Uncorrected < limits.Spike():
-		return Finding{Good, "erreurs", msg}
+		return found(Good, "erreurs", msg)
 	case pct >= limits.UncorrectablePctCritical:
-		return Finding{Critical, "erreurs", msg}
+		return found(Critical, "erreurs", msg)
 	case pct >= limits.UncorrectablePctWarning:
-		return Finding{Warning, "erreurs", msg}
+		return found(Warning, "erreurs", msg)
 	default:
-		return Finding{Good, "erreurs", msg}
+		return found(Good, "erreurs", msg)
 	}
 }
 
@@ -245,6 +289,64 @@ func count(n int64) string {
 	return s
 }
 
+// powerLimit decrit des bandes de puissance.
+func powerLimit(b operator.PowerBands, key string) string {
+	return "plage nominale " + span(b.Good) + "\u00a0dBmV, limites " + span(b.Critical) + "\u00a0dBmV" + keyText(key)
+}
+
+// snrLimit decrit des planchers de SNR.
+func snrLimit(b operator.SNRBands, key string) string {
+	return "nominal dès " + short(b.GoodMin) + "\u00a0dB, critique sous " + short(b.WarningMin) + "\u00a0dB" + keyText(key)
+}
+
+func errorLimit(e operator.ErrorLimits) string {
+	return "à surveiller dès " + short(e.UncorrectablePctWarning) + "\u202f% d'erreurs non corrigées, critique dès " +
+		short(e.UncorrectablePctCritical) + "\u202f%, à partir de " + count(e.Spike()) + " non corrigées sur " + hours(e.Window())
+}
+
+func modulationLimit(l operator.ModulationLimits) string {
+	s := ""
+	if l.Usual > 0 {
+		s = "modulation habituelle déclarée : " + strconv.Itoa(l.Usual) + "QAM ; "
+	}
+	s += "à surveiller à " + strconv.Itoa(l.WarningMaxQAM) + "QAM ou moins, critique à " + strconv.Itoa(l.CriticalMaxQAM) + "QAM ou moins"
+	if l.Usual == 0 && l.ToleratedMaxQAM > 0 {
+		s += ", tolérée jusqu'à " + strconv.Itoa(l.ToleratedMaxQAM) + "QAM"
+	}
+	return s
+}
+
+// keyText dit pour quelle modulation le seuil est defini : « , en 256QAM ».
+func keyText(key string) string {
+	switch key {
+	case "":
+		return ""
+	case "ofdm":
+		return ", en OFDM"
+	case "ofdma":
+		return ", en OFDMA"
+	case "sc_qam":
+		return ", en SC-QAM"
+	}
+	return ", en " + key
+}
+
+// span rend un intervalle : « de −8 à +8 », « de 28 à 49 ».
+func span(r operator.Range) string {
+	hi := short(r.Max)
+	if r.Min < 0 && r.Max > 0 {
+		hi = "+" + hi
+	}
+	return "de " + short(r.Min) + " à " + hi
+}
+
+// short rend un seuil sans decimale inutile : 8, 25,5, −8.
+func short(v float64) string {
+	s := num(v)
+	s = strings.TrimSuffix(s, ",0")
+	return strings.Replace(s, "-", "\u2212", 1)
+}
+
 func modulation(m string, limits operator.ModulationLimits) (Finding, bool) {
 	qam := qamOrder(m)
 	if qam == 0 {
@@ -253,28 +355,28 @@ func modulation(m string, limits operator.ModulationLimits) (Finding, bool) {
 	if u := limits.Usual; u > 0 {
 		switch {
 		case qam <= limits.CriticalMaxQAM:
-			return Finding{Critical, "modulation montante",
-				fmt.Sprintf("%s, très en dessous de la modulation habituelle du segment (%dQAM)", m, u)}, true
+			return found(Critical, "modulation montante",
+				fmt.Sprintf("%s, très en dessous de la modulation habituelle du segment (%dQAM)", m, u)), true
 		case qam <= limits.WarningMaxQAM:
-			return Finding{Warning, "modulation montante",
-				fmt.Sprintf("%s, sous la modulation habituelle du segment (%dQAM)", m, u)}, true
+			return found(Warning, "modulation montante",
+				fmt.Sprintf("%s, sous la modulation habituelle du segment (%dQAM)", m, u)), true
 		case qam == u:
-			return Finding{Good, "modulation montante", m + ", modulation habituelle du segment"}, true
+			return found(Good, "modulation montante", m+", modulation habituelle du segment"), true
 		default:
-			return Finding{Good, "modulation montante", m}, true
+			return found(Good, "modulation montante", m), true
 		}
 	}
 	switch {
 	case qam <= limits.CriticalMaxQAM:
-		return Finding{Critical, "modulation montante",
-			fmt.Sprintf("%s, très basse", m)}, true
+		return found(Critical, "modulation montante",
+			fmt.Sprintf("%s, très basse", m)), true
 	case qam <= limits.WarningMaxQAM:
-		return Finding{Warning, "modulation montante",
-			fmt.Sprintf("%s, basse : comparer avec l'historique avant de conclure", m)}, true
+		return found(Warning, "modulation montante",
+			fmt.Sprintf("%s, basse : comparer avec l'historique avant de conclure", m)), true
 	case limits.ToleratedMaxQAM > 0 && qam <= limits.ToleratedMaxQAM:
-		return Finding{Tolerated, "modulation montante", m}, true
+		return found(Tolerated, "modulation montante", m), true
 	default:
-		return Finding{Good, "modulation montante", m}, true
+		return found(Good, "modulation montante", m), true
 	}
 }
 

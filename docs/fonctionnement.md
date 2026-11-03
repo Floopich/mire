@@ -8,7 +8,9 @@ Mire relève le modem toutes les 10 minutes, et toutes les minutes pendant le qu
 - **Mesure douteuse** : un canal OFDM qui s'écarte de plus de 10 dB de ses voisins, alors que la réception est excellente.
 - **Modulation habituelle OFDMA** : à déclarer dans les réglages si votre segment reste en basse modulation. Un cran en dessous : à surveiller ; deux crans : critique.
 
-La page **Comprendre la ligne** détaille chaque mesure avec les seuils de l'opérateur et vos valeurs.
+Sous le verdict, **Pourquoi ce verdict** liste chaque mesure hors plage : sa valeur, le seuil franchi et depuis quand. La date se lit dans l'historique, à l'intervalle des relevés près ; avant le début de l'historique ou après une interruption des relevés, Mire n'en donne qu'une borne (« depuis au moins »). La page de chaque canal reprend ses mesures et leurs seuils.
+
+La page **Comprendre la ligne** détaille chaque mesure avec les seuils de l'opérateur et vos valeurs, le tableau complet des seuils et d'où ils viennent, et ce que Mire ne sait pas juger. Le rapport de la ligne reprend le tableau des seuils.
 
 ![Comprendre la ligne](images/comprendre.png)
 

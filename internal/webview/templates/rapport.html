@@ -88,5 +88,16 @@
   {{if .EventsTruncated}}<p class="hint body-m">Journal tronqué : raccourcissez la période.</p>{{end}}
   {{else}}<p class="body-m muted">Aucune alerte sur la période.</p>{{end}}
  </section>
+
+ {{if .Thresholds}}
+ <section class="card report-part">
+  <h3 class="title-m">Seuils appliqués</h3>
+  {{with .Basis}}<p class="hint body-m">{{.}}</p>{{end}}
+  <div class="table-wrap"><table class="data seuils">
+   <thead><tr><th scope="col">Mesure</th><th scope="col">Nominal</th><th scope="col">À surveiller</th><th scope="col">Critique</th></tr></thead>
+   <tbody>{{range .Thresholds}}<tr><th scope="row">{{.Measure}}</th><td data-label="Nominal">{{.Good}}</td><td data-label="À surveiller">{{.Warning}}</td><td data-label="Critique">{{.Critical}}</td></tr>{{end}}</tbody>
+  </table></div>
+ </section>
+ {{end}}
 </article>
 {{end}}

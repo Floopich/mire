@@ -11,6 +11,7 @@ import (
 	"github.com/floopich/mire/internal/analyze"
 	"github.com/floopich/mire/internal/docsis"
 	"github.com/floopich/mire/internal/operator"
+	"github.com/floopich/mire/internal/settings"
 	"github.com/floopich/mire/internal/status"
 	"github.com/floopich/mire/internal/store"
 )
@@ -33,6 +34,16 @@ type learnSection struct {
 	Link   *link
 	States []learnState
 	Steps  []string
+	// Table liste les seuils du profil, mesure par mesure.
+	Table []thresholdRow
+	// Source est la reference des seuils, Note le detail du profil.
+	Source *link
+	Note   string
+}
+
+// thresholdRow est une ligne du tableau des seuils.
+type thresholdRow struct {
+	Measure, Good, Warning, Critical string
 }
 
 type learnView struct {
@@ -58,6 +69,10 @@ func (s *Server) handleLearn(w http.ResponseWriter, r *http.Request) {
 	}
 	v := learnView{common: s.commonFor(r, "Comprendre la ligne"),
 		Sections: learnSections(st.Profile, st.Interval, line, errs, window)}
+	// Les seuils et les limites, avant « Que faire ? ».
+	last := v.Sections[len(v.Sections)-1]
+	v.Sections = append(append(v.Sections[:len(v.Sections)-1], limitSections(st.Profile,
+		analyze.Effective(st.Profile.Thresholds, analyze.Options{OFDMAFloor: st.Values.Int(settings.OFDMAFloor)}))...), last)
 	s.render(w, http.StatusOK, "comprendre", v)
 }
 
@@ -176,8 +191,7 @@ func learnSections(p operator.Profile, interval time.Duration, line status.Statu
 		{analyze.Unknown, "Pas de mesure, ou un profil qui ne juge pas la ligne."},
 	}}
 	if cal {
-		sec.Paras = []string{"Les seuils viennent du profil d'opérateur. Pour " + name +
-			", ce sont des valeurs constatées, pas une norme publiée."}
+		sec.Paras = []string{"Les seuils viennent du profil d'opérateur : voir plus bas d'où ils viennent."}
 	} else {
 		sec.Paras = []string{"Le profil « " + name + " » ne juge pas la ligne : les mesures sont relevées sans seuils."}
 	}
@@ -282,4 +296,147 @@ func upstreamModulations(snap docsis.Snapshot) string {
 // hours rend une fenetre : « 24 h ».
 func hours(d time.Duration) string {
 	return strconv.Itoa(int(d.Hours())) + nbsp + "h"
+}
+
+// limitSections ecrit le tableau des seuils et ce que Mire ne sait pas
+// juger. Sans profil calibre, il n'y a pas de seuils a montrer.
+func limitSections(p operator.Profile, t operator.Thresholds) []learnSection {
+	var out []learnSection
+	if p.Calibrated {
+		sec := learnSection{ID: "seuils", Title: "D'où viennent les seuils", Paras: []string{
+			"Seuils " + p.Name + " : " + nonBlank(p.Basis, "voir la note du profil") + ".",
+		}, Table: thresholdTable(t)}
+		if !p.Validated {
+			sec.Yours = "À confirmer : ces seuils n'ont pas encore été comparés à des relevés de ce réseau."
+		}
+		sec.Note = p.Notes
+		if p.Source != "" {
+			sec.Source = &link{p.Source, "Référence du profil"}
+		}
+		out = append(out, sec)
+	}
+	out = append(out, learnSection{ID: "limites", Title: "Ce que Mire ne sait pas juger", Paras: []string{
+		"Mire lit ce que le modem publie. Une mesure fausse du modem fausse le verdict : une puissance OFDM sans rapport avec les canaux voisins est signalée comme douteuse, pas comme une panne.",
+		"La voie montante ne se juge qu'en partie : la qualité de ce que le modem émet se mesure chez l'opérateur. Un bruit qui entre sur le retour ne se voit qu'à ses signes : émission qui grimpe, modulation qui baisse, erreurs à heures fixes.",
+		"Les erreurs non corrigées sont comptées en part des erreurs, pas des données reçues : le modem ne publie pas le nombre de blocs reçus.",
+		"Un relevé est un instant. Une dégradation entre deux relevés peut passer inaperçue ; une coupure courte ne se voit qu'avec une sonde à 30 secondes au plus.",
+		"« Constaté depuis » se lit dans l'historique conservé, à l'intervalle des relevés près. Avant le début de l'historique, ou après une interruption des relevés, Mire n'en donne qu'une borne : « depuis au moins ».",
+		"Les seuils sont ceux d'un réseau, pas de votre segment : une modulation montante basse peut être la règle du segment. Déclarez-la dans les réglages.",
+		"Mire ne mesure ni le débit, ni le Wi-Fi, ni les appareils de votre réseau. Il ne remplace pas la mesure d'un technicien.",
+	}})
+	return out
+}
+
+func nonBlank(s, fallback string) string {
+	if strings.TrimSpace(s) == "" {
+		return fallback
+	}
+	return s
+}
+
+// thresholdTable rend les seuils effectivement appliques, dans l'ordre de la
+// page.
+func thresholdTable(t operator.Thresholds) []thresholdRow {
+	var out []thresholdRow
+	power := func(label string, table map[string]operator.PowerBands) {
+		for _, g := range grouped(table) {
+			b := table[g[0]]
+			out = append(out, thresholdRow{label + modNames(g), rangeText(b.Good, "dBmV"),
+				"entre " + strings.Replace(strings.TrimPrefix(rangeText(b.Warning, "dBmV"), "de "), " à ", " et ", 1), "au-delà"})
+		}
+	}
+	power("Puissance descendante", t.DownstreamPower)
+	for _, g := range grouped(t.SNR) {
+		b := t.SNR[g[0]]
+		out = append(out, thresholdRow{"SNR" + modNames(g), short(b.GoodMin) + nbsp + "dB et plus",
+			"de " + short(b.WarningMin) + " à " + short(b.GoodMin) + nbsp + "dB", "sous " + short(b.WarningMin) + nbsp + "dB"})
+	}
+	power("Puissance montante", t.UpstreamPower)
+	mod := func(label string, l operator.ModulationLimits) {
+		if l.WarningMaxQAM == 0 {
+			return
+		}
+		good := "au-dessus de " + strconv.Itoa(l.WarningMaxQAM) + "QAM"
+		if l.Usual > 0 {
+			good = strconv.Itoa(l.Usual) + "QAM, modulation déclarée"
+		} else if l.ToleratedMaxQAM > 0 {
+			good = "au-dessus de " + strconv.Itoa(l.ToleratedMaxQAM) + "QAM (" + strconv.Itoa(l.ToleratedMaxQAM) + "QAM toléré)"
+		}
+		out = append(out, thresholdRow{label, good, strconv.Itoa(l.WarningMaxQAM) + "QAM ou moins", strconv.Itoa(l.CriticalMaxQAM) + "QAM ou moins"})
+	}
+	mod("Modulation montante, SC-QAM", t.UpstreamModulation)
+	mod("Modulation montante, OFDMA", t.UpstreamOFDMA)
+	if e := t.Errors; e.UncorrectablePctWarning > 0 {
+		out = append(out, thresholdRow{"Erreurs non corrigées, sur " + hours(e.Window()),
+			"moins de " + short(e.UncorrectablePctWarning) + nbsp + "% ou moins de " + FmtCount(int(e.Spike())) + " non corrigées",
+			"dès " + short(e.UncorrectablePctWarning) + nbsp + "%", "dès " + short(e.UncorrectablePctCritical) + nbsp + "%"})
+	}
+	return out
+}
+
+// modNames rend les modulations d'une ligne : « , 256QAM », « , 64QAM à
+// 4096QAM et OFDM ».
+func modNames(keys []string) string {
+	name := func(k string) string {
+		switch k {
+		case "ofdm":
+			return "OFDM"
+		case "ofdma":
+			return "OFDMA"
+		case "sc_qam":
+			return "SC-QAM"
+		}
+		return k
+	}
+	var qam, other []string
+	for _, k := range keys {
+		if analyze.QAMOrder(k) > 0 {
+			qam = append(qam, k)
+		} else {
+			other = append(other, name(k))
+		}
+	}
+	var parts []string
+	switch len(qam) {
+	case 0:
+	case 1:
+		parts = append(parts, qam[0])
+	case 2:
+		parts = append(parts, qam[0]+", "+qam[1])
+	default:
+		parts = append(parts, qam[0]+" à "+qam[len(qam)-1])
+	}
+	parts = append(parts, other...)
+	return ", " + strings.Join(parts, " et ")
+}
+
+// grouped regroupe les modulations aux seuils identiques et voisines dans
+// l'ordre de la page.
+func grouped[T comparable](m map[string]T) [][]string {
+	var out [][]string
+	for _, k := range sortedKeys(m) {
+		if n := len(out); n > 0 && m[out[n-1][0]] == m[k] {
+			out[n-1] = append(out[n-1], k)
+			continue
+		}
+		out = append(out, []string{k})
+	}
+	return out
+}
+
+// sortedKeys range les modulations par ordre croissant, OFDM et OFDMA a la
+// fin.
+func sortedKeys[T any](m map[string]T) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		a, b := analyze.QAMOrder(keys[i]), analyze.QAMOrder(keys[j])
+		if a == 0 || b == 0 {
+			return a > b || (a == b && keys[i] > keys[j])
+		}
+		return a < b
+	})
+	return keys
 }

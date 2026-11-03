@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 
@@ -38,6 +39,9 @@ var flagSettings = []struct {
 	{"journal", settings.LogLevel, "niveau du journal : erreurs, normal ou detaille (MIRE_JOURNAL)"},
 }
 
+// readSecretFile lit un fichier de secret ; remplacable dans les tests.
+var readSecretFile = os.ReadFile
+
 // parseConfig lit l'environnement puis les options, sans argument libre.
 func parseConfig(name string, args []string, getenv func(string) string, out io.Writer) (config, error) {
 	c, rest, err := parseConfigArgs(name, args, getenv, out)
@@ -57,6 +61,13 @@ func parseConfigArgs(name string, args []string, getenv func(string) string, out
 		return fallback
 	}
 	c := config{Forced: settings.FromEnv(getenv)}
+	files, err := settings.SecretFiles(getenv, readSecretFile)
+	if err != nil {
+		return c, nil, err
+	}
+	for k, v := range files {
+		c.Forced[k] = v
+	}
 
 	demoMode, err := strconv.ParseBool(env("MIRE_DEMO", "false"))
 	if err != nil {

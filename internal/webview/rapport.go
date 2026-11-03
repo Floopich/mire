@@ -257,6 +257,10 @@ type reportView struct {
 	Exports []exportLink
 	// Calibration est l'archive anonymisee de la periode, vide sans releve.
 	Calibration, CalibrationIssue string
+	// Thresholds sont les seuils appliques, Basis leur origine : le lecteur
+	// du rapport sait sur quoi repose chaque etat.
+	Thresholds []thresholdRow
+	Basis      string
 }
 
 type exportLink struct {
@@ -454,6 +458,10 @@ func (s *Server) handleReport(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+	}
+	if st := s.opts.Service.State(); st.Profile.Calibrated {
+		v.Thresholds = thresholdTable(analyze.Effective(st.Profile.Thresholds, analyze.Options{OFDMAFloor: st.Values.Int(settings.OFDMAFloor)}))
+		v.Basis = basisText(st.Profile)
 	}
 	s.render(w, http.StatusOK, "rapport", v)
 }

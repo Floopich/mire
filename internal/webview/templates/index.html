@@ -14,6 +14,21 @@
  {{with .Next}}<div class="next">{{.SVG}}<p class="label-m">{{.Label}}</p></div>{{end}}
 </section>
 
+{{if .Reasons}}
+<section class="card why" aria-labelledby="pourquoi">
+ <h2 id="pourquoi" class="title-m">Pourquoi ce verdict</h2>
+ <ul class="reasons">
+  {{range .Reasons}}<li class="{{.Level}}"><svg class="pip" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .Level}}"/></svg><div>
+   <p class="body-l"><a href="{{.Href}}">{{.Where}}</a> · {{.Headline}}</p>
+   {{with .Limit}}<p class="body-m muted">Seuil : {{.}}.</p>{{end}}
+   {{with .Since}}<p class="body-m muted">Constaté {{.}}.</p>{{end}}
+  </div></li>{{end}}
+ </ul>
+ {{with .ReasonsMore}}<p class="body-m muted">{{template "count-more" .}}</p>{{end}}
+ {{with .Basis}}<p class="basis body-m">{{.}} <a href="/comprendre#seuils">Les seuils et leurs limites</a></p>{{end}}
+</section>
+{{else}}{{with .Basis}}<p class="basis body-m muted">{{.}} <a href="/comprendre#seuils">Les seuils et leurs limites</a></p>{{end}}{{end}}
+
 {{with .SpectrumDS}}
 <section class="card bands" aria-label="Bande de canaux">
  <figure>
@@ -100,3 +115,5 @@
  {{if .SNRColumn}}<span class="value"><small>SNR</small>{{fmtValue .SNR "dB"}}</span>{{end}}
  <span class="state"><span class="tag">{{levelIcon .Level}}{{label .Level}}</span>{{with .Note}}<span class="note">{{.}}</span>{{end}}</span>
 </a></li>{{end}}
+
+{{define "count-more"}}{{if eq . 1}}Et une autre mesure hors plage, sur la page du canal.{{else}}Et {{.}} autres mesures hors plage, sur la page de chaque canal.{{end}}{{end}}

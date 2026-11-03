@@ -13,13 +13,13 @@ Seule la dernière version reçoit les corrections : `docker compose pull && doc
 Mire est prévu pour un réseau local, derrière un pare-feu.
 
 **Protégé**
-- L'interface : mot de passe choisi à la première visite, conservé sous forme d'empreinte ; sessions de 30 jours ; tentatives de connexion ralenties ; formulaires refusés depuis une autre origine ; aucun script ni ressource externe.
+- L'interface : mot de passe choisi à la première visite, conservé sous forme d'empreinte ; sessions de 30 jours ; tentatives de connexion ralenties ; formulaires refusés depuis une autre origine, et au-delà de 1 Mo ; aucun script ni ressource externe ; pages ni intégrables ni lisibles depuis un autre site.
 - Les secrets (mot de passe du modem, jetons, mots de passe MQTT et mail) : jamais réaffichés, absents du journal, des erreurs, des métriques et du rapport du modem. Une valeur effacée ne reste pas dans le fichier de la base.
 - Le conteneur : système de fichiers en lecture seule, aucun privilège, utilisateur non root, image sans shell.
 - Les connexions sortantes : seulement ce que vous activez (notifications, Home Assistant, météo, débit, avis de nouvelle version) et la sonde Internet vers ses cibles.
 
 **Non protégé**
-- La base `mire.db` et les sauvegardes complètes contiennent les secrets en clair : quiconque lit le dossier de données les lit. Protégez ce dossier, ou utilisez une sauvegarde « sans mots de passe ni jetons ».
+- La base `mire.db` et les sauvegardes complètes contiennent les secrets saisis dans les Réglages, en clair : quiconque lit le dossier de données les lit. Protégez ce dossier, ou utilisez une sauvegarde « sans mots de passe ni jetons ». Un secret passé par variable ou par fichier (`…_FICHIER`, voir [configuration](docs/configuration.md)) n'est pas écrit dans la base.
 - `/sante` répond sans session (état de la collecte, modèle du modem, version) ; `/metrics` aussi, sauf si un jeton est défini.
 - Le trafic entre le navigateur et Mire n'est chiffré que derrière un proxy inverse en HTTPS.
 
