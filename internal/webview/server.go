@@ -97,8 +97,18 @@ func NewServer(db *sql.DB, opts Options) (*Server, error) {
 	}
 	s.versions = assetVersions(map[string][]byte{"/reglages.css": []byte(s.css)})
 	funcs := template.FuncMap{
-		"asset":      s.assetURL,
-		"appleIcon":  s.appleIcon,
+		"asset":     s.assetURL,
+		"appleIcon": s.appleIcon,
+		"theme":     s.theme,
+		"colorScheme": func() string {
+			switch s.theme() {
+			case settings.ThemeLight:
+				return "light"
+			case settings.ThemeDark:
+				return "dark"
+			}
+			return "light dark"
+		},
 		"iconSrc":    func(style string) string { return iconPrefix(style) + "192.png" },
 		"fmtValue":   Fmt,
 		"fmtMHz":     FmtMHz,

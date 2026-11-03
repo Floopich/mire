@@ -182,3 +182,30 @@ func TestStylesDIcone(t *testing.T) {
 		t.Error("style inconnu")
 	}
 }
+
+func TestThemeImpose(t *testing.T) {
+	for theme, voulu := range map[string][2]string{
+		settings.ThemeAuto:  {`<html lang="fr">`, `<meta name="color-scheme" content="light dark">`},
+		settings.ThemeLight: {`<html lang="fr" data-theme="clair">`, `<meta name="color-scheme" content="light">`},
+		settings.ThemeDark:  {`<html lang="fr" data-theme="sombre">`, `<meta name="color-scheme" content="dark">`},
+	} {
+		db := baseRemplie(t, 1)
+		if err := settings.Set(context.Background(), db, settings.Source{}, map[string]string{settings.AppTheme: theme}); err != nil {
+			t.Fatal(err)
+		}
+		h, _ := monter(t, db, essai{})
+		tok := session(t, db)
+		// Toutes les pages, connexion comprise, suivent le theme choisi.
+		for _, page := range []string{"/", "/connexion"} {
+			body := get(t, h, tok, page).Body.String()
+			if page == "/connexion" {
+				body = get(t, h, "", page).Body.String()
+			}
+			for _, v := range voulu {
+				if !strings.Contains(body, v) {
+					t.Errorf("%s, %s : %s absent", theme, page, v)
+				}
+			}
+		}
+	}
+}

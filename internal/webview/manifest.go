@@ -110,3 +110,12 @@ func (s *Server) iconStyle() string {
 
 // appleIcon est l'icone de l'ecran d'accueil d'iOS, lue a l'ajout seulement.
 func (s *Server) appleIcon() string { return iconPrefix(s.iconStyle()) + "apple-180.png" }
+
+// theme est le theme impose a l'interface, vide quand il suit l'appareil.
+func (s *Server) theme() string {
+	switch t := s.opts.Service.State().Values.String(settings.AppTheme); t {
+	case settings.ThemeLight, settings.ThemeDark:
+		return t
+	}
+	return ""
+}

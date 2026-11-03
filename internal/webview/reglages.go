@@ -407,7 +407,8 @@ func (s *Server) summary(ctx context.Context, id string, st service.State) (stri
 		}
 		return "Chaque jour, " + plural(v.Int(settings.BackupKeep), "copie gardée", "copies gardées"), false
 	case "application":
-		return "Icône " + strings.ToLower(optionLabel(settings.AppIcon, v.String(settings.AppIcon))), false
+		return "Icône " + strings.ToLower(optionLabel(settings.AppIcon, v.String(settings.AppIcon))) +
+			" · thème " + strings.ToLower(optionLabel(settings.AppTheme, v.String(settings.AppTheme))), false
 	case "versions":
 		if st.Update == nil {
 			return "Désactivé", false

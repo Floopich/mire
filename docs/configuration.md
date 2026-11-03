@@ -16,7 +16,7 @@ Un changement s'applique aussitôt, sans redémarrer.
 | Alertes et intégrations | Notifications | service, événements envoyés, essai |
 |  | Home Assistant | serveur MQTT, identifiant, préfixe de découverte, bouton de redémarrage, essai |
 |  | Métriques | publication sur `/metrics`, jeton d'accès |
-| Système | Application | style de l'icône de l'application installée : classique, sombre, couleurs inversées, noir et blanc |
+| Système | Application | style de l'icône de l'application installée : classique, sombre, couleurs inversées, noir et blanc ; thème de l'interface : automatique, clair, sombre |
 |  | Journal | niveau de détail, dernières lignes du service, téléchargement |
 |  | Sauvegarde | copie automatique chaque jour, nombre de copies gardées, téléchargement d'une copie |
 |  | Nouvelles versions | avis d'une nouvelle version, désactivé par défaut |
@@ -49,6 +49,7 @@ Facultatives. Une variable définie **verrouille** le réglage dans la page. À 
 | `MIRE_SAUVEGARDE_COPIES` | `7` | copies automatiques gardées, de 1 à 365 |
 | `MIRE_AVIS_VERSION` | `false` | signale une nouvelle version : une fois par jour, Mire demande à GitHub le numéro de la dernière |
 | `MIRE_ICONE` | `classique` | icône de l'application installée : `classique`, `sombre`, `inversee`, `noir-blanc` |
+| `MIRE_THEME` | `auto` | thème de l'interface : `auto` (celui de l'appareil), `clair`, `sombre` |
 
 Notifications :
 
@@ -104,6 +105,7 @@ Image pour `amd64`, `arm64` et `armv7`.
 |---|---|
 | `latest` | dernière version publiée |
 | `1.2.3`, `1.2` | version précise, ou dernière correction d'une version |
+| `1` | dernière version 1.x : nouveautés et corrections, sans changement cassant |
 | `main` | version en développement |
 
 Mettre à jour : `docker compose pull && docker compose up -d`. Les données sont conservées et la base est mise à jour au démarrage ; avant de la modifier, Mire en garde une copie à côté, `mire.db.avant-vN` (la plus récente seulement).

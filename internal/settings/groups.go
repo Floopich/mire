@@ -80,7 +80,15 @@ const (
 
 	UpdateCheck = "versions.avis"
 
-	AppIcon = "application.icone"
+	AppIcon  = "application.icone"
+	AppTheme = "application.theme"
+)
+
+// Themes de l'interface : celui de l'appareil, ou l'un des deux impose.
+const (
+	ThemeAuto  = "auto"
+	ThemeLight = "clair"
+	ThemeDark  = "sombre"
 )
 
 // AppIcons sont les styles d'icone de l'application installee : le meme
@@ -356,6 +364,11 @@ func Groups() []Group {
 				{Key: AppIcon, Env: "MIRE_ICONE", Kind: Select, Default: "classique", Label: "Icône",
 					Help:    "Choisissez-la avant d'installer. Déjà installée : sur Android et ordinateur, l'icône change d'elle-même, parfois après quelques jours ou une confirmation ; sur iPhone, réinstallez l'application.",
 					Options: AppIcons},
+				{Key: AppTheme, Env: "MIRE_THEME", Kind: Select, Default: ThemeAuto, Label: "Thème de l'interface",
+					Help: "Automatique : clair ou sombre comme l'appareil.",
+					Options: func() []Option {
+						return []Option{{ThemeAuto, "Automatique"}, {ThemeLight, "Clair"}, {ThemeDark, "Sombre"}}
+					}},
 			},
 		},
 	}
