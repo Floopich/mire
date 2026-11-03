@@ -92,6 +92,30 @@ func Detect(ctx context.Context, hosts []string) []Candidate {
 }
 
 func probe(ctx context.Context, client *http.Client, host string) (Candidate, bool) {
+	c, ok := probeHTTP(ctx, client, host)
+	if ok && c.Model != nil {
+		return c, true
+	}
+	// Un modem que Mire ne lit pas par son interface web peut publier ses
+	// tables DOCSIS en SNMP : le pilote SNMP standard le lirait alors.
+	sctx, cancel := context.WithTimeout(ctx, 1500*time.Millisecond)
+	defer cancel()
+	if p := ProbeSNMP(sctx, host, "public"); p.Answered && p.DSChannel > 0 {
+		if m, err := Lookup(SNMPID); err == nil {
+			if !ok {
+				c = Candidate{URL: "http://" + host}
+			}
+			c.Model, c.DOCSIS = &m, true
+			if c.Title == "" {
+				c.Title = p.SysDescr
+			}
+			return c, true
+		}
+	}
+	return c, ok
+}
+
+func probeHTTP(ctx context.Context, client *http.Client, host string) (Candidate, bool) {
 	for _, scheme := range []string{"http", "https"} {
 		url := scheme + "://" + host
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)

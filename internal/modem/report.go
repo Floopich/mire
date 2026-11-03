@@ -48,6 +48,9 @@ type Report struct {
 	Name     string    `json:"nom,omitempty"`
 	Software string    `json:"logiciel,omitempty"`
 	Lectures []Capture `json:"lectures"`
+	// SNMP dit si le modem repond en SNMP avec la communaute public : de
+	// quoi savoir si le pilote SNMP standard peut le lire.
+	SNMP *SNMPProbe `json:"snmp,omitempty"`
 }
 
 const (
@@ -105,6 +108,10 @@ func BuildReport(ctx context.Context, address string, d Driver, progress Progres
 		c.Text = clip(scrub(b.String()), homeLimit)
 	}
 	r.Lectures = append(r.Lectures, c)
+
+	probe := ProbeSNMP(ctx, address, "public")
+	probe.SysDescr, probe.Err = scrub(probe.SysDescr), scrub(probe.Err)
+	r.SNMP = &probe
 
 	if hasInfo {
 		progress.report(1, pre+1, "informations du modem")
@@ -322,6 +329,17 @@ func render(r Report, budget int, full bool) string {
 		add("Adresse : %s, page « %s ».", r.Address, r.Title)
 	} else {
 		add("Adresse : %s.", r.Address)
+	}
+
+	if p := r.SNMP; p != nil {
+		switch {
+		case p.Answered:
+			add("SNMP (communauté public) : répond, %d canaux descendants et %d montants lisibles%s%s.", p.DSChannel, p.USChannel,
+				map[bool]string{true: ", DOCSIS " + p.DOCSIS}[p.DOCSIS != ""],
+				map[bool]string{true: ", « " + p.SysDescr + " »"}[p.SysDescr != ""])
+		default:
+			add("SNMP (communauté public) : pas de réponse.")
+		}
 	}
 
 	lines = append(lines, "", "Lectures :")

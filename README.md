@@ -68,6 +68,7 @@ volumes:
 | Modem | Opérateur |
 |---|---|
 | Technicolor CGA4233 (firmware VOO) | VOO |
+| Modem DOCSIS standard, par SNMP (expérimental, canaux SC-QAM) | tout modem câble qui publie ses tables DOCSIS en SNMP |
 
 | Profil | Réseau |
 |---|---|
@@ -75,7 +76,7 @@ volumes:
 | Telenet / Orange | réseau Telenet : Flandre, une partie de Bruxelles |
 | Autre opérateur | relevés conservés, sans jugement de la ligne |
 
-Modem absent de la liste : choisissez « Autre modem », puis **Proposer mon modem** dans la page Modem.
+Modem absent de la liste : essayez **Modem DOCSIS standard (SNMP)**, avec la communauté `public` dans le champ Identifiant. S'il ne répond pas, choisissez « Autre modem », puis **Proposer mon modem** dans la page Modem : le rapport dit aussi si le modem répond en SNMP.
 
 ## Documentation
 

@@ -20,7 +20,8 @@ func TestLeRegistreEstCoherent(t *testing.T) {
 		if m.Name == "" || m.New == nil {
 			t.Errorf("%s : nom ou constructeur manquant", m.ID)
 		}
-		if len(m.Markers) == 0 {
+		// Le pilote SNMP se reconnait a sa reponse SNMP, pas a une page web.
+		if len(m.Markers) == 0 && m.ID != SNMPID {
 			t.Errorf("%s : aucun repere pour la detection", m.ID)
 		}
 		for _, mk := range m.Markers {

@@ -45,6 +45,9 @@ type Model struct {
 	// fictif de la demonstration, que seule une instance de demonstration
 	// emploie.
 	Hidden bool
+	// NoPassword dit que le pilote se passe de mot de passe : le SNMP, dont
+	// la communaute est souvent public.
+	NoPassword bool
 }
 
 // models est le registre des pilotes. Un pilote n'y entre qu'avec des
@@ -58,6 +61,19 @@ var models = []Model{
 		Markers:     []string{"theme/voo", "technicolor"},
 		New: func(c Config) (Driver, error) {
 			return NewCGA4233(c.URL, c.User, c.Password)
+		},
+	},
+	{
+		// Experimental : aucun releve reel ne l'a encore valide. Il est
+		// propose pour que les utilisateurs dont le modem repond en SNMP le
+		// confirment.
+		ID:          SNMPID,
+		Name:        "Modem DOCSIS standard (SNMP)",
+		Firmware:    "expérimental, canaux SC-QAM",
+		DefaultUser: "public",
+		NoPassword:  true,
+		New: func(c Config) (Driver, error) {
+			return NewSNMP(c)
 		},
 	},
 }

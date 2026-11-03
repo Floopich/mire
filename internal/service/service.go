@@ -166,7 +166,7 @@ func (st State) Driver() (modem.Driver, error) {
 		return nil, st.ModelErr
 	}
 	password := st.Values.String(settings.ModemPassword)
-	if password == "" {
+	if password == "" && !st.Model.NoPassword {
 		return nil, ErrNoModemPassword
 	}
 	return st.Model.New(modem.Config{URL: st.Address, User: st.User, Password: password})

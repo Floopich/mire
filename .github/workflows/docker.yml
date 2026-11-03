@@ -54,13 +54,15 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ghcr.io/${{ github.repository_owner }}/mire
-          # latest designe la derniere version publiee, jamais un etat de
-          # developpement : il ne bouge qu'avec un tag vX.Y.Z sans suffixe
-          # (une pre-version v1.2.0-rc1 ne le deplace pas). main suit la
-          # branche, pour qui veut tester avant publication.
+          # latest, et son synonyme stable, designent la derniere version
+          # publiee : ils ne bougent qu'avec un tag vX.Y.Z sans suffixe. testing
+          # suit toutes les versions, celles de test comprises (v1.9.0-rc1),
+          # puis la version finale. main suit la branche de developpement.
           flavor: latest=false
           tags: |
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-') }}
+            type=raw,value=stable,enable=${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-') }}
+            type=raw,value=testing,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}

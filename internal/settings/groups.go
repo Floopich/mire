@@ -128,7 +128,7 @@ func Groups() []Group {
 					Help:        "Vide : celle du profil.",
 					Placeholder: "http://192.168.100.1", Check: checkURL, Normalize: withScheme("http://")},
 				{Key: ModemUser, Env: "MIRE_UTILISATEUR", Kind: Text, Label: "Identifiant",
-					Help: "Vide : celui du modèle."},
+					Help: "Vide : celui du modèle. SNMP : la communauté, public le plus souvent."},
 				{Key: ModemPassword, Env: "MIRE_MODEM_MOT_DE_PASSE", Kind: Password, Label: "Mot de passe",
 					Help: "Vide : garde l'actuel."},
 			},

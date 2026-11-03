@@ -616,7 +616,7 @@ func (s *Server) bannerFor(st service.State, latest time.Time) *banner {
 	}
 	if !st.Collecting {
 		what := "le modem"
-		if st.ModelErr == nil && st.Values.String(settings.ModemPassword) == "" {
+		if st.ModelErr == nil && st.Values.String(settings.ModemPassword) == "" && !st.Model.NoPassword {
 			what = "le mot de passe du modem"
 		}
 		msg := "La collecte est arrêtée : renseignez " + what + " dans les réglages."

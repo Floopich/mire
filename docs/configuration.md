@@ -30,9 +30,9 @@ Facultatives. Une variable définie **verrouille** le réglage dans la page. À 
 
 | Variable | Défaut | Rôle |
 |---|---|---|
-| `MIRE_MODELE` | celui du profil | modèle du modem, voir `mire modeles` ; `generique` pour un modem non pris en charge |
+| `MIRE_MODELE` | celui du profil | modèle du modem, voir `mire modeles` ; `snmp` pour un modem DOCSIS standard lu en SNMP (expérimental) ; `generique` pour un modem non pris en charge |
 | `MIRE_MODEM` | celle du profil | adresse du modem, `http://192.168.100.1` chez VOO |
-| `MIRE_UTILISATEUR` | celui du modèle | identifiant du modem |
+| `MIRE_UTILISATEUR` | celui du modèle | identifiant du modem ; en SNMP, la communauté (`public` par défaut) |
 | `MIRE_MODEM_MOT_DE_PASSE` | — | mot de passe du modem ; sans lui, la collecte reste arrêtée |
 | `MIRE_INTERVALLE` | `10m` | délai entre deux relevés, une minute au minimum |
 | `MIRE_RAPPROCHE` | `true` | relevés toutes les minutes pendant le quart d'heure qui suit un incident |
@@ -103,14 +103,17 @@ Image pour `amd64`, `arm64` et `armv7`.
 
 | Tag de l'image | Contenu |
 |---|---|
-| `latest` | dernière version publiée |
+| `latest`, `stable` | dernière version publiée |
+| `testing` | dernière version, versions de test comprises (`1.9.0-rc1`), puis la version finale |
 | `1.2.3`, `1.2` | version précise, ou dernière correction d'une version |
 | `1` | dernière version 1.x : nouveautés et corrections, sans changement cassant |
 | `main` | version en développement |
 
 Mettre à jour : `docker compose pull && docker compose up -d`. Les données sont conservées et la base est mise à jour au démarrage ; avant de la modifier, Mire en garde une copie à côté, `mire.db.avant-vN` (la plus récente seulement).
 
-Être prévenu d'une nouvelle version : **Réglages, Nouvelles versions**, ou les notifications de GitHub (Watch, Custom, Releases).
+Être prévenu d'une nouvelle version : **Réglages, Nouvelles versions**, ou les notifications de GitHub (Watch, Custom, Releases). Une version stable n'annonce que des versions stables ; une version de test annonce aussi les versions de test suivantes.
+
+**Essayer avant les autres** : remplacez `latest` par `testing` dans `compose.yaml`. Vous recevez chaque version de test, puis la version finale, sans revenir à la main sur `latest`. Une version de test peut contenir des erreurs : gardez une sauvegarde.
 
 **Dossier des données.** Pour un dossier sur la machine plutôt que le volume `mire-data`, remplacez `mire-data:/data` par `./data:/data` et attribuez-le à l'utilisateur du conteneur (65532) avant le premier démarrage :
 
