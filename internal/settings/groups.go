@@ -79,7 +79,18 @@ const (
 	BackupKeep = "sauvegarde.copies"
 
 	UpdateCheck = "versions.avis"
+
+	AppIcon = "application.icone"
 )
+
+// AppIcons sont les styles d'icone de l'application installee : le meme
+// logo, en d'autres couleurs.
+func AppIcons() []Option {
+	return []Option{
+		{"classique", "Classique"}, {"sombre", "Sombre"},
+		{"inversee", "Couleurs inversées"}, {"noir-blanc", "Noir et blanc"},
+	}
+}
 
 // Sources des mesures de debit.
 const (
@@ -335,6 +346,16 @@ func Groups() []Group {
 			Toggle: UpdateCheck,
 			Defs: []Def{
 				{Key: UpdateCheck, Env: "MIRE_AVIS_VERSION", Kind: Bool, Default: "false", Label: "Signaler les nouvelles versions"},
+			},
+		},
+		{
+			ID:    "application",
+			Title: "Application",
+			Help:  "Mire s'installe comme une application, sur téléphone ou ordinateur.",
+			Defs: []Def{
+				{Key: AppIcon, Env: "MIRE_ICONE", Kind: Select, Default: "classique", Label: "Icône",
+					Help:    "Choisissez-la avant d'installer. Déjà installée : sur Android et ordinateur, l'icône change d'elle-même, parfois après quelques jours ou une confirmation ; sur iPhone, réinstallez l'application.",
+					Options: AppIcons},
 			},
 		},
 	}

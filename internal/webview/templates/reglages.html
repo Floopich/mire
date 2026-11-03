@@ -144,6 +144,11 @@
 {{define "field"}}{{if .OnlyAttr}}<div class="field-row only" data-condition="{{.OnlyAttr}}">{{else}}<div class="field-row">{{end}}
  {{if .IsBool}}
  <div class="bool-row"><label class="body-l" for="{{.ID}}">{{.Label}}</label>{{template "switch" .}}</div>
+ {{else if eq .Key "application.icone"}}
+ <fieldset class="icon-choices"{{if .Locked}} disabled{{end}}>
+  <legend class="label-l">{{.Label}}</legend>
+  {{$v := .Value}}{{$k := .Key}}{{range .Options}}<label><input type="radio" name="{{$k}}" value="{{.Value}}"{{if eq .Value $v}} checked{{end}}><img src="{{iconSrc .Value}}" width="72" height="72" alt=""><span class="label-l">{{.Label}}</span></label>{{end}}
+ </fieldset>
  {{else if .IsSelect}}
  <div class="field select"><select id="{{.ID}}" name="{{.Key}}"{{if .Locked}} disabled{{end}}>
   {{$v := .Value}}{{range .Options}}<option value="{{.Value}}"{{if eq .Value $v}} selected{{end}}>{{.Label}}</option>{{end}}

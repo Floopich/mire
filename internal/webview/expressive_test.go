@@ -1,8 +1,10 @@
 package webview
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/floopich/mire/internal/settings"
 	"image/png"
 	"net/http"
 	"strings"
@@ -131,5 +133,52 @@ func TestMireEstInstallable(t *testing.T) {
 	}
 	if csp := page.Header().Get("Content-Security-Policy"); !strings.Contains(csp, "manifest-src 'self'") {
 		t.Errorf("la CSP bloque le manifeste : %q", csp)
+	}
+}
+
+func TestStylesDIcone(t *testing.T) {
+	for _, o := range settings.AppIcons() {
+		db := baseRemplie(t, 1)
+		if err := settings.Set(context.Background(), db, settings.Source{}, map[string]string{settings.AppIcon: o.Value}); err != nil {
+			t.Fatal(err)
+		}
+		h, _ := monter(t, db, essai{})
+		tok := session(t, db)
+		var m manifest
+		if err := json.Unmarshal(get(t, h, "", "/manifest.webmanifest").Body.Bytes(), &m); err != nil {
+			t.Fatal(err)
+		}
+		pre := iconPrefix(o.Value)
+		vus := map[string]bool{}
+		for _, ic := range m.Icons {
+			img := get(t, h, "", ic.Src)
+			cfg, err := png.DecodeConfig(img.Body)
+			if img.Code != http.StatusOK || err != nil || fmt.Sprintf("%dx%d", cfg.Width, cfg.Height) != ic.Sizes {
+				t.Errorf("%s : icône %s absente ou de mauvaise taille", o.Value, ic.Src)
+			}
+			vus[ic.Purpose] = true
+			if ic.Purpose != "monochrome" && !strings.HasPrefix(ic.Src, pre) {
+				t.Errorf("%s : %s n'est pas du style choisi", o.Value, ic.Src)
+			}
+		}
+		if !vus["any"] || !vus["maskable"] || !vus["monochrome"] {
+			t.Errorf("%s : %v", o.Value, vus)
+		}
+		apple := pre + "apple-180.png"
+		if !strings.Contains(get(t, h, tok, "/").Body.String(), `rel="apple-touch-icon" href="`+apple+`"`) {
+			t.Errorf("%s : icône iOS absente de la page", o.Value)
+		}
+		if rec := get(t, h, "", apple); rec.Code != http.StatusOK {
+			t.Errorf("%s : %s HTTP %d", o.Value, apple, rec.Code)
+		}
+		body := get(t, h, tok, "/reglages/application").Body.String()
+		if strings.Count(body, `type="radio" name="application.icone"`) != 4 ||
+			!strings.Contains(body, `value="`+o.Value+`" checked><img src="`+pre+`192.png"`) {
+			t.Errorf("%s : choix des styles absent ou mal coché", o.Value)
+		}
+	}
+	// Un style inconnu revient au classique, sans lien casse.
+	if iconPrefix("inconnu") != "/static/icone-" || iconPrefix("classique") != "/static/icone-" {
+		t.Error("style inconnu")
 	}
 }

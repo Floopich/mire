@@ -98,6 +98,8 @@ func NewServer(db *sql.DB, opts Options) (*Server, error) {
 	s.versions = assetVersions(map[string][]byte{"/reglages.css": []byte(s.css)})
 	funcs := template.FuncMap{
 		"asset":      s.assetURL,
+		"appleIcon":  s.appleIcon,
+		"iconSrc":    func(style string) string { return iconPrefix(style) + "192.png" },
 		"fmtValue":   Fmt,
 		"fmtMHz":     FmtMHz,
 		"fmtTime":    FmtTime,
@@ -131,7 +133,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /sante", s.handleHealth)
 	mux.HandleFunc("GET /metrics", s.handleMetrics)
 	mux.Handle("GET /static/", s.cacheAssets(staticMaxAge, static))
-	mux.Handle("GET /manifest.webmanifest", manifestHandler())
+	mux.HandleFunc("GET /manifest.webmanifest", s.handleManifest)
 	mux.Handle("GET /reglages.css", s.cacheAssets(time.Hour, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
 		_, _ = w.Write([]byte(s.css))

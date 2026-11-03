@@ -230,7 +230,7 @@ func buildGroup(g settings.Group, values settings.Values, input map[string]strin
 
 var sectionIcons = map[string]string{
 	"modem": "modem", "collecte": "collecte", "analyse": "analyse", "sonde": "connexion",
-	"notifications": "notifications", "metriques": "metriques", "domotique": "maison", "meteo": "meteo", "abonnement": "abonnement", "debit": "debit", "journal": "note", "versions": "versions",
+	"notifications": "notifications", "metriques": "metriques", "domotique": "maison", "meteo": "meteo", "abonnement": "abonnement", "debit": "debit", "journal": "note", "versions": "versions", "application": "palette",
 	"sauvegarde": "telecharger", sectionSecurity: "verrou",
 }
 
@@ -249,7 +249,7 @@ var navLayout = []struct {
 	{"Ligne", []string{"modem", "analyse", "abonnement", "collecte"}},
 	{"Internet", []string{"sonde", "debit", "meteo"}},
 	{"Alertes et intégrations", []string{"notifications", "domotique", "metriques"}},
-	{"Système", []string{"journal", "sauvegarde", "versions", sectionSecurity}},
+	{"Système", []string{"application", "journal", "sauvegarde", "versions", sectionSecurity}},
 }
 
 // sections range les rubriques sous leurs intertitres, dans l'ordre de
@@ -406,6 +406,8 @@ func (s *Server) summary(ctx context.Context, id string, st service.State) (stri
 			return "Manuelle", false
 		}
 		return "Chaque jour, " + plural(v.Int(settings.BackupKeep), "copie gardée", "copies gardées"), false
+	case "application":
+		return "Icône " + strings.ToLower(optionLabel(settings.AppIcon, v.String(settings.AppIcon))), false
 	case "versions":
 		if st.Update == nil {
 			return "Désactivé", false

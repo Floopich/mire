@@ -16,7 +16,8 @@ Un changement s'applique aussitôt, sans redémarrer.
 | Alertes et intégrations | Notifications | service, événements envoyés, essai |
 |  | Home Assistant | serveur MQTT, identifiant, préfixe de découverte, bouton de redémarrage, essai |
 |  | Métriques | publication sur `/metrics`, jeton d'accès |
-| Système | Journal | niveau de détail, dernières lignes du service, téléchargement |
+| Système | Application | style de l'icône de l'application installée : classique, sombre, couleurs inversées, noir et blanc |
+|  | Journal | niveau de détail, dernières lignes du service, téléchargement |
 |  | Sauvegarde | copie automatique chaque jour, nombre de copies gardées, téléchargement d'une copie |
 |  | Nouvelles versions | avis d'une nouvelle version, désactivé par défaut |
 |  | Sécurité | mot de passe de l'interface |
@@ -47,6 +48,7 @@ Facultatives. Une variable définie **verrouille** le réglage dans la page. À 
 | `MIRE_SAUVEGARDE` | `true` | copie automatique chaque jour, dans `sauvegardes` |
 | `MIRE_SAUVEGARDE_COPIES` | `7` | copies automatiques gardées, de 1 à 365 |
 | `MIRE_AVIS_VERSION` | `false` | signale une nouvelle version : une fois par jour, Mire demande à GitHub le numéro de la dernière |
+| `MIRE_ICONE` | `classique` | icône de l'application installée : `classique`, `sombre`, `inversee`, `noir-blanc` |
 
 Notifications :
 
@@ -193,6 +195,7 @@ Mire doit être servi à la racine d'un nom de domaine (`https://mire.exemple.be
 
 - **Android, Chrome, Edge** : menu du navigateur, « Installer l'application ».
 - **iPhone, iPad** : Safari, Partager, « Sur l'écran d'accueil ».
+- **Icône** : choisissez son style dans **Réglages, Application** avant d'installer. Une application déjà installée change d'icône d'elle-même sur Android et sur ordinateur, parfois après quelques jours ou une confirmation ; sur iPhone, réinstallez-la. Une version monochrome est fournie aux systèmes qui teintent les icônes.
 
 L'installation demande une adresse en HTTPS.
 

@@ -520,6 +520,16 @@
   .nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
   .nav-heading { margin: 20px 16px 8px; color: var(--md-sys-color-on-surface-variant); }
   .settings-nav > .nav-heading:first-child { margin-top: 0; }
+  .icon-choices { border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; max-width: 640px; }
+  .icon-choices legend { grid-column: 1 / -1; }
+  .icon-choices legend { padding: 0; margin-bottom: 8px; color: var(--md-sys-color-on-surface-variant); }
+  .icon-choices label { display: grid; justify-items: center; gap: 6px; padding: 10px; border-radius: var(--md-sys-shape-corner-large); cursor: pointer; outline: 2px solid transparent; }
+  .icon-choices label:hover { background: var(--md-sys-color-surface-container-high); }
+  .icon-choices label:has(input:checked) { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+  .icon-choices label:has(input:focus-visible) { outline-color: var(--md-sys-color-primary); }
+  .icon-choices input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .icon-choices img { display: block; }
+  .icon-choices[disabled] label { cursor: default; opacity: .6; }
   .nav-list li a { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px; padding: 14px 16px; min-height: 64px; color: inherit; text-decoration: none; background: var(--md-sys-color-surface-container); transition: border-radius var(--ressort-rapide-duree) var(--ressort-rapide), background-color var(--effet-duree) var(--effet); }
   .nav-list li:first-child a { border-start-start-radius: var(--md-sys-shape-corner-large-increased); border-start-end-radius: var(--md-sys-shape-corner-large-increased); }
   .nav-list li:last-child a { border-end-start-radius: var(--md-sys-shape-corner-large-increased); border-end-end-radius: var(--md-sys-shape-corner-large-increased); }
