@@ -478,3 +478,44 @@ func TestLaPremiereVisiteDonneLAdresseDesNotifications(t *testing.T) {
 		t.Errorf("adresse %q", got)
 	}
 }
+
+func TestReglagesRangesParTheme(t *testing.T) {
+	h, cookie := serveurAvec(t, 1, essai{Collecting: true})
+	body := get(t, h, cookie, "/reglages").Body.String()
+	// Intertitres dans l'ordre, chaque rubrique sous le sien.
+	// La recherche part de la liste : l'en-tete porte aussi « Internet ».
+	last := strings.Index(body, "settings-nav")
+	for _, mot := range []string{
+		">Ligne<", "/reglages/modem\"", "/reglages/analyse\"", "/reglages/collecte\"",
+		">Internet<", "/reglages/sonde\"", "/reglages/debit\"", "/reglages/meteo\"",
+		">Alertes et intégrations<", "/reglages/notifications\"", "/reglages/domotique\"", "/reglages/metriques\"",
+		">Système<", "/reglages/journal\"", "/reglages/sauvegarde\"", "/reglages/versions\"", "/reglages/securite\"",
+	} {
+		i := strings.Index(body[last:], mot)
+		if i < 0 {
+			t.Errorf("%s absent ou mal placé", mot)
+			continue
+		}
+		last += i
+	}
+}
+
+func TestToutesLesRubriquesSontRangees(t *testing.T) {
+	var items []navItem
+	for _, g := range settings.Groups() {
+		items = append(items, navItem{ID: g.ID})
+	}
+	items = append(items, navItem{ID: sectionSecurity}, navItem{ID: "nouvelle"})
+	n := 0
+	for _, sec := range sections(items) {
+		n += len(sec.Items)
+	}
+	if n != len(items) {
+		t.Errorf("%d rubriques rangées sur %d", n, len(items))
+	}
+	// Une rubrique oubliee dans navLayout rejoint « Système », sans disparaitre.
+	secs := sections(items)
+	if got := secs[len(secs)-1].Items; got[len(got)-1].ID != "nouvelle" {
+		t.Error("rubrique inconnue perdue")
+	}
+}

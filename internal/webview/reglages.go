@@ -79,6 +79,8 @@ const sectionSecurity = "securite"
 type reglagesView struct {
 	common
 	Nav []navItem
+	// NavSections range les rubriques sous leurs intertitres.
+	NavSections []navSection
 	// Section est la rubrique affichee ; Explicit dit qu'elle a ete choisie.
 	// Sur un ecran etroit, la page sans rubrique choisie n'affiche que la
 	// liste ; sur un ecran large, liste et rubrique sont cote a cote.
@@ -230,6 +232,57 @@ var sectionIcons = map[string]string{
 	"modem": "modem", "collecte": "collecte", "analyse": "analyse", "sonde": "connexion",
 	"notifications": "notifications", "metriques": "metriques", "domotique": "maison", "meteo": "meteo", "abonnement": "abonnement", "debit": "debit", "journal": "note", "versions": "versions",
 	"sauvegarde": "telecharger", sectionSecurity: "verrou",
+}
+
+// navSection est un intertitre de la liste des reglages et ses rubriques.
+type navSection struct {
+	Title string
+	Items []navItem
+}
+
+// navLayout range les rubriques par theme. Une rubrique absente de la liste
+// rejoint la derniere section : aucune ne disparait.
+var navLayout = []struct {
+	title string
+	ids   []string
+}{
+	{"Ligne", []string{"modem", "analyse", "abonnement", "collecte"}},
+	{"Internet", []string{"sonde", "debit", "meteo"}},
+	{"Alertes et intégrations", []string{"notifications", "domotique", "metriques"}},
+	{"Système", []string{"journal", "sauvegarde", "versions", sectionSecurity}},
+}
+
+// sections range les rubriques sous leurs intertitres, dans l'ordre de
+// navLayout ; une section vide est omise.
+func sections(items []navItem) []navSection {
+	byID := make(map[string]navItem, len(items))
+	for _, it := range items {
+		byID[it.ID] = it
+	}
+	placed := map[string]bool{}
+	out := make([]navSection, 0, len(navLayout))
+	for _, l := range navLayout {
+		sec := navSection{Title: l.title}
+		for _, id := range l.ids {
+			if it, ok := byID[id]; ok {
+				sec.Items = append(sec.Items, it)
+				placed[id] = true
+			}
+		}
+		out = append(out, sec)
+	}
+	for _, it := range items {
+		if !placed[it.ID] {
+			out[len(out)-1].Items = append(out[len(out)-1].Items, it)
+		}
+	}
+	kept := out[:0]
+	for _, sec := range out {
+		if len(sec.Items) > 0 {
+			kept = append(kept, sec)
+		}
+	}
+	return kept
 }
 
 func (s *Server) nav(ctx context.Context, st service.State, current string) []navItem {
@@ -439,6 +492,7 @@ func (s *Server) reglagesView(r *http.Request, section string, explicit bool, in
 	st := s.opts.Service.State()
 	v := reglagesView{common: s.commonFor(r, "Réglages"), Section: section, Explicit: explicit}
 	v.Nav = s.nav(r.Context(), st, section)
+	v.NavSections = sections(v.Nav)
 	for _, n := range v.Nav {
 		if n.ID == section {
 			v.SectionTitle = n.Title

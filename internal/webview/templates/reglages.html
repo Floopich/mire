@@ -10,13 +10,16 @@
 
 <div class="settings{{if .Explicit}} chosen{{end}}">
  <nav class="settings-nav" aria-label="Rubriques des réglages">
+  {{range .NavSections}}
+  <h2 class="nav-heading label-l">{{.Title}}</h2>
   <ul class="nav-list">
-   {{range .Nav}}<li><a href="/reglages/{{.ID}}"{{if .Current}} class="current"{{if $.Explicit}} aria-current="page"{{end}}{{end}}>
+   {{range .Items}}<li><a href="/reglages/{{.ID}}"{{if .Current}} class="current"{{if $.Explicit}} aria-current="page"{{end}}{{end}}>
     {{icon .Icon}}
     <span class="nav-text"><span class="title-m">{{.Title}}</span><small class="body-m{{if .Attention}} attention{{end}}">{{.Summary}}</small></span>
     <span class="chevron">{{icon "suivant"}}</span>
    </a></li>{{end}}
   </ul>
+  {{end}}
  </nav>
 
  <div class="settings-detail">

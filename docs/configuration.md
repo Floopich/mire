@@ -4,22 +4,22 @@
 
 Un changement s'applique aussitôt, sans redémarrer.
 
-| Rubrique | Contenu |
-|---|---|
-| Modem | modèle, adresse, identifiant et mot de passe ; « Enregistrer et tester », « Détecter le modem » |
-| Collecte et conservation | intervalle entre deux relevés, relevés rapprochés après un incident, durée et taille de conservation |
-| Opérateur et seuils | profil d'opérateur, modulation habituelle de la voie montante OFDMA |
-| Abonnement | prix mensuel, pour la compensation légale (opérateur belge) |
-| Internet | sonde de connexion : cibles et intervalle |
-| Débit | source (Speedtest Tracker ou passerelle UniFi), adresse, jeton ou clé API, compte local UniFi, essai |
-| Notifications | service, événements envoyés, essai |
-| Météo | commune ou coordonnées, essai ; température pour la page Tendance |
-| Métriques | publication sur `/metrics`, jeton d'accès |
-| Home Assistant | serveur MQTT, identifiant, préfixe de découverte, bouton de redémarrage, essai |
-| Journal | niveau de détail, dernières lignes du service, téléchargement |
-| Sauvegarde | copie automatique chaque jour, nombre de copies gardées, téléchargement d'une copie |
-| Nouvelles versions | avis d'une nouvelle version, désactivé par défaut |
-| Sécurité | mot de passe de l'interface |
+| Groupe | Rubrique | Contenu |
+|---|---|---|
+| Ligne | Modem | modèle, adresse, identifiant et mot de passe ; « Enregistrer et tester », « Détecter le modem » |
+|  | Opérateur et seuils | profil d'opérateur, modulation habituelle de la voie montante OFDMA |
+|  | Abonnement | prix mensuel, pour la compensation légale (opérateur belge) |
+|  | Collecte et conservation | intervalle entre deux relevés, relevés rapprochés après un incident, durée et taille de conservation |
+| Internet | Internet | sonde de connexion : cibles et intervalle |
+|  | Débit | source (Speedtest Tracker ou passerelle UniFi), adresse, jeton ou clé API, compte local UniFi, essai |
+|  | Météo | commune ou coordonnées, essai ; température pour la page Tendance |
+| Alertes et intégrations | Notifications | service, événements envoyés, essai |
+|  | Home Assistant | serveur MQTT, identifiant, préfixe de découverte, bouton de redémarrage, essai |
+|  | Métriques | publication sur `/metrics`, jeton d'accès |
+| Système | Journal | niveau de détail, dernières lignes du service, téléchargement |
+|  | Sauvegarde | copie automatique chaque jour, nombre de copies gardées, téléchargement d'une copie |
+|  | Nouvelles versions | avis d'une nouvelle version, désactivé par défaut |
+|  | Sécurité | mot de passe de l'interface |
 
 ![Page Réglages](images/reglages.png)
 
