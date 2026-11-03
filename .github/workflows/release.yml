@@ -64,7 +64,9 @@ jobs:
           {
             git log -1 --format=%b "${GITHUB_SHA}"
             echo
-            echo "Image Docker : \`ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/mire:${GITHUB_REF_NAME#v}\`"
+            echo "**Mettre à jour** : \`docker compose pull && docker compose up -d\`"
+            echo
+            echo "Image : \`ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/mire:${GITHUB_REF_NAME#v}\`"
           } > notes.md
           # Brouillon d'abord : une version publiee est immuable et ne recoit
           # plus de fichiers. Elle n'est publiee qu'une fois les binaires joints.

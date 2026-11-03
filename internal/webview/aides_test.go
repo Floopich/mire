@@ -12,6 +12,7 @@ import (
 	"github.com/floopich/mire/internal/modem"
 	"github.com/floopich/mire/internal/service"
 	"github.com/floopich/mire/internal/settings"
+	"github.com/floopich/mire/internal/update"
 )
 
 // motDePasseTest est le mot de passe de l'interface dans les tests.
@@ -28,6 +29,8 @@ type fauxService struct {
 	reloads    int
 	// pilote remplace le pilote partage du modem.
 	pilote modem.Driver
+	// update remplace la verification des versions, quand elle est activee.
+	update *update.Checker
 }
 
 func (f *fauxService) State() service.State    { return f.st }
@@ -41,6 +44,9 @@ func (f *fauxService) Reload(ctx context.Context) error {
 	st.Collecting = f.collecting
 	if f.pilote != nil {
 		st.Modem = f.pilote
+	}
+	if f.update != nil && st.Values.Bool(settings.UpdateCheck) {
+		st.Update = f.update
 	}
 	if f.interval > 0 {
 		st.Interval = f.interval

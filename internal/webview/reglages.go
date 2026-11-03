@@ -22,6 +22,7 @@ import (
 	"github.com/floopich/mire/internal/settings"
 	"github.com/floopich/mire/internal/speedtest"
 	"github.com/floopich/mire/internal/store"
+	"github.com/floopich/mire/internal/update"
 )
 
 type fieldView struct {
@@ -639,6 +640,7 @@ var groupTests = map[string]groupTest{
 	"meteo":         {"meteo", "Relevé de la température", (*Server).testWeather},
 	"debit":         {"debit", "Lecture des mesures de débit", (*Server).testSpeed},
 	"domotique":     {"domotique", "Connexion au serveur MQTT", (*Server).testMQTT},
+	"versions":      {"versions", "Recherche de la dernière version", (*Server).testVersions},
 }
 
 // testTimeout borne un essai : la lecture d'un modem lent comprise.
@@ -704,6 +706,24 @@ func (s *Server) testFor(id string, v *reglagesView) {
 	}
 	v.Testing = &pending{Step: step, Elapsed: wk.elapsed(time.Now())}
 	v.Refresh = workRefresh
+}
+
+// testVersions verifie tout de suite, sans attendre la verification du jour.
+func (s *Server) testVersions(ctx context.Context) *testResult {
+	st := s.opts.Service.State()
+	if st.Update == nil {
+		return &testResult{Message: "Activez « Signaler les nouvelles versions » pour vérifier."}
+	}
+	if !update.Comparable(st.Update.Current) {
+		return &testResult{Message: "Version de développement : elle ne se compare pas aux versions publiées."}
+	}
+	if err := st.Update.Check(ctx); err != nil {
+		return &testResult{Message: "Vérification impossible : " + err.Error() + "."}
+	}
+	if _, newer, _, _ := st.Update.Status(); newer {
+		return &testResult{OK: true, Message: "Vérification faite : une nouvelle version est disponible."}
+	}
+	return &testResult{OK: true, Message: "Vérification faite : Mire " + strings.TrimPrefix(st.Update.Current, "v") + " est la dernière version."}
 }
 
 func (s *Server) testWeather(ctx context.Context) *testResult {

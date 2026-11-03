@@ -60,6 +60,9 @@
     {{if eq .ID "domotique"}}
     <button type="submit" class="btn tonal" formaction="/reglages/domotique/tester">Enregistrer et tester</button>
     {{end}}
+    {{if eq .ID "versions"}}
+    <button type="submit" class="btn tonal" formaction="/reglages/versions/tester">Vérifier maintenant</button>
+    {{end}}
    </div>{{end}}
   </form>
   {{if and (eq .ID "modem") $.Detecting}}

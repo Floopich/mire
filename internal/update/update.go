@@ -162,6 +162,10 @@ func Newer(a, b string) bool {
 	return false
 }
 
+// Comparable dit si une version se compare aux versions publiees : une
+// version de developpement ne se compare a rien.
+func Comparable(v string) bool { return parse(v) != nil }
+
 func parse(v string) []int {
 	m := semver.FindStringSubmatch(v)
 	if m == nil {
