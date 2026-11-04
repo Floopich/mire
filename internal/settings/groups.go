@@ -66,6 +66,10 @@ const (
 	MetricsOn    = "metriques.actives"
 	MetricsToken = "metriques.jeton"
 
+	SupervisionOn    = "supervision.etat"
+	SupervisionToken = "supervision.jeton"
+	HeartbeatURL     = "supervision.signal"
+
 	MQTTOn       = "mqtt.actif"
 	MQTTServer   = "mqtt.serveur"
 	MQTTUser     = "mqtt.identifiant"
@@ -302,6 +306,20 @@ func Groups() []Group {
 				{Key: MetricsOn, Env: "MIRE_METRIQUES", Kind: Bool, Default: "false", Label: "Publier les métriques"},
 				{Key: MetricsToken, Env: "MIRE_METRIQUES_JETON", Kind: Password, Label: "Jeton d'accès",
 					Help: "Facultatif, conseillé : sans jeton, tout appareil du réseau peut lire les métriques. Prometheus l'envoie en Authorization: Bearer."},
+			},
+		},
+		{
+			ID:    "supervision",
+			Title: "Supervision",
+			Help:  "Pour Uptime Kuma, PRTG, Gatus, Zabbix, Healthchecks.io et les outils du même genre.",
+			Defs: []Def{
+				{Key: SupervisionOn, Env: "MIRE_SUPERVISION", Kind: Bool, Default: "false", Label: "Publier l'état de la ligne",
+					Help: "Ajoute l'état de la ligne et d'Internet à /sante, et ouvre /sante/prtg. Aucune mesure détaillée ni adresse n'y figure."},
+				{Key: SupervisionToken, Env: "MIRE_SUPERVISION_JETON", Kind: Password, Label: "Jeton d'accès",
+					Help: "Facultatif : sans jeton, tout appareil du réseau peut lire l'état. Avec, il est exigé en Authorization: Bearer ; /sante reste ouvert, sans l'état."},
+				{Key: HeartbeatURL, Env: "MIRE_SIGNAL_DE_VIE", Kind: Text, Label: "Adresse du signal de vie",
+					Help:        "Appelée après chaque relevé réussi : sonde Push d'Uptime Kuma, Healthchecks.io… Sans appel, l'outil alerte. Vide : aucun.",
+					Placeholder: "https://hc-ping.com/…", Check: checkURL},
 			},
 		},
 		{

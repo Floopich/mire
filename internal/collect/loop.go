@@ -62,6 +62,21 @@ type Observer interface {
 	Failed(ctx context.Context, err error)
 }
 
+// Observers relaie la collecte a plusieurs observateurs, dans l'ordre.
+type Observers []Observer
+
+func (o Observers) Recorded(ctx context.Context, snap docsis.Snapshot) {
+	for _, ob := range o {
+		ob.Recorded(ctx, snap)
+	}
+}
+
+func (o Observers) Failed(ctx context.Context, err error) {
+	for _, ob := range o {
+		ob.Failed(ctx, err)
+	}
+}
+
 // Collector interroge le modem et ecrit ce qu'il lit.
 type Collector struct {
 	source Source

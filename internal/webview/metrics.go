@@ -1,9 +1,7 @@
 package webview
 
 import (
-	"crypto/subtle"
 	"net/http"
-	"strings"
 
 	"github.com/floopich/mire/internal/metrics"
 	"github.com/floopich/mire/internal/settings"
@@ -20,13 +18,10 @@ func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if token := st.Values.String(settings.MetricsToken); token != "" {
-		got, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
-		if !ok || subtle.ConstantTimeCompare([]byte(strings.TrimSpace(got)), []byte(token)) != 1 {
-			w.Header().Set("WWW-Authenticate", `Bearer realm="mire"`)
-			http.Error(w, "jeton d'accès requis", http.StatusUnauthorized)
-			return
-		}
+	if !bearerOK(r, st.Values.String(settings.MetricsToken)) {
+		w.Header().Set("WWW-Authenticate", `Bearer realm="mire"`)
+		http.Error(w, "jeton d'accès requis", http.StatusUnauthorized)
+		return
 	}
 	line, err := s.readStatus(r.Context(), st)
 	if err != nil {

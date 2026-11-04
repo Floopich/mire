@@ -18,6 +18,7 @@ import (
 	"github.com/floopich/mire/internal/collect"
 	"github.com/floopich/mire/internal/docsis"
 	"github.com/floopich/mire/internal/events"
+	"github.com/floopich/mire/internal/heartbeat"
 	"github.com/floopich/mire/internal/homeassistant"
 	"github.com/floopich/mire/internal/journal"
 	"github.com/floopich/mire/internal/modem"
@@ -280,21 +281,25 @@ func (m *Manager) Reload(ctx context.Context) error {
 		st.Modem = driver
 		db := m.db
 		info, _ := driver.(modem.InfoReader)
+		observers := collect.Observers{&events.Recorder{
+			DB:      db,
+			Profile: st.Profile,
+			Analyze: func(ctx context.Context, snap docsis.Snapshot) (analyze.Health, error) {
+				return st.Analyze(ctx, db, snap)
+			},
+			Modem:  info,
+			Logger: m.logger,
+		}}
+		if u := st.Values.String(settings.HeartbeatURL); u != "" {
+			observers = append(observers, &heartbeat.Pinger{URL: u, UserAgent: "Mire/" + m.Version, Logger: m.logger})
+		}
 		collector := collect.New(driver, m.db, collect.Options{
 			Interval:  st.Interval,
 			Retention: st.Retention(),
 			Logger:    m.logger,
 			Pace:      st.Pace(m.db, m.logger, time.Now),
 			Wake:      m.wake,
-			Observer: &events.Recorder{
-				DB:      db,
-				Profile: st.Profile,
-				Analyze: func(ctx context.Context, snap docsis.Snapshot) (analyze.Health, error) {
-					return st.Analyze(ctx, db, snap)
-				},
-				Modem:  info,
-				Logger: m.logger,
-			},
+			Observer:  observers,
 		})
 		m.wg.Add(1)
 		go func() {

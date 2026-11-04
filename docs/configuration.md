@@ -70,6 +70,7 @@ Débit, météo, métriques et Home Assistant :
 |---|---|
 | Débit | `MIRE_DEBIT` (`true` pour lire les mesures), `MIRE_DEBIT_SOURCE` (`speedtest-tracker` par défaut, ou `unifi`), `MIRE_DEBIT_ADRESSE`, `MIRE_DEBIT_JETON` (jeton ou clé API), `MIRE_DEBIT_IDENTIFIANT` et `MIRE_DEBIT_MOT_DE_PASSE` (compte local UniFi) |
 | Météo | `MIRE_METEO` (`true` pour relever la température), `MIRE_METEO_POSITION` (commune, ou `latitude, longitude`) |
+| Supervision | `MIRE_SUPERVISION` (`true` pour publier l'état de la ligne dans `/sante` et `/sante/prtg`), `MIRE_SUPERVISION_JETON`, `MIRE_SIGNAL_DE_VIE` (adresse appelée après chaque relevé réussi) |
 | Métriques | `MIRE_METRIQUES` (`true` pour publier), `MIRE_METRIQUES_JETON` |
 | Home Assistant | `MIRE_MQTT` (`true` pour publier), `MIRE_MQTT_SERVEUR` (`mqtt://hôte:1883` ou `mqtts://hôte:8883`), `MIRE_MQTT_IDENTIFIANT`, `MIRE_MQTT_MOT_DE_PASSE`, `MIRE_MQTT_PREFIXE` (`homeassistant` par défaut), `MIRE_MQTT_REDEMARRAGE` (`true` par défaut : bouton de redémarrage du modem) |
 

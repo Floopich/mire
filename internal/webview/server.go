@@ -141,6 +141,7 @@ func (s *Server) Routes() http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /sante", s.handleHealth)
+	mux.HandleFunc("GET /sante/prtg", s.handlePRTG)
 	mux.HandleFunc("GET /metrics", s.handleMetrics)
 	mux.Handle("GET /static/", s.cacheAssets(staticMaxAge, static))
 	mux.HandleFunc("GET /manifest.webmanifest", s.handleManifest)
@@ -806,8 +807,8 @@ func hoursParam(r *http.Request) int {
 	return h
 }
 
-// handleHealth repond a la supervision, sans authentification et sans rien
-// de la ligne.
+// handleHealth repond a la supervision, sans authentification. L'etat de la
+// ligne n'y figure que s'il est publie, dans la rubrique Supervision.
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	latest, err := store.LastReadingTime(r.Context(), s.db)
 	st := s.opts.Service.State()
@@ -831,6 +832,13 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	}
 	if !latest.IsZero() {
 		body["dernier_releve"] = latest.Format(time.RFC3339)
+	}
+	if err == nil && supervisionAllowed(r, st) {
+		if line, lerr := s.readStatus(r.Context(), st); lerr != nil {
+			s.opts.Logger.Error("supervision", "erreur", lerr)
+		} else {
+			addSupervision(body, line)
+		}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")

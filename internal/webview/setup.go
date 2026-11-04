@@ -56,6 +56,8 @@ func (s *Server) handleSetupOptions(w http.ResponseWriter, r *http.Request) {
 		{"domotique", "Home Assistant", "Capteurs et bouton de redémarrage, par MQTT.", vals.Bool(settings.MQTTOn)},
 		{"notifications", "Notifications", "Coupures et ligne dégradée, sur votre téléphone.", vals.Bool(settings.NotifyOn)},
 		{"debit", "Débit", "Mesures de Speedtest Tracker ou d'une passerelle UniFi.", vals.Bool(settings.SpeedOn)},
+		{"supervision", "Supervision", "Uptime Kuma, PRTG, Gatus, Healthchecks.io.",
+			vals.Bool(settings.SupervisionOn) || vals.String(settings.HeartbeatURL) != ""},
 		{"metriques", "Métriques", "Prometheus, Grafana.", vals.Bool(settings.MetricsOn)},
 		{"versions", "Nouvelles versions", "Être prévenu quand une nouvelle version paraît.", vals.Bool(settings.UpdateCheck)},
 	}

@@ -91,6 +91,37 @@
   <div class="notice info" role="status">{{icon "info"}}<p>{{.Message}} <a href="{{.Link}}" rel="noopener noreferrer" target="_blank">{{.LinkLabel}}</a></p></div>
   <p class="help body-m">Mettre à jour : <code>docker compose pull &amp;&amp; docker compose up -d</code>, ou remplacez le binaire.</p>
   {{end}}{{end}}
+  {{if eq .ID "supervision"}}{{with $.Supervision}}
+  <div class="service-log recipes">
+   <p class="help body-m">Adresses ci-dessous telles que cette page est ouverte : depuis l'outil, utilisez celle par laquelle il joint Mire. Derrière un proxy avec connexion, laissez <code>/sante</code> accessible sans connexion.</p>
+   <h3 class="title-m">Uptime Kuma</h3>
+   <ul class="help body-m">
+    <li>Mire et sa collecte : sonde « HTTP(s) - Requête JSON » sur <code>{{.Base}}/sante</code>, expression <code>$string(collecte = "a_jour")</code>, valeur attendue <code>true</code>, toutes les {{.Every}}.</li>
+    {{if .Published}}<li>État de la ligne : même sonde, expression <code>$string(ligne != "critique")</code>{{if .Token}}, en-têtes <code>{"Authorization": "Bearer &lt;jeton&gt;"}</code>{{end}}.</li>{{end}}
+    <li>Signal de vie : sonde « Push », intervalle {{.Beat}} ; son adresse va dans « Adresse du signal de vie ».</li>
+   </ul>
+   <h3 class="title-m">PRTG</h3>
+   {{if .Published}}<p class="help body-m">Capteur « HTTP Data Advanced » sur <code>{{.Base}}/sante/prtg</code>{{if .Token}}, avec l'en-tête <code>Authorization: Bearer &lt;jeton&gt;</code>{{end}}. Mire fournit les canaux et leurs seuils : collecte, ligne, canaux à surveiller, SNR, Internet, coupures, latence, perte.</p>
+   {{else}}<p class="help body-m">Activez « Publier l'état de la ligne » : le capteur « HTTP Data Advanced » lira <code>{{.Base}}/sante/prtg</code>.</p>{{end}}
+   <h3 class="title-m">Gatus</h3>
+<pre><code>endpoints:
+  - name: Mire
+    url: "{{.Base}}/sante"
+    interval: 5m{{if and .Published .Token}}
+    headers:
+      Authorization: "Bearer &lt;jeton&gt;"{{end}}
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].collecte == a_jour"{{if .Published}}
+      - "[BODY].ligne != critique"{{end}}</code></pre>
+   <h3 class="title-m">Zabbix, Checkmk, Nagios</h3>
+   <p class="help body-m">Requête HTTP sur <code>{{.Base}}/sante</code>, valeur lue en JSONPath : <code>$.collecte</code>{{if .Published}}, <code>$.ligne</code>, <code>$.internet</code>{{end}}.</p>
+   <h3 class="title-m">Healthchecks.io, Better Stack, Cronitor</h3>
+   <p class="help body-m">Créez une vérification à recevoir toutes les {{.Beat}} et collez son adresse dans « Adresse du signal de vie ».</p>
+   <h3 class="title-m">Prometheus, Grafana, Home Assistant</h3>
+   <p class="help body-m">Rubriques <a href="/reglages/metriques">Métriques</a> et <a href="/reglages/domotique">Home Assistant</a>.</p>
+  </div>
+  {{end}}{{end}}
   {{if eq .ID "sauvegarde"}}
   <div class="service-log">
    {{with $.Backups}}<p class="help body-m">{{if .Count}}Dernière copie : {{fmtTime .Last}}, {{.Size}} · {{.Count}} dans <code>{{.Dir}}</code>.{{else}}Aucune copie automatique pour l'instant.{{end}}</p>{{end}}

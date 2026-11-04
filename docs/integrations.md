@@ -106,21 +106,63 @@ Sujets MQTT : `mire/etat`, `mire/disponibilite`, `mire/commande/redemarrer`. Un 
 
 ## Supervision
 
+**Réglages, Supervision** donne ces recettes remplies avec l'adresse de votre Mire.
+
 `GET /sante` répond sans authentification :
 
 ```json
 {"collecte":"a_jour","dernier_releve":"2026-10-31T21:43:27Z","modem":"Technicolor CGA4233 (firmware VOO)","statut":"ok","version":"v1.4.0"}
 ```
 
-`collecte` vaut `a_jour`, `en_retard` (aucun relevé depuis trois intervalles), `en_attente` ou `inactive`. Une sonde HTTP sur le mot-clé `a_jour` alerte dès que le modem ne répond plus.
+`collecte` vaut `a_jour`, `en_retard` (aucun relevé depuis trois intervalles), `en_attente` ou `inactive`. `statut` passe à `erreur`, en HTTP 503, si la base est illisible.
+
+Avec **Publier l'état de la ligne**, `/sante` ajoute :
+
+| Champ | Valeurs |
+|---|---|
+| `ligne` | `bon`, `tolere`, `a_surveiller`, `critique`, `non_qualifie` (profil sans seuils), `inconnu` |
+| `canaux_a_surveiller` | canaux à surveiller ou critiques |
+| `internet` | `ok` ou `coupe`, si la sonde Internet est active |
+| `coupures_24h`, `micro_coupures_24h`, `latence_ms` | sonde Internet |
+
+Avec un jeton, ces champs n'apparaissent que pour qui l'envoie en `Authorization: Bearer` ; le reste de `/sante` reste ouvert.
+
+Derrière un proxy avec authentification, laissez `/sante` accessible sans connexion.
 
 ### Uptime Kuma
 
-Deux sondes **HTTP(s) - Mot-clé** sur `http://<machine>:1340/sante` :
+Sondes **HTTP(s) - Requête JSON** sur `http://<machine>:1340/sante`, valeur attendue `true` :
 
-| Sonde | Mot-clé | Intervalle | Alerte quand |
-|---|---|---|---|
-| Mire | `"statut":"ok"` | 60 s | Mire ne répond plus, ou sa base est illisible |
-| Collecte | `"collecte":"a_jour"` | 5 min | le modem ne donne plus de relevés |
+| Sonde | Expression | Intervalle |
+|---|---|---|
+| Mire et sa collecte | `$string(collecte = "a_jour")` | 5 min |
+| État de la ligne | `$string(ligne != "critique")` | 5 min |
 
-Derrière un proxy avec authentification, laissez `/sante` accessible sans connexion.
+Avec un jeton, en-têtes : `{"Authorization": "Bearer <jeton>"}`.
+
+Signal de vie : une sonde **Push**, intervalle de trois relevés (30 min au moins), dont l'adresse va dans **Adresse du signal de vie**.
+
+### PRTG
+
+Capteur **HTTP Data Advanced** sur `http://<machine>:1340/sante/prtg`, avec l'en-tête `Authorization: Bearer <jeton>` si un jeton est défini. Mire fournit les canaux et leurs seuils : collecte, ligne (0 à 4, avertissement à 3, erreur à 4), canaux à surveiller, âge du dernier relevé, SNR minimum, Internet, coupures et micro-coupures sur 24 h, latence, perte.
+
+### Gatus
+
+```yaml
+endpoints:
+  - name: Mire
+    url: "http://<machine>:1340/sante"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].collecte == a_jour"
+      - "[BODY].ligne != critique"
+```
+
+### Zabbix, Checkmk, Nagios
+
+Requête HTTP sur `/sante`, valeur lue en JSONPath : `$.collecte`, `$.ligne`, `$.internet`.
+
+### Healthchecks.io, Better Stack, Cronitor
+
+Une vérification attendue tous les trois relevés (30 min au moins), dont l'adresse va dans **Adresse du signal de vie**. Mire l'appelle après chaque relevé réussi : sans appel, l'outil alerte.

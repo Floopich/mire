@@ -104,6 +104,8 @@ type reglagesView struct {
 	// Release est la version plus recente annoncee, pour la rubrique
 	// Nouvelles versions.
 	Release *banner
+	// Supervision porte les recettes de la rubrique Supervision.
+	Supervision *supervisionView
 }
 
 type backupsView struct {
@@ -229,7 +231,7 @@ func buildGroup(g settings.Group, values settings.Values, input map[string]strin
 
 var sectionIcons = map[string]string{
 	"modem": "modem", "collecte": "collecte", "analyse": "analyse", "sonde": "connexion",
-	"notifications": "notifications", "metriques": "metriques", "domotique": "maison", "meteo": "meteo", "abonnement": "abonnement", "debit": "debit", "journal": "note", "versions": "versions", "application": "palette",
+	"notifications": "notifications", "supervision": "supervision", "metriques": "metriques", "domotique": "maison", "meteo": "meteo", "abonnement": "abonnement", "debit": "debit", "journal": "note", "versions": "versions", "application": "palette",
 	"sauvegarde": "telecharger", sectionSecurity: "verrou",
 }
 
@@ -247,7 +249,7 @@ var navLayout = []struct {
 }{
 	{"Ligne", []string{"modem", "analyse", "abonnement", "collecte"}},
 	{"Internet", []string{"sonde", "debit", "meteo"}},
-	{"Alertes et intégrations", []string{"notifications", "domotique", "metriques"}},
+	{"Alertes et intégrations", []string{"notifications", "supervision", "domotique", "metriques"}},
 	{"Système", []string{"application", "journal", "sauvegarde", "versions", sectionSecurity}},
 }
 
@@ -378,6 +380,22 @@ func (s *Server) summary(ctx context.Context, id string, st service.State) (stri
 			return source + " · dernière mesure le " + FmtTime(last), true
 		}
 		return source + " · " + strings.TrimPrefix(strings.TrimPrefix(v.String(settings.SpeedURL), "http://"), "https://"), false
+	case "supervision":
+		var parts []string
+		if v.Bool(settings.SupervisionOn) {
+			if v.String(settings.SupervisionToken) != "" {
+				parts = append(parts, "État publié, avec jeton")
+			} else {
+				parts = append(parts, "État publié, sans jeton")
+			}
+		}
+		if v.String(settings.HeartbeatURL) != "" {
+			parts = append(parts, "signal de vie")
+		}
+		if len(parts) == 0 {
+			return "Collecte sur /sante", false
+		}
+		return capitalize(strings.Join(parts, " · ")), false
 	case "metriques":
 		switch {
 		case !v.Bool(settings.MetricsOn):
@@ -559,6 +577,9 @@ func (s *Server) reglagesView(r *http.Request, section string, explicit bool, in
 			if rel, newer, _, _ := st.Update.Status(); newer {
 				v.Release = &banner{Kind: "info", Message: "Mire " + rel.Version + " est disponible.", Link: rel.URL, LinkLabel: "Voir les nouveautés"}
 			}
+		}
+		if g.ID == "supervision" {
+			v.Supervision = s.supervisionView(r, st)
 		}
 		if g.ID == "sauvegarde" && !s.opts.Demo {
 			v.Backups = s.backups()
