@@ -3,6 +3,7 @@ package webview
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"html"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/floopich/mire/internal/analyze"
 	"github.com/floopich/mire/internal/docsis"
+	"github.com/floopich/mire/internal/modem"
 	"github.com/floopich/mire/internal/operator"
 	"github.com/floopich/mire/internal/store"
 )
@@ -200,5 +202,15 @@ func TestProtectionsDOffice(t *testing.T) {
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusBadRequest && rec.Code != http.StatusRequestEntityTooLarge {
 		t.Errorf("envoi de 2 Mo : HTTP %d", rec.Code)
+	}
+}
+
+func TestErreursSNMP(t *testing.T) {
+	msg := readError(fmt.Errorf("lecture : %w", modem.ErrNoSNMP), "http://192.168.100.1")
+	if !strings.Contains(msg, "en SNMP à 192.168.100.1") || !strings.Contains(msg, "Autre modem") {
+		t.Errorf("%s", msg)
+	}
+	if msg := readError(modem.ErrNoDOCSIS, "http://192.168.100.1"); !strings.Contains(msg, "ne publie pas ses canaux") {
+		t.Errorf("%s", msg)
 	}
 }

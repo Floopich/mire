@@ -32,8 +32,8 @@ Facultatives. Une variable définie **verrouille** le réglage dans la page. À 
 |---|---|---|
 | `MIRE_MODELE` | celui du profil | modèle du modem, voir `mire modeles` ; `snmp` pour un modem DOCSIS standard lu en SNMP (expérimental) ; `generique` pour un modem non pris en charge |
 | `MIRE_MODEM` | celle du profil | adresse du modem, `http://192.168.100.1` chez VOO |
-| `MIRE_UTILISATEUR` | celui du modèle | identifiant du modem ; en SNMP, la communauté (`public` par défaut) |
-| `MIRE_MODEM_MOT_DE_PASSE` | — | mot de passe du modem ; sans lui, la collecte reste arrêtée |
+| `MIRE_UTILISATEUR` | celui du modèle | identifiant du modem ; en SNMP, la communauté (`public` est essayé aussi) |
+| `MIRE_MODEM_MOT_DE_PASSE` | — | mot de passe du modem ; sans lui, la collecte reste arrêtée (inutile en SNMP) |
 | `MIRE_INTERVALLE` | `10m` | délai entre deux relevés, une minute au minimum |
 | `MIRE_RAPPROCHE` | `true` | relevés toutes les minutes pendant le quart d'heure qui suit un incident |
 | `MIRE_PROFIL` | `voo` | profil d'opérateur : `voo` (VOO, Orange sur VOO), `telenet` (Telenet, Orange sur Telenet) ou `generique` |

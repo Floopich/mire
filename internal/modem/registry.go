@@ -69,7 +69,7 @@ var models = []Model{
 		// confirment.
 		ID:          SNMPID,
 		Name:        "Modem DOCSIS standard (SNMP)",
-		Firmware:    "expérimental, canaux SC-QAM",
+		Firmware:    "expérimental",
 		DefaultUser: "public",
 		NoPassword:  true,
 		New: func(c Config) (Driver, error) {

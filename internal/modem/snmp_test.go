@@ -2,7 +2,7 @@ package modem
 
 import (
 	"context"
-	"strings"
+	"errors"
 	"testing"
 	"time"
 
@@ -89,14 +89,38 @@ func TestPiloteSNMPCommunauteRefusee(t *testing.T) {
 	a := modemSNMP(t, "secret", true)
 	d, _ := NewSNMP(Config{URL: "http://192.168.100.1", User: "public"})
 	d.client.Addr, d.client.Timeout, d.client.Retries = a.Addr(), 200*time.Millisecond, 0
-	if _, err := d.Snapshot(context.Background()); err == nil || !strings.Contains(err.Error(), "ne répond pas en SNMP") {
+	if _, err := d.Snapshot(context.Background()); !errors.Is(err, ErrNoSNMP) {
 		t.Errorf("%v", err)
 	}
-	// Le mot de passe, s'il est renseigne, sert de communaute.
+	// Le mot de passe ne sert jamais de communaute.
 	d, _ = NewSNMP(Config{URL: "http://192.168.100.1", User: "public", Password: "secret"})
-	d.client.Addr = a.Addr()
+	d.client.Addr, d.client.Timeout, d.client.Retries = a.Addr(), 200*time.Millisecond, 0
+	if _, err := d.Snapshot(context.Background()); !errors.Is(err, ErrNoSNMP) {
+		t.Errorf("mot de passe envoyé comme communauté : %v", err)
+	}
+}
+
+func TestPiloteSNMPIdentifiantDUnAutreModele(t *testing.T) {
+	// L'identifiant du modele precedent (voo) reste dans le champ : public
+	// est essaye ensuite, puis garde.
+	a := modemSNMP(t, "public", true)
+	d, _ := NewSNMP(Config{URL: "http://192.168.100.1", User: "voo", Password: "motdepasseweb"})
+	d.client.Addr, d.client.Timeout, d.client.Retries = a.Addr(), 200*time.Millisecond, 0
 	if _, err := d.Snapshot(context.Background()); err != nil {
-		t.Errorf("communauté du mot de passe : %v", err)
+		t.Fatal(err)
+	}
+	if d.communities[0] != "public" {
+		t.Errorf("communauté retenue : %v", d.communities)
+	}
+	// Le modem sans canaux DOCSIS est signale comme tel.
+	empty, err := snmp.NewAgent("public", map[string]snmp.Value{"1.3.6.1.2.1.1.1.0": {Kind: snmp.Octets, Bytes: []byte("x")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = empty.Close() }()
+	d.client.Addr = empty.Addr()
+	if _, err := d.Snapshot(context.Background()); !errors.Is(err, ErrNoDOCSIS) {
+		t.Errorf("%v", err)
 	}
 }
 

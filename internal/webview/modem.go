@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -183,11 +184,28 @@ func (v *modemView) apply(rd modemRead, st service.State, s *Server) {
 	}
 }
 
+// readError dit, en clair, pourquoi le modem n'a pas ete lu. Le detail
+// technique reste au journal.
 func readError(err error, address string) string {
-	if errors.Is(err, modem.ErrAuth) {
+	switch {
+	case errors.Is(err, modem.ErrAuth):
 		return "Le modem refuse l'identifiant ou le mot de passe."
+	case errors.Is(err, modem.ErrNoSNMP):
+		return "Le modem ne répond pas en SNMP à " + hostOf(address) +
+			", ni avec la communauté indiquée ni avec public. Beaucoup de modems fournis par l'opérateur ferment le SNMP côté maison : choisissez alors leur modèle, ou « Autre modem »."
+	case errors.Is(err, modem.ErrNoDOCSIS):
+		return "Le modem répond en SNMP, mais ne publie pas ses canaux DOCSIS."
 	}
 	return "Le modem ne répond pas à " + address + "."
+}
+
+// hostOf rend l'hote d'une adresse : http://192.168.100.1 donne
+// 192.168.100.1.
+func hostOf(address string) string {
+	if u, err := url.Parse(address); err == nil && u.Hostname() != "" {
+		return u.Hostname()
+	}
+	return address
 }
 
 var docsisStates = map[string]string{

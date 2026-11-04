@@ -76,7 +76,7 @@ volumes:
 | Telenet / Orange | réseau Telenet : Flandre, une partie de Bruxelles |
 | Autre opérateur | relevés conservés, sans jugement de la ligne |
 
-Modem absent de la liste : essayez **Modem DOCSIS standard (SNMP)**, avec la communauté `public` dans le champ Identifiant. S'il ne répond pas, choisissez « Autre modem », puis **Proposer mon modem** dans la page Modem : le rapport dit aussi si le modem répond en SNMP.
+Modem absent de la liste : essayez **Modem DOCSIS standard (SNMP)**, avec sa communauté dans le champ Identifiant (`public` est essayé aussi). Beaucoup de modems fournis par l'opérateur ferment le SNMP côté maison : s'il ne répond pas, choisissez « Autre modem », puis **Proposer mon modem** dans la page Modem : le rapport dit aussi si le modem répond en SNMP.
 
 ## Documentation
 

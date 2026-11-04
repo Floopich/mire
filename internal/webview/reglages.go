@@ -2,7 +2,6 @@ package webview
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -883,11 +882,7 @@ func (s *Server) testModem(ctx context.Context) *testResult {
 	if err != nil {
 		// Le detail technique va au journal ; la page dit quoi faire.
 		s.opts.Logger.Warn("test du modem", "modem", st.Address, "erreur", err)
-		if errors.Is(err, modem.ErrAuth) {
-			return &testResult{Message: "Le modem refuse l'identifiant ou le mot de passe."}
-		}
-		return &testResult{Message: "Le modem ne répond pas à " + st.Address +
-			"."}
+		return &testResult{Message: readError(err, st.Address)}
 	}
 	return &testResult{OK: true, Message: fmt.Sprintf("Le modem répond : %d canaux descendants et %d montants lus sur %s.",
 		len(raw.Downstream), len(raw.Upstream), st.Address)}

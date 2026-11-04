@@ -42,26 +42,42 @@ var (
 	oidUSTxLegacy = snmp.MustOID("1.3.6.1.2.1.10.127.1.2.2.1.3")    // docsIfCmStatusTxPower
 )
 
+// Erreurs du pilote SNMP, que la page Modem explique.
+var (
+	// ErrNoSNMP : aucune reponse, ni avec la communaute indiquee ni avec
+	// public. Communaute refusee, ou SNMP ferme cote reseau local, ce que
+	// font beaucoup de modems fournis par l'operateur.
+	ErrNoSNMP = errors.New("le modem ne répond pas en SNMP")
+	// ErrNoDOCSIS : le modem repond, mais ne publie pas ses canaux.
+	ErrNoDOCSIS = errors.New("le modem répond en SNMP, mais ne publie pas ses canaux DOCSIS")
+)
+
 // SNMP lit un modem par SNMPv2c.
 type SNMP struct {
 	client *snmp.Client
+	// communities : la communaute indiquee, puis public. Celle qui repond
+	// reste en tete.
+	communities []string
 }
 
-// NewSNMP prepare le pilote. La communaute est le mot de passe s'il est
-// renseigne, sinon l'identifiant, public par defaut.
+// NewSNMP prepare le pilote. La communaute est l'identifiant, public par
+// defaut ; le mot de passe ne sert pas, pour ne pas envoyer en clair celui
+// de l'interface web quand on change de modele.
 func NewSNMP(c Config) (*SNMP, error) {
 	host, err := snmpHost(c.URL)
 	if err != nil {
 		return nil, err
 	}
-	community := c.Password
-	if community == "" {
-		community = c.User
+	communities := []string{"public"}
+	if u := strings.TrimSpace(c.User); u != "" && u != "public" {
+		// Un identifiant reste d'un autre modele n'est souvent pas la
+		// communaute : public est essaye ensuite.
+		communities = []string{u, "public"}
 	}
-	if community == "" {
-		community = "public"
-	}
-	return &SNMP{client: &snmp.Client{Addr: host, Community: community, Timeout: 3 * time.Second, Retries: 1}}, nil
+	return &SNMP{
+		client:      &snmp.Client{Addr: host, Community: communities[0], Timeout: 3 * time.Second, Retries: 1},
+		communities: communities,
+	}, nil
 }
 
 // snmpHost tire l'hote de l'adresse du modem : http://192.168.100.1 donne
@@ -135,8 +151,23 @@ func dsModulation(v snmp.Value) string {
 	return ""
 }
 
-// Snapshot lit les canaux.
+// Snapshot lit les canaux, avec la premiere communaute qui repond.
 func (s *SNMP) Snapshot(ctx context.Context) (docsis.RawSnapshot, error) {
+	for i, c := range s.communities {
+		s.client.Community = c
+		raw, err := s.snapshot(ctx)
+		if !errors.Is(err, snmp.ErrTimeout) || ctx.Err() != nil {
+			if err == nil && i > 0 {
+				s.communities[0], s.communities[i] = s.communities[i], s.communities[0]
+			}
+			return raw, err
+		}
+	}
+	s.client.Community = s.communities[0]
+	return docsis.RawSnapshot{}, ErrNoSNMP
+}
+
+func (s *SNMP) snapshot(ctx context.Context) (docsis.RawSnapshot, error) {
 	var raw docsis.RawSnapshot
 	cols := map[string]map[uint32]snmp.Value{}
 	for name, oid := range map[string]snmp.OID{
@@ -146,15 +177,12 @@ func (s *SNMP) Snapshot(ctx context.Context) (docsis.RawSnapshot, error) {
 	} {
 		c, err := s.column(ctx, oid)
 		if err != nil {
-			if errors.Is(err, snmp.ErrTimeout) {
-				return raw, fmt.Errorf("le modem ne répond pas en SNMP (communauté refusée, ou SNMP fermé) : %w", err)
-			}
 			return raw, err
 		}
 		cols[name] = c
 	}
 	if len(cols["dsid"]) == 0 {
-		return raw, errors.New("le modem répond en SNMP, mais ne publie pas de canaux DOCSIS")
+		return raw, ErrNoDOCSIS
 	}
 	if caps, err := s.client.Get(ctx, oidDocsisCap); err == nil && len(caps) == 1 {
 		switch n, _ := snmpNumber(caps[0].Value); n {

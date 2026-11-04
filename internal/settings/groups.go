@@ -120,7 +120,7 @@ func Groups() []Group {
 		{
 			ID:    "modem",
 			Title: "Modem",
-			Help:  "Sans mot de passe, la collecte reste arrêtée.",
+			Help:  "Sans mot de passe, la collecte reste arrêtée, sauf en SNMP.",
 			Defs: []Def{
 				{Key: ModemModel, Env: "MIRE_MODELE", Kind: Select, Label: "Modèle",
 					Help: "Absent de la liste : « Autre modem ».", Options: modelOptions},
@@ -128,9 +128,9 @@ func Groups() []Group {
 					Help:        "Vide : celle du profil.",
 					Placeholder: "http://192.168.100.1", Check: checkURL, Normalize: withScheme("http://")},
 				{Key: ModemUser, Env: "MIRE_UTILISATEUR", Kind: Text, Label: "Identifiant",
-					Help: "Vide : celui du modèle. SNMP : la communauté, public le plus souvent."},
+					Help: "Vide : celui du modèle. En SNMP : la communauté ; public est essayé aussi."},
 				{Key: ModemPassword, Env: "MIRE_MODEM_MOT_DE_PASSE", Kind: Password, Label: "Mot de passe",
-					Help: "Vide : garde l'actuel."},
+					Help: "Vide : garde l'actuel. Inutile en SNMP."},
 			},
 		},
 		{
