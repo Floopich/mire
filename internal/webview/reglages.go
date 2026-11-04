@@ -231,7 +231,7 @@ func buildGroup(g settings.Group, values settings.Values, input map[string]strin
 
 var sectionIcons = map[string]string{
 	"modem": "modem", "collecte": "collecte", "analyse": "analyse", "sonde": "connexion",
-	"notifications": "notifications", "supervision": "supervision", "metriques": "metriques", "domotique": "maison", "meteo": "meteo", "abonnement": "abonnement", "debit": "debit", "journal": "note", "versions": "versions", "application": "palette",
+	"notifications": "notifications", "supervision": "supervision", "domotique": "maison", "meteo": "meteo", "abonnement": "abonnement", "debit": "debit", "journal": "note", "versions": "versions", "application": "palette",
 	"sauvegarde": "telecharger", sectionSecurity: "verrou",
 }
 
@@ -249,7 +249,7 @@ var navLayout = []struct {
 }{
 	{"Ligne", []string{"modem", "analyse", "abonnement", "collecte"}},
 	{"Internet", []string{"sonde", "debit", "meteo"}},
-	{"Alertes et intégrations", []string{"notifications", "supervision", "domotique", "metriques"}},
+	{"Alertes et intégrations", []string{"notifications", "supervision", "domotique"}},
 	{"Système", []string{"application", "journal", "sauvegarde", "versions", sectionSecurity}},
 }
 
@@ -383,28 +383,22 @@ func (s *Server) summary(ctx context.Context, id string, st service.State) (stri
 	case "supervision":
 		var parts []string
 		if v.Bool(settings.SupervisionOn) {
-			if v.String(settings.SupervisionToken) != "" {
-				parts = append(parts, "État publié, avec jeton")
-			} else {
-				parts = append(parts, "État publié, sans jeton")
-			}
+			parts = append(parts, "état de la ligne")
+		}
+		if v.Bool(settings.MetricsOn) {
+			parts = append(parts, "métriques")
 		}
 		if v.String(settings.HeartbeatURL) != "" {
 			parts = append(parts, "signal de vie")
 		}
 		if len(parts) == 0 {
-			return "Collecte sur /sante", false
+			return "Rien de publié", false
 		}
-		return capitalize(strings.Join(parts, " · ")), false
-	case "metriques":
-		switch {
-		case !v.Bool(settings.MetricsOn):
-			return "Désactivées", false
-		case v.String(settings.MetricsToken) != "":
-			return "Publiées sur /metrics, avec jeton", false
-		default:
-			return "Publiées sur /metrics, sans jeton", false
+		out := capitalize(strings.Join(parts, ", "))
+		if v.String(settings.AccessToken) != "" && (v.Bool(settings.SupervisionOn) || v.Bool(settings.MetricsOn)) {
+			out += " · avec jeton"
 		}
+		return out, false
 	case "domotique":
 		switch {
 		case st.HomeAssistantErr != nil:
@@ -630,6 +624,12 @@ func (s *Server) handleReglages(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleSection(w http.ResponseWriter, r *http.Request) {
 	section := r.PathValue("rubrique")
+	// Les metriques ont rejoint la rubrique Supervision : les anciens liens
+	// y menent.
+	if section == "metriques" {
+		http.Redirect(w, r, "/reglages/supervision", http.StatusMovedPermanently)
+		return
+	}
 	if _, _, ok := knownSection(s.opts.Service.State(), section); !ok {
 		s.renderError(w, http.StatusNotFound, "Réglages introuvables", "Cette rubrique des réglages n'existe pas.")
 		return

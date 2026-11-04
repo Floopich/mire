@@ -28,7 +28,7 @@ Services : **ntfy**, **Gotify**, **Discord**, **Telegram**, **Slack**, **mail** 
 
 ## Métriques
 
-Format Prometheus sur `GET /metrics`, pour Prometheus, VictoriaMetrics, Grafana Alloy ou Telegraf. À activer dans **Réglages, Métriques**. Jeton facultatif, exigé alors en `Authorization: Bearer` (à créer avec `openssl rand -hex 24`).
+Format Prometheus sur `GET /metrics`, pour Prometheus, VictoriaMetrics, Grafana Alloy ou Telegraf. À activer dans **Réglages, Supervision**, « Métriques Prometheus ». Jeton facultatif, commun avec l'état de la ligne, exigé alors en `Authorization: Bearer` (à créer avec `openssl rand -hex 24`).
 
 | Métrique | Contenu |
 |---|---|
@@ -131,12 +131,10 @@ Derrière un proxy avec authentification, laissez `/sante` accessible sans conne
 
 ### Uptime Kuma
 
-Sondes **HTTP(s) - Requête JSON** sur `http://<machine>:1340/sante`, valeur attendue `true` :
+Une sonde **HTTP(s) - Requête JSON** sur `http://<machine>:1340/sante`, toutes les 5 min, valeur attendue `true`, expression :
 
-| Sonde | Expression | Intervalle |
-|---|---|---|
-| Mire et sa collecte | `$string(collecte = "a_jour")` | 5 min |
-| État de la ligne | `$string(ligne != "critique")` | 5 min |
+- `$string(collecte = "a_jour" and ligne != "critique")` avec l'état de la ligne publié ;
+- `$string(collecte = "a_jour")` sinon.
 
 Avec un jeton, en-têtes : `{"Authorization": "Bearer <jeton>"}`.
 

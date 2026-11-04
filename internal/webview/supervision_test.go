@@ -46,7 +46,7 @@ func TestSanteEtatDeLaLigne(t *testing.T) {
 
 	// Avec jeton : /sante reste ouvert, l'etat ne vient qu'avec le jeton.
 	h, _ = serveurAvec(t, 3, essai{Collecting: true,
-		Forced: settings.Source{settings.SupervisionOn: "true", settings.SupervisionToken: "jeton-secret"}})
+		Forced: settings.Source{settings.SupervisionOn: "true", settings.AccessToken: "jeton-secret"}})
 	for auth, voit := range map[string]bool{"": false, "Bearer faux": false, "Bearer jeton-secret": true} {
 		rec := lire(t, h, "/sante", auth)
 		if rec.Code != http.StatusOK {
@@ -65,7 +65,7 @@ func TestPointPRTG(t *testing.T) {
 	}
 
 	h, _ = serveurAvec(t, 3, essai{Collecting: true,
-		Forced: settings.Source{settings.SupervisionOn: "true", settings.SupervisionToken: "jeton-secret"}})
+		Forced: settings.Source{settings.SupervisionOn: "true", settings.AccessToken: "jeton-secret"}})
 	if rec := lire(t, h, "/sante/prtg", "Bearer faux"); rec.Code != http.StatusUnauthorized {
 		t.Errorf("mauvais jeton : HTTP %d", rec.Code)
 	}
@@ -105,20 +105,56 @@ func TestPointPRTG(t *testing.T) {
 
 func TestRubriqueSupervision(t *testing.T) {
 	db := baseRemplie(t, 3)
-	h, _ := monter(t, db, essai{Collecting: true,
-		Forced: settings.Source{settings.SupervisionOn: "true", settings.SupervisionToken: "jeton-secret"}})
-	rec := get(t, h, session(t, db), "/reglages/supervision")
+	h, _ := monter(t, db, essai{Collecting: true, Forced: settings.Source{
+		settings.SupervisionOn: "true", settings.MetricsOn: "true", settings.AccessToken: "jeton-secret"}})
+	tok := session(t, db)
+	rec := get(t, h, tok, "/reglages/supervision")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("HTTP %d", rec.Code)
 	}
 	body := rec.Body.String()
-	for _, want := range []string{"http://example.com/sante/prtg", `$string(ligne != "critique")`,
-		"Bearer &lt;jeton&gt;", "[BODY].ligne != critique", "Adresse du signal de vie"} {
+	for _, want := range []string{">Publier<", ">Signal de vie<", "Métriques Prometheus", `id="r-outil"`,
+		"http://example.com/sante/prtg", `$string(collecte = &#34;a_jour&#34; and ligne != &#34;critique&#34;)`,
+		"Bearer &lt;jeton&gt;", "[BODY].ligne != critique", ">example.com<"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("absent de la rubrique : %q", want)
 		}
 	}
 	if strings.Contains(body, "jeton-secret") {
 		t.Error("le jeton apparaît dans la page")
+	}
+	// Une fiche par outil, chacune affichable par la feuille de style.
+	css := get(t, h, "", "/static/mire.css").Body.String()
+	for _, tool := range recipes("http://m:1340", settings.Fixed(nil), 0) {
+		if !strings.Contains(body, `data-outil="`+tool.ID+`"`) || !strings.Contains(css, `.recipe[data-outil="`+tool.ID+`"]`) {
+			t.Errorf("fiche %s : absente de la page ou de la feuille de style", tool.ID)
+		}
+	}
+	// L'ancienne rubrique Metriques mene a Supervision.
+	if rec := get(t, h, tok, "/reglages/metriques"); rec.Code != http.StatusMovedPermanently || rec.Header().Get("Location") != "/reglages/supervision" {
+		t.Errorf("ancienne rubrique : HTTP %d vers %q", rec.Code, rec.Header().Get("Location"))
+	}
+}
+
+func TestFichesSuiventLaPublication(t *testing.T) {
+	byID := func(v settings.Values) map[string]toolRecipe {
+		out := map[string]toolRecipe{}
+		for _, r := range recipes("http://m:1340", v, 0) {
+			out[r.ID] = r
+		}
+		return out
+	}
+	off := byID(settings.Fixed(nil))
+	if off["prtg"].Note == "" || off["prom"].Note == "" || len(off["prtg"].Rows) != 0 {
+		t.Errorf("rien de publié : PRTG et Prometheus doivent renvoyer à l'interrupteur : %+v", off)
+	}
+	for _, r := range off["kuma"].Rows {
+		if strings.Contains(r.Value, "ligne") || strings.Contains(r.Value, "Bearer") {
+			t.Errorf("Uptime Kuma sans état publié : %q", r.Value)
+		}
+	}
+	on := byID(settings.Fixed(map[string]string{settings.SupervisionOn: "true", settings.MetricsOn: "true"}))
+	if on["prtg"].Note != "" || on["prom"].Rows[0].Value != "m:1340" {
+		t.Errorf("tout publié : %+v %+v", on["prtg"], on["prom"])
 	}
 }

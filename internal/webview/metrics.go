@@ -18,7 +18,7 @@ func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if !bearerOK(r, st.Values.String(settings.MetricsToken)) {
+	if !bearerOK(r, st.Values.String(settings.AccessToken)) {
 		w.Header().Set("WWW-Authenticate", `Bearer realm="mire"`)
 		http.Error(w, "jeton d'accès requis", http.StatusUnauthorized)
 		return

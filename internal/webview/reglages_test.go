@@ -488,7 +488,7 @@ func TestReglagesRangesParTheme(t *testing.T) {
 	for _, mot := range []string{
 		">Ligne<", "/reglages/modem\"", "/reglages/analyse\"", "/reglages/collecte\"",
 		">Internet<", "/reglages/sonde\"", "/reglages/debit\"", "/reglages/meteo\"",
-		">Alertes et intégrations<", "/reglages/notifications\"", "/reglages/domotique\"", "/reglages/metriques\"",
+		">Alertes et intégrations<", "/reglages/notifications\"", "/reglages/supervision\"", "/reglages/domotique\"",
 		">Système<", "/reglages/journal\"", "/reglages/sauvegarde\"", "/reglages/versions\"", "/reglages/securite\"",
 	} {
 		i := strings.Index(body[last:], mot)

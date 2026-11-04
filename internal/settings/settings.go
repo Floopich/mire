@@ -47,6 +47,9 @@ type Def struct {
 	Placeholder string
 	// Options donne les choix d'une liste ; elle est appelee a chaque rendu.
 	Options func() []Option
+	// Heading est un intertitre affiche avant le champ, qui ouvre une partie
+	// du groupe.
+	Heading string
 	// Only limite l'affichage du champ a une valeur de la liste de son
 	// groupe (par exemple un service de notification) : « notif.service=ntfy ».
 	Only string

@@ -39,7 +39,7 @@ func TestLaRubriqueJournalAfficheLesDernieresLignes(t *testing.T) {
 func TestLAssistantProposeLesOptions(t *testing.T) {
 	h, token := serveurAvec(t, 0, essai{})
 	body := get(t, h, token, "/installation/options").Body.String()
-	for _, voulu := range []string{"Options", "/reglages/domotique", "/reglages/notifications", "/reglages/debit", "/reglages/metriques", `href="/">Terminer`} {
+	for _, voulu := range []string{"Options", "/reglages/domotique", "/reglages/notifications", "/reglages/debit", "/reglages/supervision", `href="/">Terminer`} {
 		if !strings.Contains(body, voulu) {
 			t.Errorf("absent : %s", voulu)
 		}

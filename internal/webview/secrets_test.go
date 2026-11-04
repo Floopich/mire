@@ -77,7 +77,7 @@ func TestAucunSecretNeSortDeLInterface(t *testing.T) {
 		verifie(p, get(t, h, token, p).Body.String())
 	}
 	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
-	req.Header.Set("Authorization", "Bearer "+temoins[settings.MetricsToken])
+	req.Header.Set("Authorization", "Bearer "+temoins[settings.AccessToken])
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {

@@ -37,7 +37,7 @@ func TestPointMetrics(t *testing.T) {
 
 	// Avec jeton : exige en Bearer.
 	h, _ = serveurAvec(t, 3, essai{Collecting: true,
-		Forced: settings.Source{settings.MetricsOn: "true", settings.MetricsToken: "jeton-secret"}})
+		Forced: settings.Source{settings.MetricsOn: "true", settings.AccessToken: "jeton-secret"}})
 	for auth, code := range map[string]int{"": 401, "Bearer faux": 401, "Basic jeton-secret": 401, "Bearer jeton-secret": 200} {
 		if rec := scrape(h, auth); rec.Code != code {
 			t.Errorf("Authorization %q : HTTP %d, attendu %d", auth, rec.Code, code)

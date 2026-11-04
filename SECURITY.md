@@ -21,7 +21,7 @@ Mire est prévu pour un réseau local, derrière un pare-feu.
 **Non protégé**
 - La base `mire.db` et les sauvegardes complètes contiennent les secrets saisis dans les Réglages, en clair : quiconque lit le dossier de données les lit. Protégez ce dossier, ou utilisez une sauvegarde « sans mots de passe ni jetons ». Un secret passé par variable ou par fichier (`…_FICHIER`, voir [configuration](docs/configuration.md)) n'est pas écrit dans la base.
 - `/sante` répond sans session (état de la collecte, modèle du modem, version) ; `/metrics` aussi, sauf si un jeton est défini.
-- L'état de la ligne et d'Internet n'est publié dans `/sante` et `/sante/prtg` que si **Réglages, Supervision** l'active ; avec un jeton, il n'y figure que pour qui le présente. Aucune mesure par canal, adresse ni nom de machine n'y figure.
+- L'état de la ligne et d'Internet n'est publié dans `/sante` et `/sante/prtg` que si **Réglages, Supervision** l'active ; avec un jeton, commun avec `/metrics`, il n'y figure que pour qui le présente. Aucune mesure par canal, adresse ni nom de machine n'y figure.
 - Le signal de vie appelle l'adresse saisie, et elle seule ; le journal n'en cite que le nom d'hôte, le chemin portant souvent un jeton.
 - Le trafic entre le navigateur et Mire n'est chiffré que derrière un proxy inverse en HTTPS.
 
