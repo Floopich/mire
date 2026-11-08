@@ -36,3 +36,9 @@ func AddSetting(ctx context.Context, db *sql.DB, key, value string) (bool, error
 	n, err := res.RowsAffected()
 	return n == 1, err
 }
+
+// DeleteSetting retire un reglage ; il reprend alors sa valeur par defaut.
+func DeleteSetting(ctx context.Context, db *sql.DB, key string) error {
+	_, err := db.ExecContext(ctx, `DELETE FROM settings WHERE key = ?`, key)
+	return err
+}

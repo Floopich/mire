@@ -28,3 +28,13 @@ func TestFeuillesDeStyleVersionnees(t *testing.T) {
 		}
 	}
 }
+
+func TestLeDossierStaticNeSeListePas(t *testing.T) {
+	h, _ := serveur(t, baseRemplie(t, 1))
+	if rec := get(t, h, "", "/static/"); rec.Code != http.StatusNotFound {
+		t.Errorf("/static/ : HTTP %d, attendu 404", rec.Code)
+	}
+	if rec := get(t, h, "", "/static/icone-192.png"); rec.Code != http.StatusOK {
+		t.Errorf("icône : HTTP %d", rec.Code)
+	}
+}

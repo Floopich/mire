@@ -33,6 +33,8 @@ type fieldView struct {
 	IsSet   bool // mot de passe deja enregistre
 	Checked bool
 	Type    string // type HTML du champ texte
+	// ClearName est le champ « Effacer » d'un secret enregistre.
+	ClearName string
 	// OnlyAttr est la valeur de data-condition. Pas de « data-only » :
 	// html/template prend un attribut dont le nom, sans « data- », commence
 	// par « on » pour un gestionnaire d'evenement JavaScript, et l'echappe.
@@ -206,6 +208,7 @@ func buildGroup(g settings.Group, values settings.Values, input map[string]strin
 			f.IsSet = value != ""
 			f.Value = ""
 			f.Type = "password"
+			f.ClearName = d.Key + settings.ClearSuffix
 		case settings.Bool:
 			f.Checked, _ = strconv.ParseBool(value)
 		case settings.Select:
@@ -692,8 +695,21 @@ func (s *Server) saveGroup(w http.ResponseWriter, r *http.Request, g settings.Gr
 			input[d.Key] = vals[0]
 		}
 	}
+	// Un secret coche « Effacer » est retire, sauf si une nouvelle valeur
+	// vient d'etre saisie a sa place.
+	var clears []string
+	for _, d := range g.Defs {
+		if d.Kind == settings.Password && r.PostForm.Get(d.Key+settings.ClearSuffix) != "" &&
+			strings.TrimSpace(input[d.Key]) == "" {
+			clears = append(clears, d.Key)
+		}
+	}
 	svc := s.opts.Service
-	if err := settings.Set(r.Context(), s.db, svc.Forced(), input); err != nil {
+	err := settings.Set(r.Context(), s.db, svc.Forced(), input)
+	if err == nil {
+		err = settings.Clear(r.Context(), s.db, svc.Forced(), clears)
+	}
+	if err != nil {
 		v := s.reglagesView(r, g.ID, true, input)
 		v.Group.Err = capitalize(err.Error()) + "."
 		v.Group.Saved = false

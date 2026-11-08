@@ -55,6 +55,10 @@ type Def struct {
 	Only string
 	// Check valide une valeur avant enregistrement.
 	Check func(string) error
+	// Secret retire la valeur des sauvegardes sans secrets sans la masquer
+	// dans la page : un sujet ntfy se relit, mais il suffit a lire les
+	// notifications. Un mot de passe (Kind Password) l'est toujours.
+	Secret bool
 }
 
 // Group rassemble des reglages sous un meme titre.
@@ -218,17 +222,41 @@ func (v Values) Duration(k string) time.Duration {
 }
 
 // SecretKeys sont les cles en base des reglages secrets : mots de passe,
-// jetons, adresses de webhook.
+// jetons, adresses de webhook et de signal de vie, sujet ntfy.
 func SecretKeys() []string {
 	var out []string
 	for _, g := range Groups() {
 		for _, d := range g.Defs {
-			if d.Kind == Password {
+			if d.Kind == Password || d.Secret {
 				out = append(out, key(d.Key))
 			}
 		}
 	}
 	return out
+}
+
+// ClearSuffix termine le champ du formulaire qui demande d'effacer un secret
+// enregistre : un mot de passe laisse vide est conserve, il faut donc le
+// demander expressement.
+const ClearSuffix = "__effacer"
+
+// Clear efface des secrets enregistres ; une valeur imposee par
+// l'environnement n'est pas touchee. Le reglage revient a sa valeur par
+// defaut, et secure_delete efface aussi l'ancienne valeur du fichier.
+func Clear(ctx context.Context, db *sql.DB, forced Source, keys []string) error {
+	for _, k := range keys {
+		d, ok := Lookup(k)
+		if !ok || d.Kind != Password {
+			return fmt.Errorf("réglage non effaçable : %s", k)
+		}
+		if _, isForced := forced[k]; isForced {
+			continue
+		}
+		if err := store.DeleteSetting(ctx, db, key(k)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Locked dit si la valeur est imposee par l'environnement.

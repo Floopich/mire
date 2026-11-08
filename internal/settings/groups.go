@@ -246,7 +246,7 @@ func Groups() []Group {
 					Only: NotifyService + "=ntfy", Check: checkURL},
 				{Key: NtfyTopic, Env: "MIRE_NTFY_SUJET", Kind: Text, Label: "Sujet",
 					Help: "Sur ntfy.sh, choisissez-le difficile à deviner.",
-					Only: NotifyService + "=ntfy"},
+					Only: NotifyService + "=ntfy", Secret: true},
 				{Key: NtfyToken, Env: "MIRE_NTFY_JETON", Kind: Password, Label: "Jeton d'accès",
 					Help: "Facultatif.", Only: NotifyService + "=ntfy"},
 
@@ -282,7 +282,7 @@ func Groups() []Group {
 				{Key: MailTo, Env: "MIRE_MAIL_DESTINATAIRE", Kind: Text, Label: "Adresse mail du destinataire",
 					Help: "Séparées par des virgules.", Only: NotifyService + "=mail", Check: checkMail},
 
-				{Key: WebhookURL, Env: "MIRE_WEBHOOK_URL", Kind: Text, Label: "Adresse du webhook",
+				{Key: WebhookURL, Env: "MIRE_WEBHOOK_URL", Kind: Password, Label: "Adresse du webhook",
 					Help: "Chaque événement en JSON, par POST.", Only: NotifyService + "=webhook", Check: checkURL},
 			},
 		},
@@ -309,8 +309,8 @@ func Groups() []Group {
 					Label: "Métriques Prometheus", Help: "Sur /metrics."},
 				{Key: AccessToken, Env: "MIRE_METRIQUES_JETON", Kind: Password, Label: "Jeton d'accès",
 					Help: "Facultatif. S'il est défini, l'outil l'envoie en Authorization: Bearer."},
-				{Key: HeartbeatURL, Env: "MIRE_SIGNAL_DE_VIE", Kind: Text, Heading: "Signal de vie", Label: "Adresse",
-					Help: "Appelée après chaque relevé réussi.", Placeholder: "https://hc-ping.com/…", Check: checkURL},
+				{Key: HeartbeatURL, Env: "MIRE_SIGNAL_DE_VIE", Kind: Password, Heading: "Signal de vie", Label: "Adresse",
+					Help: "Appelée après chaque relevé réussi. Elle porte souvent un jeton : elle n'est plus réaffichée.", Placeholder: "https://hc-ping.com/…", Check: checkURL},
 			},
 		},
 		{

@@ -39,7 +39,7 @@ func TestAucunSecretNeSortDeLInterface(t *testing.T) {
 			}
 			n++
 			v := fmt.Sprintf("temoin%02dsecret", n)
-			if d.Key == settings.DiscordURL || d.Key == settings.SlackURL {
+			if d.Key == settings.DiscordURL || d.Key == settings.SlackURL || d.Key == settings.WebhookURL || d.Key == settings.HeartbeatURL {
 				v = "http://127.0.0.1:1/api/webhooks/" + v
 			}
 			temoins[d.Key] = fmt.Sprintf("temoin%02dsecret", n)

@@ -192,12 +192,17 @@ func smtpFactice(t *testing.T, starttls bool) (string, chan string) {
 			}
 			switch cmd := strings.ToUpper(strings.TrimSpace(line)); {
 			case strings.HasPrefix(cmd, "EHLO"):
+				say("250-factice")
 				if starttls {
-					say("250-factice")
-					say("250 STARTTLS")
-				} else {
-					say("250 factice")
+					say("250-STARTTLS")
 				}
+				say("250 AUTH PLAIN")
+			case strings.HasPrefix(cmd, "AUTH"):
+				data.WriteString(line)
+				say("235 ok")
+			case strings.HasPrefix(cmd, "MAIL FROM"), strings.HasPrefix(cmd, "RCPT TO"):
+				data.WriteString(line)
+				say("250 ok")
 			case cmd == "DATA":
 				inData = true
 				say("354 allez-y")
@@ -247,5 +252,27 @@ func TestUnSujetAccentueEstEncode(t *testing.T) {
 	}
 	if !strings.Contains(brut, "Ligne =C3=A0 surveiller.") {
 		t.Errorf("corps mal encode :\n%s", brut)
+	}
+}
+
+func TestMailEnveloppeEtRelaisLocal(t *testing.T) {
+	// « Nom <adresse> » est accepte dans les reglages : l'enveloppe ne garde
+	// que l'adresse. En « Aucun », l'identifiant part sans chiffrement,
+	// comme l'utilisateur l'a choisi.
+	addr, recu := smtpFactice(t, false)
+	m := &mailer{server: addr, security: "aucun", user: "moi", password: "secret",
+		from: "Mire <mire@exemple.be>", to: []string{"Florian <moi@exemple.be>"}}
+	if err := m.Send(context.Background(), message()); err != nil {
+		t.Fatal(err)
+	}
+	brut := <-recu
+	for _, attendu := range []string{"MAIL FROM:<mire@exemple.be>", "RCPT TO:<moi@exemple.be>", "AUTH PLAIN",
+		"From: Mire <mire@exemple.be>", "Message-ID: <"} {
+		if !strings.Contains(brut, attendu) {
+			t.Errorf("sans %q :\n%s", attendu, brut)
+		}
+	}
+	if !strings.Contains(brut, "@exemple.be>\r\n") {
+		t.Errorf("Message-ID sans le domaine de l'expéditeur :\n%s", brut)
 	}
 }

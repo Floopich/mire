@@ -89,11 +89,17 @@ func restore(args []string) error {
 	if len(rest) != 1 {
 		return errors.New("indiquez la sauvegarde : mire restauration /chemin/mire-sauvegarde.db, ou - pour l'entrée standard")
 	}
-	if running(cfg.Listen) {
-		return errors.New("Mire tourne encore sur cette machine : arrêtez-le avant de restaurer (docker compose stop, ou systemctl stop mire)")
-	}
 	if err := checkWritable(cfg.DataDir); err != nil {
 		return err
+	}
+	unlock, err := lockData(cfg.DataDir)
+	if errors.Is(err, errDataLocked) || running(cfg.Listen) {
+		return errStillRunning
+	}
+	if err == nil {
+		// Tenu jusqu'a la fin : Mire ne demarre pas sur une base a moitie
+		// remplacee.
+		defer unlock()
 	}
 
 	var src io.Reader
@@ -149,6 +155,11 @@ func restore(args []string) error {
 	fmt.Fprintln(os.Stderr, "Base restaurée. Relancez Mire : les migrations s'appliqueront au démarrage si la sauvegarde est plus ancienne.")
 	return nil
 }
+
+// errDataLocked dit qu'une instance de Mire tient le dossier des donnees.
+var errDataLocked = errors.New("dossier des données verrouillé")
+
+var errStillRunning = errors.New("Mire tourne encore sur ce dossier de données : arrêtez-le avant de restaurer (docker compose stop, ou systemctl stop mire)")
 
 // running dit si une instance repond deja sur l'adresse d'ecoute.
 func running(listen string) bool {

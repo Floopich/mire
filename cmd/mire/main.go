@@ -166,6 +166,20 @@ func serve(args []string) error {
 		return listen(ctx, stop, cfg, logger, d.handler, nil, false)
 	}
 
+	// Une seule instance par dossier de donnees, verrouille avant toute
+	// migration ; le verrou dit aussi a une restauration que le service
+	// tourne.
+	if err := checkWritable(cfg.DataDir); err != nil {
+		return err
+	}
+	switch unlock, err := lockData(cfg.DataDir); {
+	case errors.Is(err, errDataLocked):
+		return errors.New("une autre instance de Mire utilise déjà ce dossier de données")
+	case err != nil:
+		logger.Warn("verrou du dossier des données impossible", "erreur", err)
+	default:
+		defer unlock()
+	}
 	db, err := open(cfg)
 	if err != nil {
 		return err
@@ -516,13 +530,17 @@ func health(args []string) error {
 	return nil
 }
 
-// healthURL derive l'adresse locale de /sante depuis l'adresse d'ecoute.
+// healthURL derive l'adresse locale de /sante depuis l'adresse d'ecoute :
+// 127.0.0.1 quand Mire ecoute partout, l'adresse choisie sinon.
 func healthURL(listen string) (string, error) {
-	_, port, err := net.SplitHostPort(listen)
+	host, port, err := net.SplitHostPort(listen)
 	if err != nil {
 		return "", fmt.Errorf("adresse d'ecoute %q: %w", listen, err)
 	}
-	return "http://127.0.0.1:" + port + "/sante", nil
+	if ip := net.ParseIP(host); host == "" || (ip != nil && ip.IsUnspecified()) {
+		host = "127.0.0.1"
+	}
+	return "http://" + net.JoinHostPort(host, port) + "/sante", nil
 }
 
 func listModels(w io.Writer) {

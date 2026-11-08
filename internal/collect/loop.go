@@ -51,6 +51,9 @@ func (o *Options) normalize() {
 	}
 }
 
+// observeTimeout borne le traitement d'un releve par les observateurs.
+const observeTimeout = time.Minute
+
 // Observer suit la collecte : le journal des evenements l'implemente.
 type Observer interface {
 	// Recorded est appele apres l'enregistrement d'un releve.
@@ -160,7 +163,12 @@ func (c *Collector) collectOnce(ctx context.Context) {
 		return
 	}
 	if c.opts.Observer != nil {
-		c.opts.Observer.Recorded(saveCtx, snap)
+		// Les observateurs ont leur propre delai : le journal relit le temps
+		// de fonctionnement du modem apres un redemarrage, et un modem lent
+		// a repondre ne doit pas faire perdre les evenements du releve.
+		obsCtx, cancelObs := context.WithTimeout(context.WithoutCancel(ctx), observeTimeout)
+		defer cancelObs()
+		c.opts.Observer.Recorded(obsCtx, snap)
 	}
 	c.opts.Logger.Debug("relevé enregistré",
 		"descendants", len(snap.Downstream), "montants", len(snap.Upstream))

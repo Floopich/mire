@@ -105,7 +105,8 @@ Déclaration unique dans `internal/settings/groups.go` : clé, variable, type, d
 - `Country` d'un groupe : rubrique réservée aux opérateurs de ce pays.
 - `Select` avec `Options` : liste déroulante.
 - `Only: "cle=valeur"` : champ affiché selon une liste.
-- Un champ vidé revient à sa valeur par défaut ; un mot de passe vidé est conservé.
+- Un champ vidé revient à sa valeur par défaut ; un mot de passe vidé est conservé, la case « Effacer » le retire.
+- `Secret: true` retire un champ lisible (sujet ntfy) des sauvegardes sans secrets ; un mot de passe l'est toujours.
 
 ## Ajouter un service de notification
 

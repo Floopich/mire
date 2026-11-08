@@ -24,6 +24,9 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
+	// Un an de releves pese des centaines de megaoctets : le delai
+	// d'ecriture du serveur vaut pour une page, pas pour ce fichier.
+	_ = http.NewResponseController(w).SetWriteDeadline(time.Time{})
 	file := "mire-" + e.Name + "-" + from.Format(time.DateOnly) + "-" + to.AddDate(0, 0, -1).Format(time.DateOnly) + ".csv"
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 	w.Header().Set("Content-Disposition", `attachment; filename="`+file+`"`)

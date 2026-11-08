@@ -75,7 +75,7 @@
 <section class="card chart-card" aria-labelledby="coupures">
  <h3 id="coupures" class="title-m">Coupures</h3>
  {{if and .CompensationShown .CompensationCount}}
- <p class="hint body-m">{{if eq .CompensationCount 1}}Une coupure dépasse{{else}}{{.CompensationCount}} coupures dépassent{{end}} 8 heures : environ {{.CompensationTotal}} de compensation légale.  <a href="https://www.ibpt.be/consommateurs/telephonie-internet-tv/protection-des-consommateurs/compensation-pour-interruption-de-service" rel="noopener noreferrer">Les règles de l'IBPT</a></p>
+ <p class="hint body-m">{{if eq .CompensationCount 1}}Une coupure dépasse{{else}}{{.CompensationCount}} coupures dépassent{{end}} 8 heures : environ {{.CompensationTotal}} de compensation légale, si vous l'avez signalée à l'opérateur dès son début : le délai court à partir du signalement. <a href="https://www.ibpt.be/consommateurs/telephonie-internet-tv/protection-des-consommateurs/compensation-pour-interruption-de-service" rel="noopener noreferrer">Les règles de l'IBPT</a></p>
  {{end}}
  {{if .Outages}}<ul class="list events compact">{{range .Outages}}<li class="event {{.Level}}">
   <svg class="pip" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .Level}}"/></svg>

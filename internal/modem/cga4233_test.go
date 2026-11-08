@@ -280,3 +280,28 @@ func TestContexteAnnuleInterromptLeReleve(t *testing.T) {
 		t.Error("un contexte annule doit interrompre le releve")
 	}
 }
+
+func TestUnModemQuiDemarreNAccusePasLeMotDePasse(t *testing.T) {
+	// Un 503 ou une page HTML pendant le demarrage du modem n'est pas un
+	// refus d'identifiants ; un 401 en est un.
+	for code, auth := range map[int]bool{http.StatusServiceUnavailable: false, http.StatusInternalServerError: false, http.StatusUnauthorized: true} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(code)
+			_, _ = w.Write([]byte("<html>démarrage</html>"))
+		}))
+		m, _ := NewCGA4233(srv.URL, "voo", "secret")
+		_, err := m.Snapshot(context.Background())
+		srv.Close()
+		if err == nil || errors.Is(err, ErrAuth) != auth {
+			t.Errorf("HTTP %d : %v (ErrAuth attendu : %v)", code, err, auth)
+		}
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("<html>démarrage</html>"))
+	}))
+	defer srv.Close()
+	m, _ := NewCGA4233(srv.URL, "voo", "secret")
+	if _, err := m.Snapshot(context.Background()); err == nil || errors.Is(err, ErrAuth) {
+		t.Errorf("page HTML : %v, attendu une erreur sans ErrAuth", err)
+	}
+}

@@ -3,7 +3,9 @@ package notify
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/tls"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +14,7 @@ import (
 	"mime/quotedprintable"
 	"net"
 	"net/http"
+	"net/mail"
 	"net/smtp"
 	"net/url"
 	"strings"
@@ -302,15 +305,24 @@ func (s *mailer) Send(ctx context.Context, m Message) error {
 		}
 	}
 	if s.user != "" {
-		if err := c.Auth(smtp.PlainAuth("", s.user, s.password, host)); err != nil {
+		a := smtp.PlainAuth("", s.user, s.password, host)
+		if s.security == "aucun" {
+			// Choisi expressement, pour un relais du reseau local : la
+			// bibliotheque refuserait sinon d'envoyer l'identifiant sans
+			// chiffrement, et l'erreur accuserait le mot de passe.
+			a = clearPlainAuth{user: s.user, password: s.password}
+		}
+		if err := c.Auth(a); err != nil {
 			return errors.New("le serveur d'envoi refuse l'identifiant ou le mot de passe")
 		}
 	}
-	if err := c.Mail(s.from); err != nil {
+	// L'enveloppe ne porte que l'adresse : « Mire <mire@exemple.be> »,
+	// accepte dans les reglages, serait refuse par le serveur.
+	if err := c.Mail(bareAddress(s.from)); err != nil {
 		return fmt.Errorf("expéditeur refusé : %w", err)
 	}
 	for _, r := range s.to {
-		if err := c.Rcpt(r); err != nil {
+		if err := c.Rcpt(bareAddress(r)); err != nil {
 			return fmt.Errorf("destinataire %s refusé : %w", r, err)
 		}
 	}
@@ -339,6 +351,9 @@ func (s *mailer) compose(m Message) []byte {
 	fmt.Fprintf(&b, "To: %s\r\n", strings.Join(s.to, ", "))
 	fmt.Fprintf(&b, "Subject: %s\r\n", mime.QEncoding.Encode("utf-8", m.Title))
 	fmt.Fprintf(&b, "Date: %s\r\n", when.Format(time.RFC1123Z))
+	// Sans Message-ID, certains fournisseurs classent le message en
+	// indesirable.
+	fmt.Fprintf(&b, "Message-ID: %s\r\n", messageID(s.from))
 	b.WriteString("MIME-Version: 1.0\r\n")
 	b.WriteString("Content-Type: text/plain; charset=utf-8\r\n")
 	b.WriteString("Content-Transfer-Encoding: quoted-printable\r\n\r\n")
@@ -350,4 +365,38 @@ func (s *mailer) compose(m Message) []byte {
 	_, _ = qp.Write([]byte(strings.ReplaceAll(body, "\n", "\r\n") + "\r\n"))
 	_ = qp.Close()
 	return b.Bytes()
+}
+
+// bareAddress rend l'adresse seule d'un « Nom <adresse> ».
+func bareAddress(a string) string {
+	if p, err := mail.ParseAddress(strings.TrimSpace(a)); err == nil {
+		return p.Address
+	}
+	return strings.TrimSpace(a)
+}
+
+// messageID forge un identifiant unique, au domaine de l'expediteur.
+func messageID(from string) string {
+	domain := "mire.invalid"
+	if _, d, ok := strings.Cut(bareAddress(from), "@"); ok && d != "" {
+		domain = d
+	}
+	var b [12]byte
+	_, _ = rand.Read(b[:])
+	return "<" + hex.EncodeToString(b[:]) + "@" + domain + ">"
+}
+
+// clearPlainAuth est l'authentification PLAIN sans exiger de chiffrement :
+// seulement quand l'utilisateur a choisi « Aucun ».
+type clearPlainAuth struct{ user, password string }
+
+func (a clearPlainAuth) Start(*smtp.ServerInfo) (string, []byte, error) {
+	return "PLAIN", []byte("\x00" + a.user + "\x00" + a.password), nil
+}
+
+func (a clearPlainAuth) Next(_ []byte, more bool) ([]byte, error) {
+	if more {
+		return nil, errors.New("réponse inattendue du serveur d'envoi")
+	}
+	return nil, nil
 }

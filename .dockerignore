@@ -9,3 +9,5 @@ testdata
 /data
 /dist
 tools
+.env
+*.env

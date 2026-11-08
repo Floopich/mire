@@ -84,10 +84,15 @@ type Manager struct {
 	forced settings.Source
 	logger *slog.Logger
 
+	// reload fait passer les relances une par une ; mu ne protege que
+	// l'etat, et n'est jamais garde pendant l'arret des taches : les pages
+	// lisent l'etat pendant qu'une sauvegarde ou une lecture du modem
+	// s'acheve.
+	reload sync.Mutex
 	mu     sync.RWMutex
 	state  State
 	cancel context.CancelFunc
-	wg     sync.WaitGroup
+	wg     *sync.WaitGroup
 	// wake previent la collecte qu'il faut recalculer son attente.
 	wake chan struct{}
 }
@@ -251,6 +256,8 @@ func (m *Manager) Start(ctx context.Context) error {
 
 // Reload relit les reglages et relance les taches de fond.
 func (m *Manager) Reload(ctx context.Context) error {
+	m.reload.Lock()
+	defer m.reload.Unlock()
 	st, err := Resolve(ctx, m.db, m.forced)
 	if err != nil {
 		return err
@@ -258,26 +265,19 @@ func (m *Manager) Reload(ctx context.Context) error {
 	if m.Journal != nil {
 		m.Journal.SetLevel(st.Values.String(settings.LogLevel))
 	}
-
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.cancel != nil {
-		m.cancel()
-		m.wg.Wait()
-		m.cancel = nil
-	}
+	m.stopTasks()
 
 	runCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
-	m.cancel = cancel
+	wg := &sync.WaitGroup{}
 
 	driver, err := st.Driver()
 	if err != nil {
 		// Sans collecte, la sonde et le journal s'ecrivent encore : la
 		// conservation s'applique quand meme.
 		retention := st.Retention()
-		m.wg.Add(1)
+		wg.Add(1)
 		go func() {
-			defer m.wg.Done()
+			defer wg.Done()
 			_ = collect.PurgeLoop(runCtx, m.db, retention, 0, m.logger)
 		}()
 	}
@@ -311,9 +311,9 @@ func (m *Manager) Reload(ctx context.Context) error {
 			Wake:      m.wake,
 			Observer:  observers,
 		})
-		m.wg.Add(1)
+		wg.Add(1)
 		go func() {
-			defer m.wg.Done()
+			defer wg.Done()
 			m.logger.Info("collecte démarrée", "modele", st.Model.ID, "modem", st.Address,
 				"intervalle", st.Interval.String())
 			if err := collector.Run(runCtx); err != nil && !errors.Is(err, context.Canceled) {
@@ -323,9 +323,9 @@ func (m *Manager) Reload(ctx context.Context) error {
 	}
 	if st.Values.Bool(settings.BackupOn) && m.DataDir != "" {
 		keeper := &backup.Keeper{DB: m.db, DataDir: m.DataDir, Keep: st.Values.Int(settings.BackupKeep), Logger: m.logger}
-		m.wg.Add(1)
+		wg.Add(1)
 		go func() {
-			defer m.wg.Done()
+			defer wg.Done()
 			if err := keeper.Run(runCtx); err != nil && !errors.Is(err, context.Canceled) {
 				m.logger.Error("sauvegardes automatiques arrêtées", "erreur", err)
 			}
@@ -334,9 +334,9 @@ func (m *Manager) Reload(ctx context.Context) error {
 	if st.Values.Bool(settings.ProbeOn) {
 		st.Probing = true
 		prober := probe.New(m.db, st.ProbeConfig(m.logger))
-		m.wg.Add(1)
+		wg.Add(1)
 		go func() {
-			defer m.wg.Done()
+			defer wg.Done()
 			if err := prober.Run(runCtx); err != nil && !errors.Is(err, context.Canceled) {
 				m.logger.Error("sonde arrêtée", "erreur", err)
 			}
@@ -354,9 +354,9 @@ func (m *Manager) Reload(ctx context.Context) error {
 				Filter: st.Values.String(settings.NotifyFilter),
 				Link:   st.Values.String(settings.NotifyLink),
 			}
-			m.wg.Add(1)
+			wg.Add(1)
 			go func() {
-				defer m.wg.Done()
+				defer wg.Done()
 				if err := notifier.Run(runCtx); err != nil && !errors.Is(err, context.Canceled) {
 					m.logger.Error("notifications arrêtées", "erreur", err)
 				}
@@ -386,9 +386,9 @@ func (m *Manager) Reload(ctx context.Context) error {
 			}
 			pub := homeassistant.New(cfg, read, m.logger)
 			st.HomeAssistant = pub
-			m.wg.Add(1)
+			wg.Add(1)
 			go func() {
-				defer m.wg.Done()
+				defer wg.Done()
 				if err := pub.Run(runCtx); err != nil && !errors.Is(err, context.Canceled) {
 					m.logger.Error("Home Assistant arrêté", "erreur", err)
 				}
@@ -398,9 +398,9 @@ func (m *Manager) Reload(ctx context.Context) error {
 	if st.Values.Bool(settings.UpdateCheck) {
 		c := update.New(m.db, m.Version, m.logger)
 		st.Update = c
-		m.wg.Add(1)
+		wg.Add(1)
 		go func() {
-			defer m.wg.Done()
+			defer wg.Done()
 			if err := c.Run(runCtx); err != nil && !errors.Is(err, context.Canceled) {
 				m.logger.Error("vérification des versions arrêtée", "erreur", err)
 			}
@@ -412,9 +412,9 @@ func (m *Manager) Reload(ctx context.Context) error {
 			m.logger.Warn("météo inactive", "raison", st.WeatherErr)
 		} else {
 			st.Weather = f
-			m.wg.Add(1)
+			wg.Add(1)
 			go func() {
-				defer m.wg.Done()
+				defer wg.Done()
 				if err := f.Run(runCtx); err != nil && !errors.Is(err, context.Canceled) {
 					m.logger.Error("météo arrêtée", "erreur", err)
 				}
@@ -428,17 +428,32 @@ func (m *Manager) Reload(ctx context.Context) error {
 		} else {
 			f := st.SpeedFetcher(m.db, m.logger)
 			st.Speed = f
-			m.wg.Add(1)
+			wg.Add(1)
 			go func() {
-				defer m.wg.Done()
+				defer wg.Done()
 				if err := f.Run(runCtx); err != nil && !errors.Is(err, context.Canceled) {
 					m.logger.Error("débit arrêté", "erreur", err)
 				}
 			}()
 		}
 	}
-	m.state = st
+	m.mu.Lock()
+	m.state, m.cancel, m.wg = st, cancel, wg
+	m.mu.Unlock()
 	return nil
+}
+
+// stopTasks arrete les taches en cours et attend leur fin, sans bloquer la
+// lecture de l'etat.
+func (m *Manager) stopTasks() {
+	m.mu.Lock()
+	cancel, wg := m.cancel, m.wg
+	m.cancel, m.wg = nil, nil
+	m.mu.Unlock()
+	if cancel != nil {
+		cancel()
+		wg.Wait()
+	}
 }
 
 // SpeedFetcher prepare la lecture des mesures de debit selon les reglages.
@@ -522,13 +537,9 @@ func hostPort(address string) string {
 
 // Stop arrete les taches de fond et attend leur fin.
 func (m *Manager) Stop() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.cancel != nil {
-		m.cancel()
-		m.wg.Wait()
-		m.cancel = nil
-	}
+	m.reload.Lock()
+	defer m.reload.Unlock()
+	m.stopTasks()
 }
 
 // Forced renvoie les reglages imposes par l'environnement.

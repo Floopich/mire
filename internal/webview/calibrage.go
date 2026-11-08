@@ -52,6 +52,9 @@ func (s *Server) handleCalibration(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
+	// Un an de releves pese des centaines de megaoctets : le delai
+	// d'ecriture du serveur vaut pour une page, pas pour ce fichier.
+	_ = http.NewResponseController(w).SetWriteDeadline(time.Time{})
 	st := s.opts.Service.State()
 	info := calibrationInfo{Mire: s.opts.Version, Profil: st.Profile.ID, Modem: st.Model.ID,
 		Intervalle: int(st.Interval / time.Second),

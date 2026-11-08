@@ -519,3 +519,31 @@ func TestToutesLesRubriquesSontRangees(t *testing.T) {
 		t.Error("rubrique inconnue perdue")
 	}
 }
+
+func TestUnSecretEnregistreSEfface(t *testing.T) {
+	db := baseRemplie(t, 1)
+	h, svc := monter(t, db, essai{Collecting: true})
+	token := session(t, db)
+	posteAvec(t, h, token, "/reglages/supervision", url.Values{"metriques.jeton": {"jeton-a-effacer"}})
+	if svc.State().Values.String(settings.AccessToken) != "jeton-a-effacer" {
+		t.Fatal("jeton non enregistré")
+	}
+	body := get(t, h, token, "/reglages/supervision").Body.String()
+	if !strings.Contains(body, `name="metriques.jeton__effacer"`) {
+		t.Fatal("la case Effacer n'est pas proposée")
+	}
+	// Un champ laisse vide garde le secret ; la case l'efface.
+	posteAvec(t, h, token, "/reglages/supervision", url.Values{"metriques.jeton": {""}})
+	if svc.State().Values.String(settings.AccessToken) == "" {
+		t.Error("un champ vide a effacé le jeton")
+	}
+	posteAvec(t, h, token, "/reglages/supervision", url.Values{"metriques.jeton": {""}, "metriques.jeton__effacer": {"1"}})
+	if v := svc.State().Values.String(settings.AccessToken); v != "" {
+		t.Errorf("jeton %q après Effacer", v)
+	}
+	// Une nouvelle valeur saisie l'emporte sur la case.
+	posteAvec(t, h, token, "/reglages/supervision", url.Values{"metriques.jeton": {"nouveau"}, "metriques.jeton__effacer": {"1"}})
+	if v := svc.State().Values.String(settings.AccessToken); v != "nouveau" {
+		t.Errorf("jeton %q, attendu la nouvelle valeur", v)
+	}
+}

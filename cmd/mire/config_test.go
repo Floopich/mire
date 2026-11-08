@@ -74,6 +74,11 @@ func TestPortDeSante(t *testing.T) {
 		"0.0.0.0:1340": "http://127.0.0.1:1340/sante",
 		":8080":        "http://127.0.0.1:8080/sante",
 		"[::]:1340":    "http://127.0.0.1:1340/sante",
+		// Une adresse choisie est celle qui repond : le HEALTHCHECK de
+		// l'image echouait sur 127.0.0.1.
+		"192.168.15.10:1340": "http://192.168.15.10:1340/sante",
+		"[::1]:1340":         "http://[::1]:1340/sante",
+		"localhost:1340":     "http://localhost:1340/sante",
 	} {
 		got, err := healthURL(in)
 		if err != nil || got != want {

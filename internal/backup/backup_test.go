@@ -86,3 +86,39 @@ func TestUneCopieInterrompueEstRetiree(t *testing.T) {
 		t.Error("la copie interrompue doit être retirée")
 	}
 }
+
+func TestLesAdressesAJetonQuittentLaCopieSansSecrets(t *testing.T) {
+	// Webhook et signal de vie portent un jeton dans leur adresse ; sur
+	// ntfy.sh, connaitre le sujet suffit a lire les notifications.
+	dir := t.TempDir()
+	db, err := store.Open(filepath.Join(dir, "mire.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	ctx := context.Background()
+	if err := settings.Set(ctx, db, settings.Source{}, map[string]string{
+		settings.WebhookURL:   "https://ha.exemple.be/api/webhook/temoin-webhook",
+		settings.HeartbeatURL: "https://hc-ping.com/temoin-signal",
+		settings.NtfyTopic:    "temoin-sujet",
+		settings.ModemUser:    "voo",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(dir, "copie.db")
+	if err := store.BackupWithout(ctx, db, out, SecretKeys()); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, w := range []string{"temoin-webhook", "temoin-signal", "temoin-sujet"} {
+		if bytes.Contains(b, []byte(w)) {
+			t.Errorf("%s reste dans la copie sans secrets", w)
+		}
+	}
+	if !bytes.Contains(b, []byte("reglage.modem.identifiant")) {
+		t.Error("un réglage ordinaire a disparu de la copie")
+	}
+}

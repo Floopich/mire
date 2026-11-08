@@ -154,7 +154,11 @@ func (r *Recorder) settleRestart(ctx context.Context, at time.Time, out []store.
 	}
 	var up time.Duration
 	if r.Modem != nil {
-		info, err := r.Modem.Info(ctx)
+		// Delai propre : un modem lent juste apres son redemarrage laisse
+		// le temps d'ecrire les evenements du releve.
+		ictx, cancel := context.WithTimeout(ctx, 20*time.Second)
+		info, err := r.Modem.Info(ictx)
+		cancel()
 		if err != nil {
 			r.logger().Debug("temps de fonctionnement du modem illisible", "erreur", err)
 		}

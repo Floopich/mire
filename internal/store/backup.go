@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 )
 
 // Backup ecrit une copie coherente de la base dans path, pendant que Mire
@@ -58,6 +59,10 @@ func Validate(ctx context.Context, path string) error {
 	var readings int
 	if version < 1 || db.QueryRowContext(ctx, `SELECT count(*) FROM readings`).Scan(&readings) != nil {
 		return errors.New("ce n'est pas une base de Mire")
+	}
+	// Une base d'une version plus recente empecherait Mire de demarrer.
+	if latest, err := CodeVersion(); err == nil && version > latest {
+		return fmt.Errorf("sauvegarde faite par une version plus récente de Mire (schéma %d, celle-ci connaît le %d) : mettez Mire à jour avant de restaurer", version, latest)
 	}
 	var check string
 	if err := db.QueryRowContext(ctx, `PRAGMA integrity_check`).Scan(&check); err != nil || check != "ok" {

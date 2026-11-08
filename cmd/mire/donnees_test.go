@@ -116,3 +116,37 @@ func TestDossierNonAccessible(t *testing.T) {
 		t.Fatalf("erreur %v, attendu la marche à suivre", err)
 	}
 }
+
+func TestRestaurationRefuseeServiceEnMarche(t *testing.T) {
+	// Le service tient le verrou du dossier, meme dans un autre conteneur
+	// qui ne repond pas sur 127.0.0.1.
+	dir := t.TempDir()
+	unlock, err := lockData(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = restaurer(dir, sauvegarde(t, 7))
+	unlock()
+	if err == nil || !strings.Contains(err.Error(), "tourne encore") {
+		t.Fatalf("restauration pendant le service : %v", err)
+	}
+	if err := restaurer(dir, sauvegarde(t, 7)); err != nil {
+		t.Fatalf("restauration service arrêté : %v", err)
+	}
+}
+
+func TestRestaurationRefuseeBasePlusRecente(t *testing.T) {
+	src := sauvegarde(t, 7)
+	db, err := store.Open(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`PRAGMA user_version = 9999`); err != nil {
+		t.Fatal(err)
+	}
+	_ = db.Close()
+	err = restaurer(t.TempDir(), src)
+	if err == nil || !strings.Contains(err.Error(), "plus récente") {
+		t.Fatalf("base plus récente : %v", err)
+	}
+}

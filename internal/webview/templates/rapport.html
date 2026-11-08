@@ -68,7 +68,7 @@
 
  <section class="card report-part">
   <h3 class="title-m">Coupures d'Internet</h3>
-  {{with .CompensationTotal}}<p class="hint body-m">Compensation légale estimée : {{.}}.</p>{{end}}
+  {{with .CompensationTotal}}<p class="hint body-m">Compensation légale estimée : {{.}}, à condition d'avoir signalé chaque coupure à l'opérateur dès son début : le délai de 8 heures court à partir du signalement.</p>{{end}}
   {{if .Outages}}<ul class="list events compact">{{range .Outages}}<li class="event {{.Level}}">
    <svg class="pip" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .Level}}"/></svg>
    <time class="label-l" datetime="{{.Start.UTC.Format "2006-01-02T15:04:05Z"}}">{{fmtTime .Start}}</time>

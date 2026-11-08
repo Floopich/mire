@@ -139,7 +139,7 @@ func NewServer(db *sql.DB, opts Options) (*Server, error) {
 
 // Routes monte les pages et les protections communes.
 func (s *Server) Routes() http.Handler {
-	static := http.StripPrefix("/static/", http.FileServerFS(staticFS()))
+	static := http.StripPrefix("/static/", noListing(http.FileServerFS(staticFS())))
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /sante", s.handleHealth)
@@ -207,6 +207,17 @@ func (s *Server) Routes() http.Handler {
 		h = s.demoGuard(mux)
 	}
 	return s.withDemo(securityHeaders(h))
+}
+
+// noListing sert les fichiers sans afficher la liste d'un dossier.
+func noListing(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "" || strings.HasSuffix(r.URL.Path, "/") {
+			http.NotFound(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // maxRequestBody borne le corps d'une requete d'ecriture.

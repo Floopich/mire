@@ -227,11 +227,17 @@ func (m *CGA4233) postLogin(ctx context.Context, password string, out any) error
 	if err != nil {
 		return fmt.Errorf("connexion au modem : lecture : %w", err)
 	}
-	if resp.StatusCode != http.StatusOK {
+	// Seul un refus explicite est une erreur d'identifiants : un 503 ou une
+	// page HTML pendant le demarrage du modem n'en est pas une, et le
+	// journal ne doit pas accuser le mot de passe.
+	switch {
+	case resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden:
 		return fmt.Errorf("%w : HTTP %d", ErrAuth, resp.StatusCode)
+	case resp.StatusCode != http.StatusOK:
+		return fmt.Errorf("connexion au modem : HTTP %d", resp.StatusCode)
 	}
 	if err := json.Unmarshal(body, out); err != nil {
-		return fmt.Errorf("%w : réponse illisible : %s", ErrAuth, truncate(body))
+		return fmt.Errorf("connexion au modem : réponse illisible : %s", truncate(body))
 	}
 	return nil
 }

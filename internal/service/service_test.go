@@ -185,3 +185,34 @@ func TestRelevesRapprochesApresUnIncident(t *testing.T) {
 		t.Error("avec un intervalle d'une minute, rien a rapprocher")
 	}
 }
+
+func TestLEtatSeLitPendantUneRelance(t *testing.T) {
+	// Une tache lente a s'arreter (sauvegarde, lecture du modem) ne doit pas
+	// figer les pages : l'etat reste lisible pendant la relance.
+	m := New(base(t), settings.Source{settings.ProbeOn: "false"}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err := m.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	defer m.Stop()
+	m.mu.Lock()
+	wg := m.wg
+	m.mu.Unlock()
+	release := make(chan struct{})
+	wg.Add(1)
+	go func() { defer wg.Done(); <-release }()
+
+	done := make(chan error, 1)
+	go func() { done <- m.Reload(context.Background()) }()
+	time.Sleep(50 * time.Millisecond)
+	read := make(chan struct{})
+	go func() { _ = m.State(); close(read) }()
+	select {
+	case <-read:
+	case <-time.After(time.Second):
+		t.Fatal("State() reste bloqué pendant l'arrêt des tâches")
+	}
+	close(release)
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+}
