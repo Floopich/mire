@@ -8,21 +8,34 @@ on:
     tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
   pull_request:
 
-permissions:
-  contents: read
-  packages: write
-  # Attestation de provenance : identite du depot (id-token) et
-  # enregistrement sur GitHub (attestations).
-  id-token: write
-  attestations: write
+permissions: {}
 
 concurrency:
   group: docker-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # Sur un tag, l'image n'est publiee qu'une fois les tests passes ; sur
+  # main et les pull requests, test.yml tourne deja a cote.
+  tests:
+    if: github.ref_type == 'tag'
+    uses: ./.github/workflows/test.yml # zizmor: ignore[self-repository]
+    permissions:
+      contents: read
+
   image:
+    needs: tests
+    # Tests sautes (hors tag) : l'image se construit quand meme ; tests en
+    # echec : rien n'est publie.
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      # Attestation de provenance : identite du depot (id-token) et
+      # enregistrement sur GitHub (attestations).
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

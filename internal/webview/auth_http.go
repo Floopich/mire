@@ -1,6 +1,7 @@
 package webview
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"net/url"
@@ -76,7 +77,9 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "origine refusée", http.StatusForbidden)
 		return
 	}
-	if wait := s.limiter.Wait(key); wait > 0 {
+	// La tentative est comptee avant la verification : des requetes
+	// simultanees ne passent pas toutes avant le premier echec.
+	if wait := s.limiter.Reserve(key); wait > 0 {
 		s.renderLogin(w, http.StatusTooManyRequests,
 			"Trop de tentatives. Réessayez dans "+humanDelay(wait)+".")
 		return
@@ -86,9 +89,8 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ok, err := auth.Check(ctx, s.db, r.PostFormValue("mot_de_passe"))
+	ok, err := s.checkPassword(ctx, r.PostFormValue("mot_de_passe"))
 	if err != nil || !ok {
-		s.limiter.Fail(key)
 		// Le message ne distingue pas "pas de mot de passe configure" de
 		// "mauvais mot de passe" : la difference renseignerait un curieux.
 		s.renderLogin(w, http.StatusUnauthorized, "Mot de passe incorrect.")
@@ -101,6 +103,22 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+// maxVerifying borne les verifications de mot de passe simultanees : chacune
+// occupe un coeur un instant, et une rafale ne doit pas affamer la collecte.
+const maxVerifying = 2
+
+// checkPassword verifie le mot de passe de l'interface, au plus
+// maxVerifying a la fois.
+func (s *Server) checkPassword(ctx context.Context, password string) (bool, error) {
+	select {
+	case s.verifying <- struct{}{}:
+	case <-ctx.Done():
+		return false, ctx.Err()
+	}
+	defer func() { <-s.verifying }()
+	return auth.Check(ctx, s.db, password)
 }
 
 func (s *Server) openSession(w http.ResponseWriter, r *http.Request) error {

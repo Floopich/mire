@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -199,6 +200,39 @@ func TestUneCoupureInterrompueParUnArretEstRefermee(t *testing.T) {
 	}
 	if ev := journal(t, db); ev[0].Kind != events.KindOutageEnd {
 		t.Errorf("journal %+v", ev)
+	}
+}
+
+func TestUneCoupureSurvitALaRelanceDeLaSonde(t *testing.T) {
+	// Enregistrer un reglage relance la sonde : une coupure en cours ne doit
+	// ni se refermer a zero seconde, ni se couper en deux.
+	p, r, h, db := sonde(t, "modem:80")
+	ctx := context.Background()
+	r.set("a:443", false)
+	r.set("b:443", false)
+	tour(p, h, 600) // cinq heures de coupure
+	p.flush(ctx)
+
+	p2 := New(db, p.cfg)
+	p2.resume(ctx)
+	if _, ok, _ := store.CurrentOutage(ctx, db); !ok {
+		t.Fatal("la coupure en cours a ete refermee par la relance")
+	}
+	tour(p2, h, 600) // cinq heures encore
+	r.set("a:443", true)
+	tour(p2, h, 1)
+
+	list, _ := store.Outages(ctx, db, time.Unix(0, 0), h.t)
+	if len(list) != 1 {
+		t.Fatalf("une coupure continue devient %d coupures : %+v", len(list), list)
+	}
+	if d := list[0].Duration(h.t); d < 10*time.Hour || d > 10*time.Hour+time.Minute {
+		t.Errorf("duree %s, attendu 10 h", d)
+	}
+	for _, e := range journal(t, db) {
+		if strings.Contains(e.Message, "inconnue") {
+			t.Errorf("fin inconnue inscrite a tort : %q", e.Message)
+		}
 	}
 }
 

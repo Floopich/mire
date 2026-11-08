@@ -158,9 +158,62 @@ func TestValeursParDefaut(t *testing.T) {
 	if c.opts.Interval != 10*time.Minute {
 		t.Errorf("intervalle par defaut %v, attendu 10m", c.opts.Interval)
 	}
-	if c.opts.Retention != store.DefaultRetention {
-		t.Errorf("retention par defaut %+v", c.opts.Retention)
+	// Zero partout veut dire illimite, comme le dit la page Reglages : la
+	// boucle ne substitue pas une conservation de son choix.
+	if c.opts.Retention != (store.Retention{}) {
+		t.Errorf("retention %+v, attendu illimitée", c.opts.Retention)
 	}
+}
+
+func TestLaPurgePasseDesLeDepart(t *testing.T) {
+	// Relancee plus d'une fois par jour, l'instance doit purger quand meme.
+	db := baseTest(t)
+	ctx := context.Background()
+	old := docsis.RawSnapshot{Downstream: []docsis.RawDownstream{{ChannelID: 1, Frequency: "442 MHz", PowerLevel: "1"}}}
+	if _, err := store.SaveSnapshot(ctx, db, old.Normalize(time.Now().AddDate(0, 0, -40))); err != nil {
+		t.Fatal(err)
+	}
+	c := New(&sourceFausse{}, db, Options{Logger: muet(), Interval: time.Hour, Retention: store.Retention{Days: 30}})
+	run, cancel := context.WithCancel(ctx)
+	done := make(chan error, 1)
+	go func() { done <- c.Run(run) }()
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		first, err := store.FirstReadingTime(ctx, db)
+		if err == nil && time.Since(first) < 24*time.Hour {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("relevé de 40 jours toujours présent : %v %v", first, err)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	cancel()
+	<-done
+}
+
+func TestLaPurgeTourneSansCollecte(t *testing.T) {
+	db := baseTest(t)
+	ctx := context.Background()
+	old := docsis.RawSnapshot{Downstream: []docsis.RawDownstream{{ChannelID: 1, Frequency: "442 MHz", PowerLevel: "1"}}}
+	if _, err := store.SaveSnapshot(ctx, db, old.Normalize(time.Now().AddDate(0, 0, -40))); err != nil {
+		t.Fatal(err)
+	}
+	run, cancel := context.WithCancel(ctx)
+	done := make(chan error, 1)
+	go func() { done <- PurgeLoop(run, db, store.Retention{Days: 30}, time.Hour, muet()) }()
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		if n, err := store.ReadingCount(ctx, db); err == nil && n == 0 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("la purge sans collecte n'a pas tourné")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	cancel()
+	<-done
 }
 
 func TestCollectOnceRemonteLErreur(t *testing.T) {

@@ -14,9 +14,6 @@ type Retention struct {
 	MaxBytes int64 // 0 = illimite
 }
 
-// DefaultRetention : dix ans, plafonnes a 5 Go.
-var DefaultRetention = Retention{Days: 3650, MaxBytes: 5 << 30}
-
 // PurgeResult dit ce qui a ete retire et pourquoi.
 type PurgeResult struct {
 	ByAge  int64

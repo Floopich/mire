@@ -187,6 +187,46 @@ func (f *FlexFloat) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// OptFloat est une mesure du modem dont l'absence se distingue du zero : un
+// champ absent, null, vide ou illisible laisse Set a faux. Une puissance de
+// 0 dBmV est une vraie mesure ; une puissance absente n'en est pas une.
+type OptFloat struct {
+	V   float64
+	Set bool
+}
+
+func (f *OptFloat) UnmarshalJSON(data []byte) error {
+	*f = OptFloat{}
+	data = bytes.TrimSpace(data)
+	if len(data) == 0 || string(data) == "null" {
+		return nil
+	}
+	if data[0] == '"' {
+		var s string
+		if err := json.Unmarshal(data, &s); err != nil {
+			return err
+		}
+		if v := ParseNumber(s); v != nil {
+			*f = OptFloat{V: *v, Set: true}
+		}
+		return nil
+	}
+	var v float64
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	*f = OptFloat{V: v, Set: true}
+	return nil
+}
+
+// String rend la mesure telle que RawSnapshot l'attend, vide si absente.
+func (f OptFloat) String() string {
+	if !f.Set {
+		return ""
+	}
+	return strconv.FormatFloat(f.V, 'g', -1, 64)
+}
+
 // CounterDelta renvoie l'accroissement d'un compteur cumulatif entre deux
 // releves. Un compteur qui baisse a ete remis a zero : sa valeur courante
 // est alors l'accroissement.

@@ -135,7 +135,7 @@ Les textes de l'interface emploient ces termes, dans ce sens :
 | relevé | une lecture complète des tables du modem, horodatée |
 | événement | un changement constaté entre deux relevés, inscrit au journal |
 | pic d'erreurs | une rafale d'erreurs non corrigées, du premier relevé touché au premier relevé calme |
-| coupure | au moins trois tentatives de la sonde sans réponse de suite ; « ligne coupée » si le modem répond encore, « réseau local coupé » sinon |
+| coupure | 90 secondes de tentatives de la sonde sans réponse de suite ; « ligne coupée » si le modem répond encore, « réseau local coupé » sinon |
 | sonde | la vérification régulière qu'Internet répond, indépendante du modem |
 | voie descendante, voie montante | du réseau vers le modem, du modem vers le réseau |
 | canal | une porteuse DOCSIS, identifiée par son numéro et sa fréquence |

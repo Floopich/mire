@@ -109,3 +109,24 @@ func TestChannelIDEnChaineEstAccepte(t *testing.T) {
 		t.Error("valeurs illisibles: attendu nil, pas zero")
 	}
 }
+
+func TestOptFloatDistingueAbsenceEtZero(t *testing.T) {
+	var v struct {
+		A, B, C, D, E, F OptFloat
+	}
+	if err := json.Unmarshal([]byte(`{"A":0,"B":"0.0","C":null,"D":"","E":"N/A","F":"-3,5 dBmV"}`), &v); err != nil {
+		t.Fatal(err)
+	}
+	for name, c := range map[string]struct {
+		got  OptFloat
+		want string
+	}{"A": {v.A, "0"}, "B": {v.B, "0"}, "C": {v.C, ""}, "D": {v.D, ""}, "E": {v.E, ""}, "F": {v.F, "-3.5"}} {
+		if c.got.String() != c.want {
+			t.Errorf("%s : %q, attendu %q", name, c.got.String(), c.want)
+		}
+	}
+	var absent struct{ X OptFloat }
+	if err := json.Unmarshal([]byte(`{}`), &absent); err != nil || absent.X.Set {
+		t.Errorf("champ absent : %+v %v", absent.X, err)
+	}
+}

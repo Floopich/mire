@@ -188,3 +188,22 @@ func sessionsTest(t *testing.T) *Sessions {
 	t.Helper()
 	return NewSessions(base(t))
 }
+
+func TestLaReservationArreteLesRafales(t *testing.T) {
+	// Des tentatives simultanees : seules les trois premieres passent,
+	// les suivantes attendent, meme avant tout resultat.
+	l := NewLimiter()
+	passed := 0
+	for range 40 {
+		if l.Reserve("1.2.3.4") == 0 {
+			passed++
+		}
+	}
+	if passed != 3 {
+		t.Errorf("%d tentatives passées sur 40, attendu 3", passed)
+	}
+	l.Succeed("1.2.3.4")
+	if l.Reserve("1.2.3.4") != 0 {
+		t.Error("une connexion réussie doit effacer l'historique")
+	}
+}

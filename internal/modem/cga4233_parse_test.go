@@ -202,3 +202,41 @@ func TestReponseReelleFirmwareVOO(t *testing.T) {
 		t.Errorf("montant 3 mal lu : %+v", snap.Upstream[2])
 	}
 }
+
+func TestMesureAbsenteNeDevientPasZero(t *testing.T) {
+	// Une puissance absente lue 0 dBmV serait jugee bonne en voie
+	// descendante et critique en voie montante : elle doit rester absente.
+	for _, tc := range []struct{ name, js string }{
+		{"absente", `{"DSTbl":[{"ChannelID":"5","Frequency":"442 MHz","SNRLevel":"40"}],"USTbl":[{"ChannelID":"2","Frequency":"37.2 MHz","Modulation":"64QAM"}]}`},
+		{"vide", `{"DSTbl":[{"ChannelID":"5","Frequency":"442 MHz","PowerLevel":"","SNRLevel":""}],"USTbl":[{"ChannelID":"2","Frequency":"37.2 MHz","PowerLevel":""}]}`},
+		{"null", `{"DSTbl":[{"ChannelID":"5","Frequency":"442 MHz","PowerLevel":null}],"USTbl":[{"ChannelID":"2","Frequency":"37.2 MHz","PowerLevel":null}]}`},
+		{"illisible", `{"DSTbl":[{"ChannelID":"5","Frequency":"442 MHz","PowerLevel":"N/A"}],"USTbl":[{"ChannelID":"2","Frequency":"37.2 MHz","PowerLevel":"--"}]}`},
+	} {
+		raw, err := parsePayload([]byte(tc.js))
+		if err != nil {
+			t.Fatalf("%s : %v", tc.name, err)
+		}
+		snap := raw.Normalize(time.Now())
+		if len(snap.Downstream) != 1 || len(snap.Upstream) != 1 {
+			t.Fatalf("%s : canaux %+v", tc.name, snap)
+		}
+		if p := snap.Downstream[0].PowerDBmV; p != nil {
+			t.Errorf("%s : puissance descendante %v, attendu absente", tc.name, *p)
+		}
+		if s := snap.Downstream[0].SNRDB; s != nil && tc.name != "absente" {
+			t.Errorf("%s : SNR %v, attendu absent", tc.name, *s)
+		}
+		if p := snap.Upstream[0].PowerDBmV; p != nil {
+			t.Errorf("%s : puissance montante %v, attendu absente", tc.name, *p)
+		}
+	}
+
+	// Un vrai zero reste une mesure.
+	raw, err := parsePayload([]byte(`{"DSTbl":[{"ChannelID":"5","Frequency":"442 MHz","PowerLevel":"0.0"}]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := raw.Normalize(time.Now()).Downstream[0].PowerDBmV; p == nil || *p != 0 {
+		t.Errorf("0 dBmV mesure : %v", p)
+	}
+}

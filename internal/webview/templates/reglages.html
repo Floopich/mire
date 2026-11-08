@@ -37,6 +37,7 @@
    </div>
    {{if .Locked}}<p class="help body-m locked">{{icon "verrou"}}{{if .Checked}}Activée{{else}}Désactivée{{end}} par la variable {{.Env}}.</p>{{end}}
    {{end}}
+   {{if .DemoLocked}}<p class="help body-m locked">{{icon "verrou"}}Non modifiable en démonstration : cette rubrique contacte d'autres appareils.</p>{{end}}
    {{if .Saved}}<div class="notice ok" role="status">{{icon "check"}}<p>Réglages enregistrés et appliqués.</p></div>{{end}}
    {{with .Err}}<div class="notice alerte" role="alert">{{icon "alerte"}}<p>{{.}}</p></div>{{end}}
    {{with $.Testing}}{{template "working" .}}{{end}}
@@ -47,6 +48,7 @@
    </div>{{end}}
    {{if not .Inert}}<div class="form-actions">
     <button type="submit" class="btn filled">Enregistrer</button>
+    {{if not $.Demo}}
     {{if eq .ID "modem"}}
     <button type="submit" class="btn tonal" formaction="/reglages/modem/tester">Enregistrer et tester</button>
     <a class="btn text" href="/reglages/modem?detecter=1">Détecter le modem</a>
@@ -65,6 +67,7 @@
     {{end}}
     {{if eq .ID "versions"}}
     <button type="submit" class="btn tonal" formaction="/reglages/versions/tester">Vérifier maintenant</button>
+    {{end}}
     {{end}}
    </div>{{end}}
   </form>
@@ -129,6 +132,12 @@
  </section>
  {{end}}{{else if eq .Section "securite"}}
  <section class="card settings-panel" aria-labelledby="titre-rubrique">
+  {{if .Demo}}
+  <header class="panel-head">
+   <h2 id="titre-rubrique" class="title-l">Sécurité</h2>
+   <p class="body-m muted">La démonstration s'ouvre sans mot de passe : rien à changer ici.</p>
+  </header>
+  {{else}}
   <form method="post" action="/reglages/mot-de-passe">
    <header class="panel-head">
     <h2 id="titre-rubrique" class="title-l">Sécurité</h2>
@@ -143,6 +152,7 @@
    </div>
    <div class="form-actions"><button type="submit" class="btn filled">Changer le mot de passe</button></div>
   </form>
+  {{end}}
  </section>
  {{end}}
  </div>

@@ -31,8 +31,8 @@ type dsSCQAM struct {
 	ChannelID  docsis.FlexFloat `json:"ChannelID"`
 	Modulation string           `json:"Modulation"`
 	Frequency  docsis.FlexFloat `json:"Frequency"`
-	PowerLevel docsis.FlexFloat `json:"PowerLevel"`
-	SNRLevel   docsis.FlexFloat `json:"SNRLevel"`
+	PowerLevel docsis.OptFloat  `json:"PowerLevel"`
+	SNRLevel   docsis.OptFloat  `json:"SNRLevel"`
 	LockStatus string           `json:"LockStatus"`
 	errRow
 }
@@ -40,8 +40,8 @@ type dsSCQAM struct {
 type dsOFDM struct {
 	ChannelID        docsis.FlexFloat `json:"ChannelID"`
 	CentralFrequency docsis.FlexFloat `json:"CentralFrequency"`
-	PowerLevel       docsis.FlexFloat `json:"PowerLevel"`
-	SNRLevel         docsis.FlexFloat `json:"SNRLevel"`
+	PowerLevel       docsis.OptFloat  `json:"PowerLevel"`
+	SNRLevel         docsis.OptFloat  `json:"SNRLevel"`
 	FFT              string           `json:"FFT"`
 	LockStatus       string           `json:"LockStatus"`
 }
@@ -50,14 +50,14 @@ type usSCQAM struct {
 	ChannelID  docsis.FlexFloat `json:"ChannelID"`
 	Modulation string           `json:"Modulation"`
 	Frequency  docsis.FlexFloat `json:"Frequency"`
-	PowerLevel docsis.FlexFloat `json:"PowerLevel"`
+	PowerLevel docsis.OptFloat  `json:"PowerLevel"`
 	LockStatus string           `json:"LockStatus"`
 }
 
 type usOFDMA struct {
 	ChannelID        docsis.FlexFloat `json:"ChannelID"`
 	CentralFrequency docsis.FlexFloat `json:"CentralFrequency"`
-	PowerLevel       docsis.FlexFloat `json:"PowerLevel"`
+	PowerLevel       docsis.OptFloat  `json:"PowerLevel"`
 	FFT              string           `json:"FFT"`
 	LockStatus       string           `json:"LockStatus"`
 }
@@ -178,8 +178,10 @@ func mhz(v docsis.FlexFloat) string {
 	return strconv.FormatFloat(math.Round(f*10)/10, 'f', -1, 64) + " MHz"
 }
 
-func number(v docsis.FlexFloat) string {
-	return fmt.Sprintf("%g", float64(v))
+// number rend une mesure, vide si le modem ne l'a pas donnee : une valeur
+// absente reste absente, jamais 0.
+func number(v docsis.OptFloat) string {
+	return v.String()
 }
 
 // mse reproduit la convention du firmware : MSE negative, SNR positif.
@@ -187,9 +189,9 @@ func number(v docsis.FlexFloat) string {
 // Le modem publie un SNR positif ; le modele attend une MSE, et la
 // normalisation en reprend la valeur absolue. On rend donc la valeur negative
 // ici plutot que de creer une deuxieme convention.
-func mse(snr docsis.FlexFloat) string {
-	v := math.Abs(float64(snr))
-	if v == 0 {
+func mse(snr docsis.OptFloat) string {
+	v := math.Abs(snr.V)
+	if !snr.Set || v == 0 {
 		return ""
 	}
 	return fmt.Sprintf("%g", -v)

@@ -100,3 +100,36 @@ func avecCookie(t *testing.T, h http.Handler, target string, c *http.Cookie) *ht
 	h.ServeHTTP(rec, req)
 	return rec
 }
+
+func TestLaDemonstrationNeContactePersonne(t *testing.T) {
+	// Ouverte sans connexion, une demonstration exposee ne doit pas servir
+	// de relais : ni essai, ni proposition de modem, ni reglage reseau.
+	db := baseRemplie(t, 1)
+	h, _ := monter(t, db, essai{Collecting: true, Demo: true})
+	for _, target := range []string{
+		"/modem/proposer", "/reglages/notifications", "/reglages/notifications/tester",
+		"/reglages/supervision", "/reglages/domotique", "/reglages/debit", "/reglages/sonde",
+		"/reglages/modem", "/reglages/modem/tester", "/reglages/mot-de-passe", "/installation/modem",
+	} {
+		rec := posteAvec(t, h, "", target, url.Values{"adresse": {"http://127.0.0.1:9"}, "notif.webhook.url": {"http://127.0.0.1:9"}})
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("POST %s : HTTP %d, attendu 403", target, rec.Code)
+		}
+	}
+	for _, target := range []string{"/reglages/modem?detecter=1", "/installation/modem"} {
+		if rec := get(t, h, "", target); rec.Code != http.StatusForbidden {
+			t.Errorf("GET %s : HTTP %d, attendu 403", target, rec.Code)
+		}
+	}
+	// La lecture de la ligne fictive reste modifiable.
+	if rec := posteAvec(t, h, "", "/reglages/analyse", url.Values{"operateur.profil": {"telenet"}}); rec.Code != http.StatusSeeOther {
+		t.Errorf("POST /reglages/analyse : HTTP %d, attendu 303", rec.Code)
+	}
+	body := get(t, h, "", "/reglages/notifications").Body.String()
+	if !strings.Contains(body, "Non modifiable en démonstration") || strings.Contains(body, "/reglages/notifications/tester") {
+		t.Error("rubrique réseau encore modifiable dans la page")
+	}
+	if body := get(t, h, "", "/reglages/modem").Body.String(); strings.Contains(body, "detecter=1") {
+		t.Error("recherche du modem proposée en démonstration")
+	}
+}

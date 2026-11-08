@@ -75,6 +75,8 @@ type Server struct {
 	works works
 	// demo est la demonstration ouverte depuis l'accueil.
 	demo demoState
+	// verifying borne les verifications de mot de passe simultanees.
+	verifying chan struct{}
 }
 
 func NewServer(db *sql.DB, opts Options) (*Server, error) {
@@ -93,7 +95,7 @@ func NewServer(db *sql.DB, opts Options) (*Server, error) {
 	s := &Server{
 		db: db, opts: opts,
 		sessions: auth.NewSessions(db), limiter: auth.NewLimiter(),
-		css: reglagesCSS(),
+		css: reglagesCSS(), verifying: make(chan struct{}, maxVerifying),
 	}
 	s.versions = assetVersions(map[string][]byte{"/reglages.css": []byte(s.css)})
 	funcs := template.FuncMap{
@@ -200,7 +202,11 @@ func (s *Server) Routes() http.Handler {
 		s.renderError(w, http.StatusNotFound, "Page introuvable",
 			"Cette adresse ne correspond à aucune page de Mire.")
 	})
-	return s.withDemo(securityHeaders(mux))
+	var h http.Handler = mux
+	if s.opts.Demo {
+		h = s.demoGuard(mux)
+	}
+	return s.withDemo(securityHeaders(h))
 }
 
 // maxRequestBody borne le corps d'une requete d'ecriture.
@@ -224,14 +230,6 @@ func securityHeaders(next http.Handler) http.Handler {
 		if r.Body != nil && r.Method != http.MethodGet && r.Method != http.MethodHead {
 			r.Body = http.MaxBytesReader(w, r.Body, maxRequestBody)
 		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-func cacheFor(d time.Duration, next http.Handler) http.Handler {
-	value := "public, max-age=" + strconv.Itoa(int(d.Seconds()))
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", value)
 		next.ServeHTTP(w, r)
 	})
 }

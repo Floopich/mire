@@ -124,8 +124,16 @@ func (p *Prober) Run(ctx context.Context) error {
 	}
 }
 
-// resume referme une coupure restee ouverte au dernier arret du service, a
-// la derniere mesure enregistree : sa duree est donc minimale.
+// resumeWithin est l'ecart maximal entre la derniere mesure et la reprise
+// pour qu'une coupure ouverte soit poursuivie plutot que refermee : la sonde
+// vient d'etre relancee (reglage enregistre, mise a jour rapide), elle n'a
+// rien manque d'important.
+func (p *Prober) resumeWithin() time.Duration { return 2 * p.cfg.Bucket }
+
+// resume reprend une coupure restee ouverte. Si la derniere mesure est
+// recente, la sonde vient seulement d'etre relancee : la coupure continue et
+// se refermera au premier retour d'Internet. Sinon, Mire a ete arrete : elle
+// est refermee a la derniere mesure enregistree, sa duree est donc minimale.
 func (p *Prober) resume(ctx context.Context) {
 	o, ok, err := store.CurrentOutage(ctx, p.db)
 	if err != nil || !ok {
@@ -135,6 +143,12 @@ func (p *Prober) resume(ctx context.Context) {
 	end, err := store.LastProbeSample(ctx, p.db)
 	if err != nil {
 		p.logErr(err)
+		return
+	}
+	if !end.IsZero() && !end.Before(o.Start.Truncate(p.cfg.Bucket)) && p.cfg.Now().Sub(end) <= p.resumeWithin() {
+		p.open = &o
+		p.failures, p.firstFail = p.cfg.Threshold, o.Start
+		p.cfg.Logger.Info("coupure en cours reprise", "nature", o.Kind)
 		return
 	}
 	end = end.Add(p.cfg.Bucket)

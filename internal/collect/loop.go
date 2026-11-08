@@ -49,9 +49,6 @@ func (o *Options) normalize() {
 	if o.Now == nil {
 		o.Now = time.Now
 	}
-	if o.Retention == (store.Retention{}) {
-		o.Retention = store.DefaultRetention
-	}
 }
 
 // Observer suit la collecte : le journal des evenements l'implemente.
@@ -97,6 +94,10 @@ func (c *Collector) Run(ctx context.Context) error {
 	defer purgeTicker.Stop()
 
 	c.collectOnce(ctx)
+	// Une purge des le depart : le minuteur repart de zero a chaque relance
+	// (reglage enregistre, mise a jour), et une instance relancee plus d'une
+	// fois par jour ne purgerait jamais.
+	c.purge(ctx)
 	timer := time.NewTimer(c.delay(ctx))
 	defer timer.Stop()
 
@@ -166,13 +167,37 @@ func (c *Collector) collectOnce(ctx context.Context) {
 }
 
 func (c *Collector) purge(ctx context.Context) {
-	res, err := store.Purge(ctx, c.db, c.opts.Retention, c.opts.Now())
+	purgeOnce(ctx, c.db, c.opts.Retention, c.opts.Now(), c.opts.Logger)
+}
+
+func purgeOnce(ctx context.Context, db *sql.DB, r store.Retention, now time.Time, logger *slog.Logger) {
+	res, err := store.Purge(ctx, db, r, now)
 	if err != nil {
-		c.opts.Logger.Error("purge échouée", "erreur", err)
+		if ctx.Err() == nil {
+			logger.Error("purge échouée", "erreur", err)
+		}
 		return
 	}
 	if res.ByAge > 0 || res.BySize > 0 {
-		c.opts.Logger.Info("purge", "par_age", res.ByAge, "par_taille", res.BySize)
+		logger.Info("purge", "par_age", res.ByAge, "par_taille", res.BySize)
+	}
+}
+
+// PurgeLoop applique la conservation sans collecte : modem non pris en
+// charge ou pas encore configure, la sonde et le journal continuent de
+// s'ecrire. Une purge tout de suite, puis toutes les every.
+func PurgeLoop(ctx context.Context, db *sql.DB, r store.Retention, every time.Duration, logger *slog.Logger) error {
+	o := Options{Retention: r, PurgeEvery: every, Logger: logger}
+	o.normalize()
+	ticker := time.NewTicker(o.PurgeEvery)
+	defer ticker.Stop()
+	for {
+		purgeOnce(ctx, db, o.Retention, o.Now(), o.Logger)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+		}
 	}
 }
 

@@ -13,9 +13,10 @@ Seule la dernière version reçoit les corrections : `docker compose pull && doc
 Mire est prévu pour un réseau local, derrière un pare-feu.
 
 **Protégé**
-- L'interface : mot de passe choisi à la première visite, conservé sous forme d'empreinte ; sessions de 30 jours ; tentatives de connexion ralenties ; formulaires refusés depuis une autre origine, et au-delà de 1 Mo ; aucun script ni ressource externe ; pages ni intégrables ni lisibles depuis un autre site.
+- L'interface : mot de passe choisi à la première visite, conservé sous forme d'empreinte ; sessions de 30 jours ; tentatives de connexion ralenties, même envoyées en rafale ; formulaires refusés depuis une autre origine, et au-delà de 1 Mo ; aucun script ni ressource externe ; pages ni intégrables ni lisibles depuis un autre site.
 - Les secrets (mot de passe du modem, jetons, mots de passe MQTT et mail) : jamais réaffichés, absents du journal, des erreurs, des métriques et du rapport du modem. Une valeur effacée ne reste pas dans le fichier de la base.
 - Le conteneur : système de fichiers en lecture seule, aucun privilège, utilisateur non root, image sans shell.
+- La démonstration (`MIRE_DEMO`) : ouverte sans mot de passe, elle ne contacte aucun autre appareil ; essais, recherche et proposition de modem y sont refusés.
 - Les connexions sortantes : seulement ce que vous activez (notifications, Home Assistant, météo, débit, avis de nouvelle version) et la sonde Internet vers ses cibles.
 
 **Non protégé**

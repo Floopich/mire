@@ -45,9 +45,30 @@ func (l *Limiter) Wait(key string) time.Duration {
 	return 0
 }
 
+// Reserve compte une tentative avant sa verification, d'un seul tenant :
+// des requetes envoyees en meme temps ne passent pas toutes avant le premier
+// echec enregistre. Il renvoie le temps a attendre, zero si la tentative
+// peut avoir lieu ; une tentative reussie efface ensuite l'historique
+// (Succeed), un echec n'a plus rien a ajouter.
+func (l *Limiter) Reserve(key string) time.Duration {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if e, ok := l.failures[key]; ok {
+		if d := e.until.Sub(l.now()); d > 0 {
+			return d
+		}
+	}
+	l.fail(key)
+	return 0
+}
+
 func (l *Limiter) Fail(key string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	l.fail(key)
+}
+
+func (l *Limiter) fail(key string) {
 	l.forgetOld()
 	e, ok := l.failures[key]
 	if !ok {

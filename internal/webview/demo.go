@@ -172,3 +172,46 @@ func (s *Server) handleDemoQuit(w http.ResponseWriter, r *http.Request) {
 	s.stopDemo()
 	http.Redirect(w, r, "/installation?etape=mot-de-passe", http.StatusSeeOther)
 }
+
+// demoEditable sont les rubriques modifiables en demonstration : elles ne
+// changent que la lecture de la ligne fictive et ne contactent rien.
+var demoEditable = map[string]bool{
+	"analyse": true, "abonnement": true, "collecte": true, "application": true, "journal": true,
+}
+
+// demoGuard borne ce que permet une demonstration, ouverte sans connexion :
+// les ecritures dans sa base jetable, rien qui contacte un autre appareil
+// (essais, recherche et proposition de modem, notifications, sonde, debit,
+// Home Assistant). Exposee, elle ne doit pas servir de relais vers le
+// reseau qui l'heberge.
+func (s *Server) demoGuard(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if demoAllowed(r) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		s.renderError(w, http.StatusForbidden, "Indisponible en démonstration",
+			"Cette action contacte d'autres appareils : elle est réservée à une installation de Mire.")
+	})
+}
+
+func demoAllowed(r *http.Request) bool {
+	path := r.URL.Path
+	if r.Method == http.MethodGet || r.Method == http.MethodHead {
+		// La recherche du modem interroge le reseau local.
+		return !strings.HasPrefix(path, "/installation/") &&
+			!(path == "/reglages/modem" && r.URL.Query().Get("detecter") != "")
+	}
+	if r.Method != http.MethodPost {
+		return false
+	}
+	switch {
+	case path == "/evenements/notes", path == "/modem/redemarrer":
+		return true
+	case strings.HasPrefix(path, "/evenements/notes/") && strings.HasSuffix(path, "/supprimer"):
+		return true
+	case strings.HasPrefix(path, "/reglages/"):
+		return demoEditable[strings.TrimPrefix(path, "/reglages/")]
+	}
+	return false
+}

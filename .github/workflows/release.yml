@@ -6,15 +6,23 @@ on:
     # formé (v.1.2.3, v1.2) ne déclenche rien.
     tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
 
-permissions:
-  contents: write
-  # Attestation de provenance des binaires.
-  id-token: write
-  attestations: write
+permissions: {}
 
 jobs:
+  # Un tag dont les tests echouent ne publie rien.
+  tests:
+    uses: ./.github/workflows/test.yml # zizmor: ignore[self-repository]
+    permissions:
+      contents: read
+
   binaires:
+    needs: tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      # Attestation de provenance des binaires.
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

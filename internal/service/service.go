@@ -271,6 +271,16 @@ func (m *Manager) Reload(ctx context.Context) error {
 	m.cancel = cancel
 
 	driver, err := st.Driver()
+	if err != nil {
+		// Sans collecte, la sonde et le journal s'ecrivent encore : la
+		// conservation s'applique quand meme.
+		retention := st.Retention()
+		m.wg.Add(1)
+		go func() {
+			defer m.wg.Done()
+			_ = collect.PurgeLoop(runCtx, m.db, retention, 0, m.logger)
+		}()
+	}
 	switch {
 	case errors.Is(err, ErrNoModemPassword):
 		m.logger.Info("collecte en attente : modem à configurer")

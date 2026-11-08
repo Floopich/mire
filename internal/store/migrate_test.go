@@ -1,12 +1,14 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func openTemp(t *testing.T) *sql.DB {
@@ -181,4 +183,66 @@ func TestUneBaseEstCopieeAvantSaMigration(t *testing.T) {
 	if m, _ := filepath.Glob(neuve + ".avant-v*"); len(m) != 0 {
 		t.Errorf("copie inattendue : %v", m)
 	}
+}
+
+func TestUnNumeroDEvenementNEstJamaisReutilise(t *testing.T) {
+	// Une note supprimee ne doit pas ceder son numero a l'evenement suivant :
+	// les notifications, deja passees par ce numero, ne l'enverraient pas.
+	db, err := Open(filepath.Join(t.TempDir(), "mire.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	ctx := context.Background()
+	if err := AddNote(ctx, db, time.Now(), "note"); err != nil {
+		t.Fatal(err)
+	}
+	first, _ := LastEventID(ctx, db)
+	if ok, err := DeleteNote(ctx, db, first); !ok || err != nil {
+		t.Fatal(ok, err)
+	}
+	if err := SaveEvents(ctx, db, []Event{{Time: time.Now(), Kind: "coupure", Message: "Coupure"}}); err != nil {
+		t.Fatal(err)
+	}
+	if next, _ := LastEventID(ctx, db); next <= first {
+		t.Errorf("numero %d reutilise (note supprimee : %d)", next, first)
+	}
+}
+
+func TestLaMigrationDesNumerosRespecteLesNotifications(t *testing.T) {
+	// Une base deja en service : le dernier evenement notifie (12) a ete
+	// supprime avant la migration ; le suivant doit porter un numero plus grand.
+	path := filepath.Join(t.TempDir(), "mire.db")
+	db, err := sql.Open(driverName, dsn(path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	all, _ := loadMigrations()
+	for _, m := range all {
+		if m.version > 11 {
+			break
+		}
+		if err := applyMigration(db, m); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := db.Exec(`INSERT INTO events(id, ts, kind, message) VALUES (10, 1, 'x', 'a');
+		INSERT INTO settings(key, value) VALUES ('notif.dernier_evenement', '12')`); err != nil {
+		t.Fatal(err)
+	}
+	if err := Migrate(db); err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := SaveEvents(ctx, db, []Event{{Time: time.Now(), Kind: "coupure", Message: "Coupure"}}); err != nil {
+		t.Fatal(err)
+	}
+	if id, _ := LastEventID(ctx, db); id <= 12 {
+		t.Errorf("numero %d, attendu au-dela de 12", id)
+	}
+	var n int
+	if err := db.QueryRow(`SELECT count(*) FROM events WHERE id = 10`).Scan(&n); err != nil || n != 1 {
+		t.Errorf("evenement existant perdu : %d %v", n, err)
+	}
+	_ = db.Close()
 }

@@ -55,6 +55,9 @@ type groupView struct {
 	// Inert marque un groupe desactive par une variable : rien n'y est
 	// modifiable, le bouton Enregistrer n'aurait aucun effet.
 	Inert bool
+	// DemoLocked marque une rubrique fermee en demonstration : elle
+	// contacte d'autres appareils.
+	DemoLocked bool
 }
 
 type testResult struct {
@@ -521,6 +524,9 @@ func (s *Server) reglagesView(r *http.Request, section string, explicit bool, in
 			for i := range gv.Fields {
 				gv.Fields[i].Env = ""
 			}
+			if !demoEditable[g.ID] {
+				gv.Inert, gv.DemoLocked = true, true
+			}
 		}
 		gv.Saved = r.URL.Query().Get("enregistre") != ""
 		// Un modele jamais choisi s'affiche tel qu'il s'applique : celui que
@@ -923,11 +929,19 @@ func (s *Server) handlePassword(w http.ResponseWriter, r *http.Request) {
 		v.PasswordErr = msg
 		s.render(w, http.StatusUnprocessableEntity, "reglages", v)
 	}
-	ok, err := auth.Check(r.Context(), s.db, r.PostForm.Get("actuel"))
+	// Meme frein qu'a la connexion : une session volee ne doit pas deviner
+	// le mot de passe actuel sans limite.
+	key := clientKey(r)
+	if wait := s.limiter.Reserve(key); wait > 0 {
+		fail("Trop de tentatives. Réessayez dans " + humanDelay(wait) + ".")
+		return
+	}
+	ok, err := s.checkPassword(r.Context(), r.PostForm.Get("actuel"))
 	if err != nil || !ok {
 		fail("Le mot de passe actuel est incorrect.")
 		return
 	}
+	s.limiter.Succeed(key)
 	if r.PostForm.Get("nouveau") != r.PostForm.Get("confirmation") {
 		fail("Les deux saisies du nouveau mot de passe diffèrent.")
 		return
