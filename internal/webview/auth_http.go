@@ -4,8 +4,10 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/floopich/mire/internal/auth"
@@ -68,7 +70,7 @@ func (s *Server) handleLoginForm(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	key := clientKey(r)
+	key := s.clientKey(r)
 
 	// Le SameSite=Strict du cookie bloque deja la soumission depuis un autre
 	// site ; on refuse en plus une origine etrangere, qui n'a aucune raison
@@ -164,13 +166,50 @@ func isHTTPS(r *http.Request) bool {
 }
 
 // clientKey identifie l'appelant pour le limiteur par l'adresse de la
-// connexion, jamais par un en-tete falsifiable.
-func clientKey(r *http.Request) string {
+// connexion. X-Forwarded-For n'est lu que si la connexion vient d'un proxy
+// declare de confiance (MIRE_PROXY_DE_CONFIANCE) : sans cela, derriere un
+// proxy inverse, tout le monde partagerait la meme adresse, et trois fautes
+// de frappe bloqueraient chacun. L'en-tete se lit de droite a gauche : la
+// premiere adresse qui n'est pas un proxy de confiance est le client, et ce
+// qu'un client ecrit lui-meme a gauche n'est jamais retenu.
+func (s *Server) clientKey(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		host = r.RemoteAddr
+	}
+	if !s.trusted(host) {
+		return host
+	}
+	var hops []string
+	for _, h := range r.Header.Values("X-Forwarded-For") {
+		hops = append(hops, strings.Split(h, ",")...)
+	}
+	for i := len(hops) - 1; i >= 0; i-- {
+		hop := strings.TrimSpace(hops[i])
+		ip, err := netip.ParseAddr(hop)
+		if err != nil {
+			break
+		}
+		if !s.trusted(hop) {
+			return ip.Unmap().String()
+		}
 	}
 	return host
+}
+
+// trusted dit si une adresse est un proxy de confiance.
+func (s *Server) trusted(addr string) bool {
+	ip, err := netip.ParseAddr(addr)
+	if err != nil {
+		return false
+	}
+	ip = ip.Unmap()
+	for _, p := range s.opts.TrustedProxies {
+		if p.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 // sameOrigin verifie qu'une requete d'ecriture vient de cette instance.

@@ -132,3 +132,19 @@ func TestCommandeSauvegarde(t *testing.T) {
 		t.Error("sans destination, la commande doit le dire")
 	}
 }
+
+func TestProxysDeConfiance(t *testing.T) {
+	c, err := parseConfig("mire", nil, env(map[string]string{"MIRE_PROXY_DE_CONFIANCE": "172.18.0.0/16, 192.168.1.5"}), io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.TrustedProxies) != 2 || c.TrustedProxies[1].String() != "192.168.1.5/32" {
+		t.Errorf("proxys %v", c.TrustedProxies)
+	}
+	if _, err := parseConfig("mire", nil, env(map[string]string{"MIRE_PROXY_DE_CONFIANCE": "traefik"}), io.Discard); err == nil {
+		t.Error("un nom d'hôte doit être refusé : seule une adresse se compare à la connexion")
+	}
+	if c, _ := parseConfig("mire", nil, env(nil), io.Discard); len(c.TrustedProxies) != 0 {
+		t.Error("aucun proxy par défaut")
+	}
+}

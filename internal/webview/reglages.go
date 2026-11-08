@@ -35,6 +35,9 @@ type fieldView struct {
 	Type    string // type HTML du champ texte
 	// ClearName est le champ « Effacer » d'un secret enregistre.
 	ClearName string
+	// Host est l'hote d'une adresse secrete enregistree (webhook, signal de
+	// vie) : de quoi reconnaitre la bonne, sans le jeton qu'elle porte.
+	Host string
 	// OnlyAttr est la valeur de data-condition. Pas de « data-only » :
 	// html/template prend un attribut dont le nom, sans « data- », commence
 	// par « on » pour un gestionnaire d'evenement JavaScript, et l'echappe.
@@ -209,6 +212,9 @@ func buildGroup(g settings.Group, values settings.Values, input map[string]strin
 			f.Value = ""
 			f.Type = "password"
 			f.ClearName = d.Key + settings.ClearSuffix
+			if u, err := url.Parse(value); err == nil && (u.Scheme == "http" || u.Scheme == "https") {
+				f.Host = u.Host
+			}
 		case settings.Bool:
 			f.Checked, _ = strconv.ParseBool(value)
 		case settings.Select:
@@ -947,7 +953,7 @@ func (s *Server) handlePassword(w http.ResponseWriter, r *http.Request) {
 	}
 	// Meme frein qu'a la connexion : une session volee ne doit pas deviner
 	// le mot de passe actuel sans limite.
-	key := clientKey(r)
+	key := s.clientKey(r)
 	if wait := s.limiter.Reserve(key); wait > 0 {
 		fail("Trop de tentatives. Réessayez dans " + humanDelay(wait) + ".")
 		return

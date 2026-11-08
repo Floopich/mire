@@ -68,8 +68,15 @@ func Purge(ctx context.Context, db *sql.DB, r Retention, now time.Time) (PurgeRe
 	return result, nil
 }
 
-// purgeToSize retire les releves les plus anciens par tranches, jusqu'a
-// repasser sous la limite.
+// probeTables sont les mesures de la sonde et du debit, qui s'ecrivent aussi
+// sans modem : la purge par taille les retire du plus ancien au plus recent,
+// comme les releves.
+var probeTables = []string{"probe_samples", "probe_jitter", "micro_cuts", "speed_tests"}
+
+// purgeToSize retire les donnees les plus anciennes par tranches, jusqu'a
+// repasser sous la limite : les releves, et avec eux les mesures de la sonde
+// plus anciennes que le plus ancien releve garde. Sans releve (modem non pris
+// en charge), la sonde se purge seule. Le resultat compte les releves.
 func purgeToSize(ctx context.Context, db *sql.DB, maxBytes int64) (int64, error) {
 	const batch = 500
 	var total int64
@@ -88,12 +95,44 @@ func purgeToSize(ctx context.Context, db *sql.DB, maxBytes int64) (int64, error)
 			return total, fmt.Errorf("purge par taille: %w", err)
 		}
 		n, _ := res.RowsAffected()
-		if n == 0 {
+		total += n
+		var oldest sql.NullInt64
+		if err := db.QueryRowContext(ctx, `SELECT min(ts) FROM readings`).Scan(&oldest); err != nil {
+			return total, fmt.Errorf("purge par taille: %w", err)
+		}
+		var probed int64
+		if oldest.Valid {
+			for _, t := range probeTables {
+				r, err := db.ExecContext(ctx, `DELETE FROM `+t+` WHERE ts < ?`, oldest.Int64)
+				if err != nil {
+					return total, fmt.Errorf("purge par taille: %w", err)
+				}
+				m, _ := r.RowsAffected()
+				probed += m
+			}
+		} else {
+			// Plus de releve : la sonde, par tranches de plusieurs jours.
+			var cut sql.NullInt64
+			if err := db.QueryRowContext(ctx,
+				`SELECT max(ts) FROM (SELECT ts FROM probe_samples ORDER BY ts ASC LIMIT ?)`, batch*4).Scan(&cut); err != nil {
+				return total, fmt.Errorf("purge par taille: %w", err)
+			}
+			if cut.Valid {
+				for _, t := range probeTables {
+					r, err := db.ExecContext(ctx, `DELETE FROM `+t+` WHERE ts <= ?`, cut.Int64)
+					if err != nil {
+						return total, fmt.Errorf("purge par taille: %w", err)
+					}
+					m, _ := r.RowsAffected()
+					probed += m
+				}
+			}
+		}
+		if n == 0 && probed == 0 {
 			// Plus rien a supprimer : la base depasse la limite par son seul
 			// schema. Mieux vaut s'arreter que boucler indefiniment.
 			return total, nil
 		}
-		total += n
 	}
 }
 

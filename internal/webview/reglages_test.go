@@ -547,3 +547,17 @@ func TestUnSecretEnregistreSEfface(t *testing.T) {
 		t.Errorf("jeton %q, attendu la nouvelle valeur", v)
 	}
 }
+
+func TestUneAdresseSecreteMontreSonHote(t *testing.T) {
+	db := baseRemplie(t, 1)
+	h, _ := monter(t, db, essai{Collecting: true})
+	token := session(t, db)
+	posteAvec(t, h, token, "/reglages/supervision", url.Values{"supervision.signal": {"https://hc-ping.com/jeton-secret-42"}})
+	body := get(t, h, token, "/reglages/supervision").Body.String()
+	if !strings.Contains(body, "enregistrée : hc-ping.com/…") {
+		t.Error("l'hôte de l'adresse enregistrée n'est pas affiché")
+	}
+	if strings.Contains(body, "jeton-secret-42") {
+		t.Error("le jeton de l'adresse apparaît dans la page")
+	}
+}

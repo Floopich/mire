@@ -81,8 +81,9 @@ Service, hors de la page Réglages :
 | `MIRE_DONNEES` | `.` (`/data` dans l'image) | dossier de la base |
 | `MIRE_ECOUTE` | `0.0.0.0:1340` | adresse d'écoute de l'interface |
 | `MIRE_DEMO` | `false` | démonstration sur une ligne fictive : base jetable, interface sans mot de passe |
+| `MIRE_PROXY_DE_CONFIANCE` | aucun | proxys inverses dont l'en-tête `X-Forwarded-For` est cru, adresses ou plages : `172.18.0.0/16`. Facultatif : sans lui, derrière un proxy, trois fautes de frappe bloquent tout le monde quelques minutes |
 
-Chaque variable a son option en ligne de commande (`mire -h`), sauf le mot de passe du modem. Les données tiennent dans un fichier SQLite, `mire.db`.
+Chaque variable a son option en ligne de commande (`mire -h`), sauf le mot de passe du modem et les proxys de confiance. Les données tiennent dans un fichier SQLite, `mire.db`.
 
 **Secrets dans un fichier (facultatif).** Chaque mot de passe ou jeton peut aussi se lire dans un fichier, en ajoutant `_FICHIER` au nom de sa variable : `MIRE_MODEM_MOT_DE_PASSE_FICHIER=/run/secrets/modem`. Le secret n'apparaît alors ni dans `docker inspect` ni dans l'environnement du conteneur. Les deux formes à la fois pour un même secret empêchent le démarrage, comme un fichier vide ou illisible. Avec les secrets Docker :
 
@@ -192,7 +193,7 @@ mire restauration /chemin/mire-sauvegarde.db
 
 ## Derrière un proxy inverse
 
-Mire doit être servi à la racine d'un nom de domaine (`https://mire.exemple.be`). Le cookie de session passe en `Secure` quand le proxy transmet `X-Forwarded-Proto: https`.
+Mire doit être servi à la racine d'un nom de domaine (`https://mire.exemple.be`). Le cookie de session passe en `Secure` quand le proxy transmet `X-Forwarded-Proto: https`. Pour que le ralentissement des connexions vise la bonne personne, indiquez l'adresse du proxy dans `MIRE_PROXY_DE_CONFIANCE` (avec Docker, souvent le réseau du proxy, par exemple `172.18.0.0/16`).
 
 ## Installer comme une application
 

@@ -264,3 +264,64 @@ func TestDernierReleveSurBaseVide(t *testing.T) {
 		t.Errorf("base vide : %v (%v), attendu zero", last, err)
 	}
 }
+
+func TestPurgeParTailleSansModemPurgeLaSonde(t *testing.T) {
+	// Modem non pris en charge : seule la sonde ecrit. La limite de taille
+	// doit s'appliquer a ses mesures, des plus anciennes aux plus recentes.
+	db := baseTest(t)
+	ctx := context.Background()
+	debut := time.Unix(1_700_000_000, 0).UTC()
+	var samples []ProbeSample
+	for i := range 20000 {
+		v := float64(i%50) + 0.5
+		samples = append(samples, ProbeSample{Start: debut.Add(time.Duration(i) * 5 * time.Minute), Rounds: 60, Failed: i % 3, RTTMin: &v, RTTAvg: &v, RTTMax: &v})
+	}
+	if err := SaveProbeSamples(ctx, db, samples); err != nil {
+		t.Fatal(err)
+	}
+	taille, err := DatabaseSize(ctx, db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Purge(ctx, db, Retention{MaxBytes: taille / 2}, debut); err != nil {
+		t.Fatal(err)
+	}
+	var n int
+	var plusAncien int64
+	if err := db.QueryRow(`SELECT count(*), min(ts) FROM probe_samples`).Scan(&n, &plusAncien); err != nil {
+		t.Fatal(err)
+	}
+	if n == 20000 || n == 0 {
+		t.Fatalf("%d mesures restantes sur 20000", n)
+	}
+	if plusAncien == debut.Unix() {
+		t.Error("les plus anciennes mesures auraient dû partir d'abord")
+	}
+	if last, _ := LastProbeSample(ctx, db); !last.Equal(samples[len(samples)-1].Start) {
+		t.Errorf("la mesure la plus récente a disparu : %v", last)
+	}
+}
+
+func TestPurgeParTailleAligneLaSondeSurLesReleves(t *testing.T) {
+	db := baseTest(t)
+	ctx := context.Background()
+	debut := time.Unix(1_700_000_000, 0).UTC()
+	v := 10.0
+	// Une sonde plus ancienne que tous les releves.
+	if err := SaveProbeSamples(ctx, db, []ProbeSample{{Start: debut.Add(-48 * time.Hour), Rounds: 1, RTTAvg: &v, RTTMin: &v, RTTMax: &v}}); err != nil {
+		t.Fatal(err)
+	}
+	for i := range 1500 {
+		if _, err := SaveSnapshot(ctx, db, gros(debut.Add(time.Duration(i)*time.Minute))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	taille, _ := DatabaseSize(ctx, db)
+	if _, err := Purge(ctx, db, Retention{MaxBytes: taille / 2}, debut); err != nil {
+		t.Fatal(err)
+	}
+	var n int
+	if err := db.QueryRow(`SELECT count(*) FROM probe_samples`).Scan(&n); err != nil || n != 0 {
+		t.Errorf("mesure de sonde plus ancienne que les relevés gardés : %d restante (%v)", n, err)
+	}
+}

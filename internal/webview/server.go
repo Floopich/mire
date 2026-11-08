@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
+	"net/netip"
 	"strconv"
 	"strings"
 	"time"
@@ -58,6 +59,9 @@ type Options struct {
 	// StartDemo prepare une demonstration a cote de l'instance : son
 	// interface, et ce qui l'arrete. Nil, l'accueil ne la propose pas.
 	StartDemo func(ctx context.Context) (http.Handler, func(), error)
+	// TrustedProxies sont les proxys inverses dont X-Forwarded-For est cru,
+	// pour le limiteur de connexion. Vide : aucun.
+	TrustedProxies []netip.Prefix
 }
 
 type Server struct {

@@ -202,11 +202,12 @@ func serve(args []string) error {
 	}
 
 	srv, err := webview.NewServer(db, webview.Options{
-		DataDir: cfg.DataDir,
-		Version: currentVersion(),
-		Service: mgr,
-		Logger:  logger,
-		Journal: jr,
+		DataDir:        cfg.DataDir,
+		TrustedProxies: cfg.TrustedProxies,
+		Version:        currentVersion(),
+		Service:        mgr,
+		Logger:         logger,
+		Journal:        jr,
 		// Avant l'installation, l'accueil propose d'essayer Mire sur une
 		// ligne fictive, a cote de l'instance, sans toucher a sa base.
 		StartDemo: func(ctx context.Context) (http.Handler, func(), error) {

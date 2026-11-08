@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/netip"
 	"os"
 	"strconv"
 	"strings"
@@ -19,6 +20,8 @@ type config struct {
 	Listen  string
 	// Demo fait tourner Mire sur une ligne fictive, dans une base jetable.
 	Demo bool
+	// TrustedProxies sont les proxys inverses dont X-Forwarded-For est cru.
+	TrustedProxies []netip.Prefix
 	// Forced regroupe les reglages imposes par l'environnement ou par les
 	// options : ils l'emportent sur la page Reglages et y sont verrouilles.
 	Forced settings.Source
@@ -74,6 +77,12 @@ func parseConfigArgs(name string, args []string, getenv func(string) string, out
 		return c, nil, fmt.Errorf("MIRE_DEMO : valeur attendue true ou false")
 	}
 
+	proxies, err := parseProxies(env("MIRE_PROXY_DE_CONFIANCE", ""))
+	if err != nil {
+		return c, nil, fmt.Errorf("MIRE_PROXY_DE_CONFIANCE : %w", err)
+	}
+	c.TrustedProxies = proxies
+
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
 	fs.SetOutput(out)
 	fs.StringVar(&c.DataDir, "donnees", env("MIRE_DONNEES", "."), "dossier des données (MIRE_DONNEES)")
@@ -92,4 +101,23 @@ func parseConfigArgs(name string, args []string, getenv func(string) string, out
 		}
 	}
 	return c, fs.Args(), c.Forced.Validate()
+}
+
+// parseProxies lit les proxys de confiance : adresses ou plages, separees
+// par des virgules ou des espaces (« 172.18.0.0/16, 192.168.1.5 »).
+func parseProxies(v string) ([]netip.Prefix, error) {
+	var out []netip.Prefix
+	for _, f := range strings.FieldsFunc(v, func(r rune) bool { return r == ',' || r == ' ' || r == ';' }) {
+		if p, err := netip.ParsePrefix(f); err == nil {
+			out = append(out, p.Masked())
+			continue
+		}
+		ip, err := netip.ParseAddr(f)
+		if err != nil {
+			return nil, fmt.Errorf("%q : adresse ou plage attendue, par exemple 172.18.0.0/16", f)
+		}
+		ip = ip.Unmap()
+		out = append(out, netip.PrefixFrom(ip, ip.BitLen()))
+	}
+	return out, nil
 }
