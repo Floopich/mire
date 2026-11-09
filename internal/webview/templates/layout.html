@@ -29,7 +29,7 @@
 {{template "content" .}}
 </main>
 <footer class="foot body-m">
- <p>Mire {{.Version}}{{if .Profile.Name}}, profil {{.Profile.Name}}{{if .Profile.Region}} ({{.Profile.Region}}){{end}}{{end}}{{with .Modem}}, modem {{.}}{{end}}</p>
+ <p>{{if .InApp}}<a href="/reglages/versions">Mire {{.Version}}</a> · <a href="/comprendre">Comprendre les mesures</a>{{else}}Mire {{.Version}}{{end}}</p>
 </footer>
 </body>
 </html>

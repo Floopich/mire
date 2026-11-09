@@ -106,3 +106,17 @@ func TestHistoriqueMeneAuDernierReleve(t *testing.T) {
 		t.Error("entrée des relevés affichée sans aucun relevé")
 	}
 }
+
+func TestBasDePageCourtEtUtile(t *testing.T) {
+	// Le bas de page mene a la version et a l'aide ; profil et modem se
+	// lisent deja dans les reglages, pas sur chaque page.
+	h, token := serveur(t, baseRemplie(t, 3))
+	for _, p := range []string{"/", "/internet", "/historique", "/modem", "/reglages"} {
+		body := get(t, h, token, p).Body.String()
+		foot := body[strings.Index(body, `<footer`):]
+		if !strings.Contains(foot, `href="/reglages/versions"`) || !strings.Contains(foot, `href="/comprendre"`) ||
+			strings.Contains(foot, "profil") || strings.Contains(foot, "modem") {
+			t.Errorf("%s : bas de page %q", p, foot)
+		}
+	}
+}

@@ -39,10 +39,12 @@ func startDemo(ctx context.Context, logger *slog.Logger, exit bool) (d *demoInst
 	if err != nil {
 		return nil, err
 	}
-	d = &demoInstance{dir: dir, logger: logger}
+	inst := &demoInstance{dir: dir, logger: logger}
+	d = inst
+	// inst et non d : un retour en erreur remet d a nil avant ce nettoyage.
 	defer func() {
 		if err != nil {
-			d.Close()
+			inst.Close()
 		}
 	}()
 	if d.db, err = store.Open(filepath.Join(dir, "mire.db")); err != nil {

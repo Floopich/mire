@@ -7,7 +7,7 @@
 </div>
 
 <dl class="figures">
- <div><dt class="label-l">Modulation</dt><dd>{{or .Channel.Modulation "—"}}</dd></div>
+ <div><dt class="label-l">Fréquence</dt><dd>{{fmtMHz .Channel.Frequency}}{{with .Channel.Modulation}}<span class="since">{{.}}</span>{{end}}</dd></div>
  <div><dt class="label-l">Puissance</dt><dd>{{fmtValue .Channel.Power "dBmV"}}</dd></div>
  {{if eq .Direction "descendant"}}<div><dt class="label-l">SNR</dt><dd>{{fmtValue .Channel.SNR "dB"}}</dd></div>{{end}}
  <div><dt class="label-l">Dernier relevé</dt><dd>{{ago .Channel.LastSeen}}</dd></div>

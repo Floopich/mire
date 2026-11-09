@@ -289,6 +289,12 @@ type common struct {
 	DemoExit bool
 }
 
+// InApp dit que la page est servie dans une session installee : l'aide et
+// le signalement n'ont de sens qu'une fois Mire en place.
+func (c common) InApp() bool {
+	return c.Path != "" && !strings.HasPrefix(c.Path, "/installation")
+}
+
 // MenuSection est l'entree du menu de la page : la page en cours s'y signale.
 func (c common) MenuSection() string {
 	p := c.Path
@@ -732,7 +738,6 @@ type channelView struct {
 	Direction string
 	Back      string
 	Channel   store.ChannelSummary
-	Freq      *float64
 	PowerBand string
 	SNRFloor  string
 	Charts    []template.HTML
@@ -954,7 +959,7 @@ func errorLevel(status int) analyze.Level {
 }
 
 // bareCommon sert les pages hors session (connexion, erreurs,
-// installation) : ni operateur ni modem en pied de page.
+// installation) : le pied de page n'y porte que la version.
 func (s *Server) bareCommon(title string) common {
 	return common{Title: title, Version: s.opts.Version, Demo: s.opts.Demo, DemoExit: s.opts.DemoExit}
 }

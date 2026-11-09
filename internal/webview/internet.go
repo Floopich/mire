@@ -236,6 +236,10 @@ func (s *Server) handleInternet(w http.ResponseWriter, r *http.Request) {
 			v.Latency = strconv.Itoa(int(math.Round(sum/float64(ok)))) + nbsp + "ms"
 		}
 		v.Loss = percent(100*float64(failed)/float64(max(rounds, 1)), 1)
+		if failed > 0 && 1000*failed < rounds {
+			// Moins d'un pour mille : « 0,0 % » ferait croire a aucune perte.
+			v.Loss = "<\u00a0" + percent(0.1, 1)
+		}
 		v.LossNone = failed == 0
 		v.Charts = append(v.Charts,
 			template.HTML(SVG(Series{Label: "Latence", Points: latency, Unit: "ms", ZeroBased: true})),

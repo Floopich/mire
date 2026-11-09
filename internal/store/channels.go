@@ -9,6 +9,7 @@ import (
 // ChannelSummary resume l'etat d'un canal au dernier releve.
 type ChannelSummary struct {
 	ChannelID  int
+	Frequency  *float64
 	Modulation string
 	Power      *float64
 	SNR        *float64
@@ -82,9 +83,9 @@ func DownstreamChannel(ctx context.Context, db *sql.DB, channelID int) (ChannelS
 	s := ChannelSummary{ChannelID: channelID}
 	var ts int64
 	err := db.QueryRowContext(ctx, `
-		SELECT modulation, power_dbmv, snr_db, ts FROM ds_channels
+		SELECT frequency_mhz, modulation, power_dbmv, snr_db, ts FROM ds_channels
 		WHERE channel_id = ? ORDER BY ts DESC LIMIT 1`, channelID).
-		Scan(&s.Modulation, &s.Power, &s.SNR, &ts)
+		Scan(&s.Frequency, &s.Modulation, &s.Power, &s.SNR, &ts)
 	if err != nil {
 		return s, err
 	}
@@ -97,9 +98,9 @@ func UpstreamChannel(ctx context.Context, db *sql.DB, channelID int) (ChannelSum
 	s := ChannelSummary{ChannelID: channelID}
 	var ts int64
 	err := db.QueryRowContext(ctx, `
-		SELECT modulation, power_dbmv, ts FROM us_channels
+		SELECT frequency_mhz, modulation, power_dbmv, ts FROM us_channels
 		WHERE channel_id = ? ORDER BY ts DESC LIMIT 1`, channelID).
-		Scan(&s.Modulation, &s.Power, &ts)
+		Scan(&s.Frequency, &s.Modulation, &s.Power, &ts)
 	if err != nil {
 		return s, err
 	}
