@@ -109,8 +109,8 @@ func TestPageTendance(t *testing.T) {
 	if !strings.Contains(get(t, h, cookie, "/tendance?jours=7").Body.String(), `href="/tendance?jours=90" aria-current="true"`) {
 		t.Error("période par défaut")
 	}
-	if !strings.Contains(get(t, h, cookie, "/").Body.String(), `href="/tendance"`) {
-		t.Error("aucun lien depuis la vue d'ensemble")
+	if !strings.Contains(get(t, h, cookie, "/historique").Body.String(), `href="/tendance"`) {
+		t.Error("aucun lien depuis l'historique")
 	}
 }
 

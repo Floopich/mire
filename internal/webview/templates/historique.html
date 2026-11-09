@@ -1,0 +1,14 @@
+{{define "actions"}}{{template "logout" .}}{{end}}
+
+{{define "content"}}
+<div class="page-head">
+ <h1 class="headline-s">Historique</h1>
+</div>
+<ul class="hub">
+ {{range .Entries}}<li><a class="card hub-item" href="{{.Href}}">
+  <span class="hub-icon">{{icon .Icon}}</span>
+  <span class="hub-text"><span class="title-m">{{.Title}}</span><span class="body-m muted">{{.Detail}}</span></span>
+  {{icon "suivant"}}
+ </a></li>{{end}}
+</ul>
+{{end}}

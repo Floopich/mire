@@ -49,18 +49,19 @@
  <p class="body-m muted">{{.Elapsed}}</p>
 </div>{{end}}
 
-{{define "logout"}}<nav class="actions" aria-label="Compte">
- <a class="btn text" href="/internet">{{icon "connexion"}}<span class="hide-s">Internet</span></a>
- <a class="btn text" href="/modem">{{icon "modem"}}<span class="hide-s">Modem</span></a>
- <a class="btn text" href="/evenements">{{icon "journal"}}<span class="hide-s">Événements</span></a>
- <a class="btn text" href="/reglages">{{icon "reglages"}}<span class="hide-s">Réglages</span></a>
- {{if not .Demo}}<form method="post" action="/deconnexion">
-  <button type="submit" class="btn tonal">{{icon "sortie"}}<span class="hide-s">Se déconnecter</span></button>
- </form>{{end}}
-</nav>{{end}}
+{{define "logout"}}<nav class="menu label-m" aria-label="Menu">
+ <a href="/"{{if eq .MenuSection "ligne"}} aria-current="page"{{end}}><span class="pill">{{icon "analyse"}}</span><span>Ligne</span></a>
+ <a href="/internet"{{if eq .MenuSection "internet"}} aria-current="page"{{end}}><span class="pill">{{icon "connexion"}}</span><span>Internet</span></a>
+ <a href="/historique"{{if eq .MenuSection "historique"}} aria-current="page"{{end}}><span class="pill">{{icon "journal"}}</span><span>Historique</span></a>
+ <a href="/modem"{{if eq .MenuSection "modem"}} aria-current="page"{{end}}><span class="pill">{{icon "modem"}}</span><span>Modem</span></a>
+ <a href="/reglages"{{if eq .MenuSection "reglages"}} aria-current="page"{{end}}><span class="pill">{{icon "reglages"}}</span><span>Réglages</span></a>
+</nav>
+{{if not .Demo}}<form class="sortie" method="post" action="/deconnexion">
+ <button type="submit" class="btn text icon-btn" aria-label="Se déconnecter" title="Se déconnecter">{{icon "sortie"}}</button>
+</form>{{end}}{{end}}
 
 {{define "windows"}}<nav class="group" aria-label="Période affichée">
- {{range .Windows}}<a href="{{$.Path}}?heures={{.Hours}}{{with $.Period.Fin}}&amp;fin={{.}}{{end}}"{{if .Active}} aria-current="true"{{end}}>{{.Label}}</a>{{end}}
+ {{range .Windows}}<a href="{{$.Path}}?heures={{.Hours}}{{with $.Period.Fin}}&amp;fin={{.}}{{end}}{{if eq $.Path "/"}}#canaux{{end}}"{{if .Active}} aria-current="true"{{end}}>{{.Label}}</a>{{end}}
 </nav>{{end}}
 
 {{define "periode"}}<nav class="periode" aria-label="Remonter dans le temps">

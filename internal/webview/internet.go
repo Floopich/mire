@@ -36,8 +36,11 @@ type internetView struct {
 	Availability string
 	Latency      string
 	// Jitter est la gigue moyenne de la periode, vide avant sa mesure.
-	Jitter      string
-	Loss        string
+	Jitter string
+	Loss   string
+	// LossNone dit qu'aucune tentative n'est restee sans reponse : le
+	// graphique serait vide, le chiffre suffit.
+	LossNone    bool
 	OutageCount int
 	OutageTotal string
 	Outages     []outageRow
@@ -233,6 +236,7 @@ func (s *Server) handleInternet(w http.ResponseWriter, r *http.Request) {
 			v.Latency = strconv.Itoa(int(math.Round(sum/float64(ok)))) + nbsp + "ms"
 		}
 		v.Loss = percent(100*float64(failed)/float64(max(rounds, 1)), 1)
+		v.LossNone = failed == 0
 		v.Charts = append(v.Charts,
 			template.HTML(SVG(Series{Label: "Latence", Points: latency, Unit: "ms", ZeroBased: true})),
 			template.HTML(LossBars("Tentatives sans réponse", samples, from, now)))

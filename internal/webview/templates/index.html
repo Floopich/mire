@@ -27,7 +27,7 @@
  {{with .ReasonsMore}}<p class="body-m muted">{{template "count-more" .}}</p>{{end}}
  {{with .Basis}}<p class="basis body-m">{{.}} <a href="/comprendre#seuils">Les seuils et leurs limites</a></p>{{end}}
 </section>
-{{else}}{{with .Basis}}<p class="basis body-m muted">{{.}} <a href="/comprendre#seuils">Les seuils et leurs limites</a></p>{{end}}{{end}}
+{{end}}
 
 {{with .SpectrumDS}}
 <section class="card bands" aria-label="Bande de canaux">
@@ -46,7 +46,7 @@
  <ul class="legend label-l" aria-label="Légende">
   {{range $.Legend}}<li class="{{.}}"><svg class="pip" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .}}"/></svg>{{label .}}</li>{{end}}
  </ul>
- <p class="legend-more"><a class="btn text" href="/comprendre">Comprendre ces valeurs{{icon "suivant"}}</a></p>
+ <p class="legend-more"><a class="btn text" href="/comprendre">Comprendre ces valeurs{{icon "suivant"}}</a>{{if and $.Basis (not $.Reasons)}}<a class="btn text" href="/comprendre#seuils">Seuils {{$.Profile.Name}}{{icon "suivant"}}</a>{{end}}</p>
 </section>
 {{end}}
 
@@ -60,14 +60,6 @@
 {{end}}
 
 {{if .HasData}}
-<nav class="shortcuts" aria-label="Pour aller plus loin">
- <a class="btn tonal" href="/chronologie">{{icon "chronologie"}}Chronologie</a>
- <a class="btn tonal" href="/tendance">{{icon "tendance"}}Tendance de la ligne</a>
- <a class="btn tonal" href="/rapport">{{icon "rapport"}}Rapport de la ligne</a>
-</nav>
-{{end}}
-
-{{if .HasData}}
 <section class="card recent" aria-labelledby="recents">
  <div class="card-head"><h2 id="recents" class="title-m">Derniers événements</h2><a class="btn text" href="/evenements">Tout le journal</a></div>
  {{if .Events}}<ul class="list events compact">{{range .Events}}{{template "event-recent" .}}{{end}}</ul>
@@ -76,8 +68,16 @@
 {{end}}
 
 {{if .HasData}}
+{{if .Attention}}
+<h2 class="list-title title-m">À surveiller</h2>
+<ul class="list">
+ <li class="head label-m muted" aria-hidden="true"><span></span><span>Fréquence</span><span>Puissance</span><span>SNR</span><span>État</span></li>
+ {{range .Attention}}{{template "row" .}}{{end}}
+</ul>
+{{end}}
+<details class="channels card" id="canaux"{{if .ChannelsOpen}} open{{end}}>
+<summary><span class="title-l">Canaux</span><span class="body-m muted">{{.ChannelsSummary}}</span>{{icon "suivant"}}</summary>
 <div class="toolbar">
- <h2 id="canaux" class="title-l">Canaux</h2>
  {{template "windows" .}}
 </div>
 
@@ -104,5 +104,6 @@
 </ul>
 {{end}}
 {{end}}
+</details>
 {{end}}
 {{end}}

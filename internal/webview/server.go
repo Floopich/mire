@@ -129,7 +129,7 @@ func NewServer(db *sql.DB, opts Options) (*Server, error) {
 		"hour":       func(t time.Time) string { return t.Local().Format("15:04") },
 	}
 	pages := map[string]*template.Template{}
-	for _, name := range []string{"index", "channel", "login", "error", "reglages", "setup", "evenements", "internet", "comprendre", "tendance", "rapport", "modem", "proposer", "chronologie", "releve"} {
+	for _, name := range []string{"index", "channel", "login", "error", "reglages", "setup", "evenements", "internet", "comprendre", "tendance", "rapport", "modem", "proposer", "chronologie", "releve", "historique"} {
 		t, err := template.New("layout.html").Funcs(funcs).
 			ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html")
 		if err != nil {
@@ -167,6 +167,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /installation/operateur", s.requireAuth(s.handleSetupOperatorSave))
 	mux.HandleFunc("GET /comprendre", s.requireAuth(s.handleLearn))
 	mux.HandleFunc("GET /tendance", s.requireAuth(s.handleTrend))
+	mux.HandleFunc("GET /historique", s.requireAuth(s.handleHistory))
 	mux.HandleFunc("GET /chronologie", s.requireAuth(s.handleChronology))
 	mux.HandleFunc("GET /releve", s.requireAuth(s.handleReleve))
 	mux.HandleFunc("GET /rapport", s.requireAuth(s.handleReport))
@@ -288,6 +289,23 @@ type common struct {
 	DemoExit bool
 }
 
+// MenuSection est l'entree du menu de la page : la page en cours s'y signale.
+func (c common) MenuSection() string {
+	p := c.Path
+	switch {
+	case p == "/internet":
+		return "internet"
+	case p == "/historique", p == "/chronologie", p == "/evenements", p == "/tendance",
+		p == "/releve", strings.HasPrefix(p, "/rapport"):
+		return "historique"
+	case strings.HasPrefix(p, "/modem"):
+		return "modem"
+	case strings.HasPrefix(p, "/reglages"):
+		return "reglages"
+	}
+	return "ligne"
+}
+
 // banner signale un probleme de fonctionnement, distinct de l'etat de la ligne.
 type banner struct {
 	Kind      string // "info" ou "alerte"
@@ -379,6 +397,13 @@ type indexView struct {
 	ReasonsMore int
 	// Basis dit d'ou viennent les seuils.
 	Basis string
+	// Attention sont les canaux a surveiller ou critiques : toujours
+	// visibles, au-dessus de la liste complete, repliee.
+	Attention []channelRow
+	// ChannelsSummary resume la liste repliee ; ChannelsOpen la deplie,
+	// quand l'utilisateur vient d'en changer la periode.
+	ChannelsSummary string
+	ChannelsOpen    bool
 }
 
 // recentEvents borne les evenements repris sur la vue d'ensemble.
@@ -479,6 +504,15 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		row.Level, row.Note = levelNote(usHealth, c.ChannelID)
 		v.Up = append(v.Up, row)
 	}
+	for _, list := range [][]channelRow{v.Down, v.Up} {
+		for _, row := range list {
+			if row.Level >= analyze.Warning {
+				v.Attention = append(v.Attention, row)
+			}
+		}
+	}
+	v.ChannelsSummary = channelsSummary(len(v.Down)+len(v.Up), len(v.Attention), st.Profile.Calibrated)
+	v.ChannelsOpen = r.URL.Query().Get("heures") != ""
 	v.DownGroups = groupChannels(v.Down, "OFDM")
 	v.UpGroups = groupChannels(v.Up, "OFDMA")
 	v.SpectrumDS = Spectrum("Voie descendante", v.Down, 720, 360)
@@ -526,6 +560,21 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	v.Refresh = s.refreshAfter(st, v.Stats.Latest)
 	s.render(w, http.StatusOK, "index", v)
+}
+
+// channelsSummary dit en une ligne ce que cache la liste repliee.
+func channelsSummary(total, attention int, calibrated bool) string {
+	switch {
+	case total == 0:
+		return "Aucun canal sur cette période"
+	case !calibrated:
+		return plural(total, "canal", "canaux")
+	case attention == 0 && total == 1:
+		return "1 canal, en bon état"
+	case attention == 0:
+		return plural(total, "canal", "canaux") + ", tous en bon état"
+	}
+	return plural(total, "canal", "canaux") + ", dont " + plural(attention, "à surveiller", "à surveiller")
 }
 
 func byChannel(list []analyze.ChannelHealth) map[int]analyze.ChannelHealth {

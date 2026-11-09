@@ -161,13 +161,7 @@ func draw(s Series, f frame) string {
 	trace(s.Second, "line second")
 	trace(s.Points, "line")
 
-	// Trois reperes horaires : debut, milieu, fin.
-	span := time.Duration(t1-t0) * time.Second
-	for i, anchor := range []string{"start", "middle", "end"} {
-		ts := t0 + (t1-t0)*int64(i)/2
-		fmt.Fprintf(&b, `<text x="%.1f" y="%d" class="tick" text-anchor="%s">%s</text>`,
-			f.x(ts, t0, t1), f.height-8, anchor, escape(timeTick(time.Unix(ts, 0), span)))
-	}
+	timeAxis(&b, f, t0, t1, f.height-8)
 	hits(&b, f, t0, t1, s.Link)
 	b.WriteString(`</svg>`)
 	return b.String()
@@ -193,6 +187,90 @@ func hits(b *strings.Builder, f frame, t0, t1 int64, link func(time.Time) (strin
 		fmt.Fprintf(b, `<a href="%s"><rect x="%.1f" y="%d" width="%.1f" height="%d" class="hit"><title>%s</title></rect></a>`,
 			escape(href), float64(f.padLeft)+w*float64(i), f.padTop, w, f.height-f.padTop-f.padBottom, escape(title))
 	}
+}
+
+// timeAxis ecrit les reperes du temps sous un graphique : deux a quatre
+// instants ronds (21:00, 09:00, minuit, le 3 novembre) plutot que le debut,
+// le milieu et la fin de la periode, qui tombent a 21:27 ou 09:25 ; le jour
+// est precise quand il n'est pas celui de la fin.
+func timeAxis(b *strings.Builder, f frame, t0, t1 int64, y int) {
+	if t1 <= t0 {
+		return
+	}
+	span := time.Duration(t1-t0) * time.Second
+	left, right := float64(f.padLeft), float64(f.width-f.padRight)
+	for _, ts := range axisTicks(t0, t1) {
+		x := f.x(ts, t0, t1)
+		anchor := "middle"
+		switch {
+		case x-left < (right-left)*0.08:
+			anchor = "start"
+		case right-x < (right-left)*0.08:
+			anchor = "end"
+		}
+		fmt.Fprintf(b, `<text x="%.1f" y="%d" class="tick" text-anchor="%s">%s</text>`,
+			x, y, anchor, escape(axisLabel(time.Unix(ts, 0), time.Unix(t1, 0), span)))
+	}
+}
+
+// axisSteps sont les ecarts possibles entre deux reperes.
+var axisSteps = []time.Duration{time.Hour, 2 * time.Hour, 3 * time.Hour, 6 * time.Hour, 12 * time.Hour,
+	24 * time.Hour, 2 * 24 * time.Hour, 7 * 24 * time.Hour, 14 * 24 * time.Hour, 30 * 24 * time.Hour, 60 * 24 * time.Hour, 90 * 24 * time.Hour}
+
+// axisTicks choisit le plus petit ecart qui donne au plus quatre reperes,
+// alignes sur l'heure locale : multiples de l'ecart depuis minuit, ou
+// minuits pour les ecarts d'un jour et plus.
+func axisTicks(t0, t1 int64) []int64 {
+	var out []int64
+	for _, step := range axisSteps {
+		out = roundTicks(time.Unix(t0, 0).Local(), time.Unix(t1, 0).Local(), step)
+		if len(out) <= 4 {
+			break
+		}
+	}
+	if len(out) < 2 {
+		// Periode trop courte pour deux instants ronds : le debut et la fin.
+		return []int64{t0, t1}
+	}
+	return out
+}
+
+func roundTicks(from, to time.Time, step time.Duration) []int64 {
+	midnight := time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, from.Location())
+	var out []int64
+	if step < 24*time.Hour {
+		for t := midnight; !t.After(to); t = t.Add(step) {
+			if !t.Before(from) {
+				out = append(out, t.Unix())
+			}
+		}
+		return out
+	}
+	days := int(step / (24 * time.Hour))
+	for t := midnight; !t.After(to); t = t.AddDate(0, 0, days) {
+		if !t.Before(from) {
+			out = append(out, t.Unix())
+		}
+	}
+	return out
+}
+
+// axisLabel nomme un repere : l'heure sur une journee, precedee de « hier »
+// ou de la date quand le jour n'est pas celui de la fin ; la date au-dela.
+func axisLabel(t, end time.Time, span time.Duration) string {
+	t, end = t.Local(), end.Local()
+	if span > 36*time.Hour {
+		return t.Format("02/01")
+	}
+	ty, tm, td := t.Date()
+	ey, em, ed := end.Date()
+	switch {
+	case ty == ey && tm == em && td == ed:
+		return t.Format("15:04")
+	case end.AddDate(0, 0, -1).Day() == td && end.AddDate(0, 0, -1).Month() == tm:
+		return "hier " + t.Format("15:04")
+	}
+	return t.Format("02/01 15:04")
 }
 
 // timeTick adapte la precision a la fenetre : l'heure sur une journee, la

@@ -260,6 +260,9 @@
   .figures dt { color: var(--md-sys-color-on-surface-variant); }
   .figures dd { margin: 6px 0 0; font-size: 1.5rem; line-height: 2rem; font-weight: 560; font-stretch: 105%; }
   .figures .to { font-size: 1rem; font-weight: 400; color: var(--md-sys-color-on-surface-variant); }
+  /* Dans une carte, la place manque : deux chiffres par ligne sur telephone
+     plutot qu'un seul pleine largeur. */
+  .card .figures { grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); }
   .figures .since { display: block; font-size: .8125rem; line-height: 1.1rem; font-weight: 400; color: var(--md-sys-color-on-surface-variant); margin-top: 2px; }
 
   .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 40px 0 8px; }
@@ -299,16 +302,36 @@
   .list li.head { align-items: end; gap: 0 16px; padding: 0 20px 6px 14px; }
   .list li.head span:nth-child(n+3) { text-align: right; }
   .list li.head span:last-child { text-align: left; }
+  /* Sur un telephone, une ligne par canal : les noms des colonnes une fois en
+     tete, l'etat dit par la forme de la pastille ; seul un ecart ajoute son
+     etiquette sur une seconde ligne. */
   @media (max-width: 719px) {
     .list { grid-template-columns: auto 1fr auto auto; }
     .list.one { grid-template-columns: auto 1fr auto; }
-    .list li.head { display: none; }
-    .list li.head + li .row { border-start-start-radius: var(--md-sys-shape-corner-large-increased); border-start-end-radius: var(--md-sys-shape-corner-large-increased); }
-    .row { gap: 6px 12px; padding: 12px 14px 12px 10px; }
+    .list li.head { gap: 0 12px; padding: 0 14px 4px 10px; }
+    .list li.head span:last-child { display: none; }
+    .list li.head span:nth-last-child(2) { text-align: right; }
+    .row { gap: 4px 12px; min-height: 52px; padding: 6px 14px 6px 10px; }
+    .row .chip { width: 36px; height: 36px; }
+    .row .chip b { font-size: .8125rem; }
+    .row .main { grid-auto-flow: column; justify-content: start; align-items: baseline; gap: 8px; }
+    .row .main .title-m { font-size: .9375rem; }
     .row .value { font-size: .875rem; }
-    .row .value small { display: block; }
     .row .state { grid-column: 2 / -1; }
+    .row.bon .state, .row.inconnu .state { display: none; }
   }
+
+  /* Liste des canaux, repliee : son resume dit ce qu'elle contient. */
+  details.channels { padding: 0; margin-top: 24px; }
+  details.channels > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 20px; cursor: pointer; list-style: none;
+    border-radius: inherit; }
+  details.channels > summary::-webkit-details-marker { display: none; }
+  details.channels > summary .icon { margin-inline-start: auto; align-self: center; transition: transform var(--effet-duree) var(--effet); color: var(--md-sys-color-on-surface-variant); }
+  details.channels[open] > summary .icon { transform: rotate(90deg); }
+  details.channels > summary:hover { background: var(--md-sys-color-surface-container); }
+  details.channels > :not(summary) { margin-inline: 12px; }
+  details.channels > .list:last-child, details.channels > :last-child { margin-bottom: 12px; }
+  details.channels .toolbar { margin-top: 0; }
 
   .empty-state { background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-extra-large); padding: 24px; color: var(--md-sys-color-on-surface-variant); }
 
@@ -517,9 +540,36 @@
 
 /* Reglages, assistant et formulaires */
 @layer composants {
-  .actions { display: flex; align-items: center; gap: 8px; }
-  .actions form { margin: 0; }
-  @media (max-width: 599px) { .hide-s { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } .actions .btn { padding: 0 10px; } }
+  /* Menu : cinq entrees nommees, toujours visibles. Sur un ecran large, en
+     ligne dans la barre ; sur un telephone, une seconde rangee, l'icone au
+     dessus du nom, comme une barre de navigation Material 3. L'entree de la
+     page en cours porte l'indicateur. */
+  .menu { display: flex; align-items: center; gap: 4px; margin-inline-start: auto; }
+  .menu a { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px 0 4px;
+    border-radius: var(--md-sys-shape-corner-full); color: var(--md-sys-color-on-surface-variant); text-decoration: none; }
+  .menu .pill { display: inline-grid; place-items: center; width: 40px; height: 32px; border-radius: var(--md-sys-shape-corner-full);
+    transition: background var(--effet-duree) var(--effet); }
+  .menu .pill .icon { width: 1.5rem; height: 1.5rem; }
+  .menu a:hover .pill { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent); }
+  .menu a[aria-current="page"] { color: var(--md-sys-color-on-surface); font-weight: 700; }
+  .menu a[aria-current="page"] .pill { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+  .sortie { margin: 0; }
+  @media (max-width: 719px) {
+    .app-bar { flex-wrap: wrap; row-gap: 4px; }
+    .menu { order: 3; flex-basis: 100%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin: 0; }
+    .menu a { flex-direction: column; gap: 4px; padding: 4px 0; min-height: 56px; justify-content: center; }
+    .menu a span:last-child { font-size: .75rem; line-height: 1rem; }
+  }
+
+  /* Historique : une carte par page, a un appui. */
+  .hub { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  @media (min-width: 840px) { .hub { grid-template-columns: 1fr 1fr; } }
+  .hub-item { display: flex; align-items: center; gap: 16px; color: var(--md-sys-color-on-surface); text-decoration: none; height: 100%; }
+  .hub-item:hover { background: var(--md-sys-color-surface-container); }
+  .hub-icon { display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+  .hub-text { display: grid; gap: 4px; flex: 1; }
+  .hub-item > .icon { color: var(--md-sys-color-on-surface-variant); }
 
   /* Reglages : la liste des rubriques et la rubrique choisie, cote a cote
      sur un ecran large ; sur un telephone, la liste puis la rubrique. */

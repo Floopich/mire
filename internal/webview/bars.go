@@ -204,12 +204,7 @@ func renderBars(label string, bars []bar, from, to time.Time, f frame, st barSty
 		b.WriteString(`</svg>`)
 		return b.String()
 	}
-	period := to.Sub(from)
-	for i, anchor := range []string{"start", "middle", "end"} {
-		ts := t0 + (t1-t0)*int64(i)/2
-		fmt.Fprintf(&b, `<text x="%.1f" y="%d" class="tick" text-anchor="%s">%s</text>`,
-			f.x(ts, t0, t1), f.height-8, anchor, escape(timeTick(time.Unix(ts, 0), period)))
-	}
+	timeAxis(&b, f, t0, t1, f.height-8)
 	b.WriteString(`</svg>`)
 	return b.String()
 }

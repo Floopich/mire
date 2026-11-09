@@ -99,8 +99,8 @@ func TestRapport(t *testing.T) {
 			t.Errorf("%s : message %q absent", q, msg)
 		}
 	}
-	if !strings.Contains(get(t, h, cookie, "/").Body.String(), `href="/rapport"`) {
-		t.Error("aucun lien depuis la vue d'ensemble")
+	if !strings.Contains(get(t, h, cookie, "/historique").Body.String(), `href="/rapport"`) {
+		t.Error("aucun lien depuis l'historique")
 	}
 }
 

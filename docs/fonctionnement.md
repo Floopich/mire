@@ -10,6 +10,8 @@ Mire relève le modem toutes les 10 minutes, et toutes les minutes pendant le qu
 
 Sous le verdict, **Pourquoi ce verdict** liste chaque mesure hors plage : sa valeur, le seuil franchi et depuis quand. La date se lit dans l'historique, à l'intervalle des relevés près ; avant le début de l'historique ou après une interruption des relevés, Mire n'en donne qu'une borne (« depuis au moins »). La page de chaque canal reprend ses mesures et leurs seuils.
 
+Les canaux hors plage s'affichent sous **À surveiller** ; la liste complète est repliée sous le verdict. Le menu mène à la ligne, à Internet, à l'**historique** (événements, chronologie, tendance et rapport), au modem et aux réglages.
+
 La page **Comprendre la ligne** détaille chaque mesure avec les seuils de l'opérateur et vos valeurs, le tableau complet des seuils et d'où ils viennent, et ce que Mire ne sait pas juger. Le rapport de la ligne reprend le tableau des seuils.
 
 ![Comprendre la ligne](images/comprendre.png)
@@ -52,7 +54,7 @@ Modèle, version du logiciel, état de la ligne câble, durée de fonctionnement
 - **Mode routeur** : réseau local, Wi-Fi et appareils connectés, en lecture seule.
 - **Redémarrage** : après confirmation. Internet, le Wi-Fi et le téléphone sont coupés 3 à 5 minutes. Une seule demande par tranche de 10 minutes, inscrite au journal. Mire constate ensuite le redémarrage, ou son absence, d'après la durée de fonctionnement du modem.
 
-![Page Modem, modem en mode routeur](images/modem.png)
+![Page Modem](images/modem.png)
 
 ## Chronologie
 

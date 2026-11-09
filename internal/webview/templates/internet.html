@@ -31,10 +31,10 @@
  <p class="hint body-m">Millisecondes, moyenne par tranche de 5 minutes.</p>
  {{index .Charts 0}}
 </section>
-<section class="card chart-card">
+{{if not .LossNone}}<section class="card chart-card">
  <h3 class="title-m">Tentatives sans réponse</h3>
  {{index .Charts 1}}
-</section>
+</section>{{end}}
 {{else}}
 <p class="empty-state">Aucune mesure sur cette période.{{if .Probing}}{{end}}</p>
 {{end}}

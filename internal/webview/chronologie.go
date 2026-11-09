@@ -344,11 +344,7 @@ func marksStrip(outages []store.Outage, micro []store.MicroCut, evs []store.Even
 			fmt.Fprintf(&b, `<circle cx="%.1f" cy="58" r="5" class="%s"><title>%s : %s</title></circle>`,
 				x(e.Time), class, timeTick(e.Time, period), escape(e.Message))
 		}
-		for i, anchor := range []string{"start", "middle", "end"} {
-			ts := t0 + (t1-t0)*int64(i)/2
-			fmt.Fprintf(&b, `<text x="%.1f" y="%d" class="tick" text-anchor="%s">%s</text>`,
-				f.x(ts, t0, t1), f.height-6, anchor, escape(timeTick(time.Unix(ts, 0), period)))
-		}
+		timeAxis(&b, f, t0, t1, f.height-6)
 		b.WriteString(`</svg>`)
 		return b.String()
 	}
