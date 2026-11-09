@@ -322,16 +322,15 @@
   }
 
   /* Liste des canaux, repliee : son resume dit ce qu'elle contient. */
-  details.channels { padding: 0; margin-top: 24px; }
-  details.channels > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 20px; cursor: pointer; list-style: none;
-    border-radius: inherit; }
-  details.channels > summary::-webkit-details-marker { display: none; }
-  details.channels > summary .icon { margin-inline-start: auto; align-self: center; transition: transform var(--effet-duree) var(--effet); color: var(--md-sys-color-on-surface-variant); }
-  details.channels[open] > summary .icon { transform: rotate(90deg); }
-  details.channels > summary:hover { background: var(--md-sys-color-surface-container); }
-  details.channels > :not(summary) { margin-inline: 12px; }
-  details.channels > .list:last-child, details.channels > :last-child { margin-bottom: 12px; }
-  details.channels .toolbar { margin-top: 0; }
+  .channels.card { padding: 0; margin-top: 24px; }
+  .channels-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 20px; border-radius: inherit;
+    color: inherit; text-decoration: none; }
+  .channels-head .icon { margin-inline-start: auto; align-self: center; transition: transform var(--effet-duree) var(--effet); color: var(--md-sys-color-on-surface-variant); }
+  .channels.open .channels-head .icon { transform: rotate(90deg); }
+  .channels-head:hover { background: var(--md-sys-color-surface-container); }
+  .channels > :not(.channels-head) { margin-inline: 12px; }
+  .channels > :last-child:not(.channels-head) { margin-bottom: 12px; }
+  .channels .toolbar { margin-top: 0; }
 
   .empty-state { background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-extra-large); padding: 24px; color: var(--md-sys-color-on-surface-variant); }
 

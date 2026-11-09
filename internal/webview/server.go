@@ -400,8 +400,10 @@ type indexView struct {
 	// Attention sont les canaux a surveiller ou critiques : toujours
 	// visibles, au-dessus de la liste complete, repliee.
 	Attention []channelRow
-	// ChannelsSummary resume la liste repliee ; ChannelsOpen la deplie,
-	// quand l'utilisateur vient d'en changer la periode.
+	// ChannelsSummary resume la liste repliee ; ChannelsOpen la deplie.
+	// L'etat tient dans l'adresse (canaux, ou heures quand l'utilisateur
+	// vient d'en changer la periode) : le rechargement automatique de la
+	// page le garde.
 	ChannelsSummary string
 	ChannelsOpen    bool
 }
@@ -512,7 +514,8 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	v.ChannelsSummary = channelsSummary(len(v.Down)+len(v.Up), len(v.Attention), st.Profile.Calibrated)
-	v.ChannelsOpen = r.URL.Query().Get("heures") != ""
+	q := r.URL.Query()
+	v.ChannelsOpen = q.Get("canaux") != "" || q.Get("heures") != ""
 	v.DownGroups = groupChannels(v.Down, "OFDM")
 	v.UpGroups = groupChannels(v.Up, "OFDMA")
 	v.SpectrumDS = Spectrum("Voie descendante", v.Down, 720, 360)

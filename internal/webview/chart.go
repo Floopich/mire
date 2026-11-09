@@ -79,8 +79,21 @@ func SVG(s Series) string {
 
 func draw(s Series, f frame) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, `<svg viewBox="0 0 %d %d" role="img" aria-label="%s" class="%s">`,
-		f.width, f.height, escape(s.Label), f.class)
+	// Avec des zones cliquables, l'image est un groupe a l'interieur du
+	// graphique, et les zones restent a cote : une image ne peut pas
+	// contenir de liens.
+	if s.Link != nil {
+		fmt.Fprintf(&b, `<svg viewBox="0 0 %d %d" role="none" class="%s"><g role="img" aria-label="%s">`,
+			f.width, f.height, f.class, escape(s.Label))
+	} else {
+		fmt.Fprintf(&b, `<svg viewBox="0 0 %d %d" role="img" aria-label="%s" class="%s">`,
+			f.width, f.height, escape(s.Label), f.class)
+	}
+	end := func() {
+		if s.Link != nil {
+			b.WriteString(`</g>`)
+		}
+	}
 
 	known := knownValues(s)
 	for _, p := range s.Second {
@@ -89,8 +102,10 @@ func draw(s Series, f frame) string {
 		}
 	}
 	if len(known) < 2 {
-		fmt.Fprintf(&b, `<text x="%d" y="%d" class="empty" text-anchor="middle">Pas encore assez de mesures.</text></svg>`,
+		fmt.Fprintf(&b, `<text x="%d" y="%d" class="empty" text-anchor="middle">Pas encore assez de mesures.</text>`,
 			f.width/2, f.height/2)
+		end()
+		b.WriteString(`</svg>`)
 		return b.String()
 	}
 
@@ -162,13 +177,16 @@ func draw(s Series, f frame) string {
 	trace(s.Points, "line")
 
 	timeAxis(&b, f, t0, t1, f.height-8)
+	end()
 	hits(&b, f, t0, t1, s.Link)
 	b.WriteString(`</svg>`)
 	return b.String()
 }
 
 // hits pose des zones cliquables sur toute la hauteur du graphique, une par
-// tranche de temps : un clic ouvre le releve de ce moment.
+// tranche de temps : un clic ouvre le releve de ce moment. Elles restent
+// hors du parcours au clavier et des lecteurs d'ecran : 48 arrets par courbe
+// noieraient la page, et la page Historique mene aussi aux releves.
 func hits(b *strings.Builder, f frame, t0, t1 int64, link func(time.Time) (string, string)) {
 	if link == nil {
 		return
@@ -184,7 +202,7 @@ func hits(b *strings.Builder, f frame, t0, t1 int64, link func(time.Time) (strin
 		if href == "" {
 			continue
 		}
-		fmt.Fprintf(b, `<a href="%s"><rect x="%.1f" y="%d" width="%.1f" height="%d" class="hit"><title>%s</title></rect></a>`,
+		fmt.Fprintf(b, `<a href="%s" tabindex="-1" aria-hidden="true"><rect x="%.1f" y="%d" width="%.1f" height="%d" class="hit"><title>%s</title></rect></a>`,
 			escape(href), float64(f.padLeft)+w*float64(i), f.padTop, w, f.height-f.padTop-f.padBottom, escape(title))
 	}
 }

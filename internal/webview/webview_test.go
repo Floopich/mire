@@ -54,7 +54,7 @@ func get(t *testing.T, h http.Handler, token, url string) *httptest.ResponseReco
 }
 
 func TestPageIndexListeLesCanaux(t *testing.T) {
-	rec := getIdx(t, 10, "/")
+	rec := getIdx(t, 10, "/?canaux=1")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("HTTP %d", rec.Code)
 	}
@@ -88,7 +88,7 @@ func TestPageCanalTraceSesGraphiques(t *testing.T) {
 func TestAucunJavaScriptNiRessourceExterne(t *testing.T) {
 	// La page doit rester lisible sur un reseau sans acces exterieur, et ne
 	// rien charger que le binaire n'embarque.
-	body := getIdx(t, 10, "/descendant/1").Body.String() + getIdx(t, 10, "/").Body.String()
+	body := getIdx(t, 10, "/descendant/1").Body.String() + getIdx(t, 10, "/?canaux=1").Body.String()
 	for _, interdit := range []string{"<script", "http://", "https://", "src="} {
 		if strings.Contains(body, interdit) {
 			t.Errorf("la page contient %q", interdit)
@@ -99,7 +99,7 @@ func TestAucunJavaScriptNiRessourceExterne(t *testing.T) {
 func TestValeurAbsenteAfficheeCommeAbsente(t *testing.T) {
 	// Le canal OFDM n'a pas de SNR : il doit apparaitre comme inconnu, pas
 	// comme un canal a 0 dB, qui se lirait comme une panne.
-	body := getIdx(t, 5, "/").Body.String()
+	body := getIdx(t, 5, "/?canaux=1").Body.String()
 	if !strings.Contains(body, "—") {
 		t.Error("aucune valeur absente signalee")
 	}
@@ -173,7 +173,7 @@ func TestLigneStableNEstPasRenduePlate(t *testing.T) {
 func ptr(v float64) *float64 { return &v }
 
 func TestLeVerdictEtLaVoieMontanteSontAffiches(t *testing.T) {
-	body := getIdx(t, 5, "/").Body.String()
+	body := getIdx(t, 5, "/?canaux=1").Body.String()
 	if !strings.Contains(body, `class="hero`) {
 		t.Error("le verdict n'apparait pas")
 	}
@@ -302,7 +302,7 @@ func TestSansReleveLeProfilCalibreNEstPasDitNonCalibre(t *testing.T) {
 func TestCanauxSeparesParFamille(t *testing.T) {
 	// SC-QAM et OFDM ne se lisent pas de la meme facon : chaque voie les
 	// presente en deux listes, SC-QAM d'abord.
-	body := getIdx(t, 3, "/").Body.String()
+	body := getIdx(t, 3, "/?canaux=1").Body.String()
 	sc := strings.Index(body, `<h4 class="list-sub label-l">SC-QAM <span class="muted">1 canal</span></h4>`)
 	ofdm := strings.Index(body, `<h4 class="list-sub label-l">OFDM <span class="muted">1 canal</span></h4>`)
 	if sc < 0 || ofdm < sc {

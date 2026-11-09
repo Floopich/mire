@@ -74,7 +74,7 @@
 <section class="card modem-card" aria-labelledby="appareils">
  <h3 id="appareils" class="title-m">Appareils</h3>
  <p class="hint body-m">{{.HostsActive}} connecté{{if gt .HostsActive 1}}s{{end}} sur {{len .Hosts}} connu{{if gt (len .Hosts) 1}}s{{end}} du modem.</p>
- <div class="table-wrap"><table class="data">
+ <div class="table-wrap" tabindex="0"><table class="data">
   <thead><tr><th scope="col">Nom</th><th scope="col">Adresse IP</th><th scope="col">Adresse MAC</th><th scope="col">État</th></tr></thead>
   <tbody>{{range .Hosts}}<tr{{if not .Active}} class="off"{{end}}><th scope="row">{{or .Name "—"}}</th><td>{{or .IP "—"}}</td><td>{{or .MAC "—"}}</td><td>{{if .Active}}Connecté{{else}}Absent{{end}}</td></tr>{{end}}</tbody>
  </table></div>

@@ -225,10 +225,7 @@ func (s *Server) stateStrip(r *http.Request, points []store.LinePoint, from, to 
 	if err != nil {
 		return "", err
 	}
-	type seg struct {
-		from, to time.Time
-		level    analyze.Level
-	}
+	type seg struct{ from, to time.Time }
 	var segs []seg
 	// Les periodes couvertes par des releves, interrompues par les trous.
 	start := points[0].Time

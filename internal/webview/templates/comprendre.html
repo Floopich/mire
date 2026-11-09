@@ -19,7 +19,7 @@
   <div class="{{.Level}}"><dt class="label-l"><svg class="pip" viewBox="0 0 48 48" aria-hidden="true"><path d="{{shapeD .Level}}"/></svg>{{label .Level}}</dt><dd class="body-m">{{.Text}}</dd></div>
  {{end}}</dl>{{end}}
  {{with .Steps}}<ol class="todo body-l">{{range .}}<li>{{.}}</li>{{end}}</ol>{{end}}
- {{with .Table}}<div class="table-wrap"><table class="data seuils">
+ {{with .Table}}<div class="table-wrap" tabindex="0"><table class="data seuils">
   <thead><tr><th scope="col">Mesure</th><th scope="col">Nominal</th><th scope="col">À surveiller</th><th scope="col">Critique</th></tr></thead>
   <tbody>{{range .}}<tr><th scope="row">{{.Measure}}</th><td data-label="Nominal">{{.Good}}</td><td data-label="À surveiller">{{.Warning}}</td><td data-label="Critique">{{.Critical}}</td></tr>{{end}}</tbody>
  </table></div>{{end}}

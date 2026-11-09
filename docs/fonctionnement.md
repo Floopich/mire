@@ -10,7 +10,7 @@ Mire relève le modem toutes les 10 minutes, et toutes les minutes pendant le qu
 
 Sous le verdict, **Pourquoi ce verdict** liste chaque mesure hors plage : sa valeur, le seuil franchi et depuis quand. La date se lit dans l'historique, à l'intervalle des relevés près ; avant le début de l'historique ou après une interruption des relevés, Mire n'en donne qu'une borne (« depuis au moins »). La page de chaque canal reprend ses mesures et leurs seuils.
 
-Les canaux hors plage s'affichent sous **À surveiller** ; la liste complète est repliée sous le verdict. Le menu mène à la ligne, à Internet, à l'**historique** (événements, chronologie, tendance et rapport), au modem et aux réglages.
+Les canaux hors plage s'affichent sous **À surveiller** ; la liste complète est repliée sous le verdict. Le menu mène à la ligne, à Internet, à l'**historique** (événements, chronologie, tendance, rapport et relevés complets), au modem et aux réglages.
 
 La page **Comprendre la ligne** détaille chaque mesure avec les seuils de l'opérateur et vos valeurs, le tableau complet des seuils et d'où ils viennent, et ce que Mire ne sait pas juger. Le rapport de la ligne reprend le tableau des seuils.
 

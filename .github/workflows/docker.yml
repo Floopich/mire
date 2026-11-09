@@ -95,6 +95,9 @@ jobs:
           # Liste des composants (SBOM) jointe a l'image, lue par les
           # scanners de failles.
           sbom: ${{ github.event_name != 'pull_request' }}
+          # Une version publiee se construit sans cache, comme les binaires :
+          # elle ne doit rien a une execution precedente.
+          no-cache: ${{ startsWith(github.ref, 'refs/tags/') }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

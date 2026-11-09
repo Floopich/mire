@@ -85,7 +85,8 @@ func drawSpectrum(label string, placed []channelRow, pos, breaks []float64, span
 		counts[r.Level]++
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, `<svg viewBox="0 0 %d %d" role="img" aria-label="%s : %s" class="%s">`,
+	// Un groupe et non une image : chaque barre est un lien vers son canal.
+	fmt.Fprintf(&b, `<svg viewBox="0 0 %d %d" role="group" aria-label="%s : %s" class="%s">`,
 		width, specHeight, escape(label), escape(summary(len(placed), counts)), class)
 	fmt.Fprintf(&b, `<rect x="0" y="0" width="%d" height="%d" rx="16" class="spec-bg"/>`, width, specHeight)
 	for _, br := range breaks {

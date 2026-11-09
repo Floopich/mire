@@ -24,7 +24,7 @@
  </a>
  {{block "actions" .}}{{end}}
 </header>
-{{if .Demo}}<div class="demo-band body-m" role="note">{{icon "info"}}<span>Démonstration : données fictives.</span>{{if .DemoExit}}<form method="post" action="/demo/quitter"><button type="submit" class="btn filled">Configurer pour ma ligne</button></form>{{end}}</div>{{end}}
+{{if .Demo}}<aside class="demo-band body-m" aria-label="Démonstration">{{icon "info"}}<span>Démonstration : données fictives.</span>{{if .DemoExit}}<form method="post" action="/demo/quitter"><button type="submit" class="btn filled">Configurer pour ma ligne</button></form>{{end}}</aside>{{end}}
 <main id="contenu">
 {{template "content" .}}
 </main>

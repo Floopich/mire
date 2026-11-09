@@ -75,8 +75,12 @@
  {{range .Attention}}{{template "row" .}}{{end}}
 </ul>
 {{end}}
-<details class="channels card" id="canaux"{{if .ChannelsOpen}} open{{end}}>
-<summary><span class="title-l">Canaux</span><span class="body-m muted">{{.ChannelsSummary}}</span>{{icon "suivant"}}</summary>
+<section class="channels card{{if .ChannelsOpen}} open{{end}}" id="canaux" aria-labelledby="canaux-titre">
+<a class="channels-head" href="{{if .ChannelsOpen}}/{{else}}/?canaux=1#canaux{{end}}">
+ <span class="title-l" id="canaux-titre">Canaux</span><span class="body-m muted">{{.ChannelsSummary}}</span>
+ <span class="sr">{{if .ChannelsOpen}}Replier la liste{{else}}Afficher la liste{{end}}</span>{{icon "suivant"}}
+</a>
+{{if .ChannelsOpen}}
 <div class="toolbar">
  {{template "windows" .}}
 </div>
@@ -104,6 +108,7 @@
 </ul>
 {{end}}
 {{end}}
-</details>
+{{end}}
+</section>
 {{end}}
 {{end}}

@@ -1,6 +1,8 @@
 package webview
 
 import (
+	"database/sql"
+	"errors"
 	"net/http"
 	"time"
 
@@ -8,7 +10,7 @@ import (
 )
 
 // La page Historique rassemble ce qui regarde en arriere : la frise, le
-// journal, la tendance et le rapport. Chaque page y est a un appui, toute
+// journal, la tendance, le rapport et les releves. Chaque page y est a un appui, toute
 // page de Mire a deux appuis au plus depuis le menu.
 
 type historyEntry struct {
@@ -50,5 +52,15 @@ func (s *Server) handleHistory(w http.ResponseWriter, r *http.Request) {
 		{"/tendance", "tendance", "Tendance", "Évolution sur 30 jours à un an, avec la température extérieure."},
 		{"/rapport", "rapport", "Rapport", "Bilan d'une période, avant et après une intervention, export CSV."},
 	}}
+	// Les releves complets s'ouvrent d'un clic sur une courbe ; cette entree
+	// les rend joignables au clavier, a partir du dernier.
+	switch last, err := store.LatestSnapshot(ctx, s.db); {
+	case err == nil:
+		v.Entries = append(v.Entries, historyEntry{releveURL(last.Timestamp), "collecte", "Relevés",
+			"Toutes les mesures d'un instant, relevé par relevé. Le dernier " + Ago(last.Timestamp, now) + "."})
+	case !errors.Is(err, sql.ErrNoRows):
+		s.fail(w, err)
+		return
+	}
 	s.render(w, http.StatusOK, "historique", v)
 }

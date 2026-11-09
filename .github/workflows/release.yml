@@ -54,6 +54,8 @@ jobs:
               go build -trimpath -tags purego -ldflags "-s -w -X main.version=$VERSION" \
               -o "dist/$nom" ./cmd/mire
           done
+          # L'unite systemd de cette version, verifiee avec les binaires.
+          cp deploy/mire.service dist/
           (cd dist && sha256sum * > SHA256SUMS)
 
       # Provenance verifiable : gh attestation verify <binaire> -R <depot>.
