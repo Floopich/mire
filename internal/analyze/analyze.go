@@ -61,8 +61,13 @@ type Finding struct {
 // ChannelHealth est le verdict porte sur un canal.
 type ChannelHealth struct {
 	ChannelID int
-	Level     Level
-	Findings  []Finding
+	// FrequencyMHz situe le canal pour un diagnostic : un numero est propre
+	// au modem et peut changer, la frequence designe la meme bande pour
+	// tout le monde (brouillage 4G a 800 MHz, entree de bruit en bas de la
+	// voie montante). Nil si le modem ne la donne pas.
+	FrequencyMHz *float64
+	Level        Level
+	Findings     []Finding
 }
 
 // Health est le verdict porte sur un releve complet.
@@ -158,7 +163,7 @@ func levelOf(ch ChannelHealth, metric string) (Level, bool) {
 }
 
 func downstream(c docsis.Downstream, t operator.Thresholds, errs map[int]ErrorCount, ref slope, hasRef bool) ChannelHealth {
-	out := ChannelHealth{ChannelID: c.ChannelID}
+	out := ChannelHealth{ChannelID: c.ChannelID, FrequencyMHz: c.FrequencyMHz}
 
 	if bands, ok := t.DownstreamPowerFor(c.Modulation); ok && c.PowerDBmV != nil {
 		f := power(*c.PowerDBmV, bands, "puissance descendante")
@@ -185,7 +190,7 @@ func downstream(c docsis.Downstream, t operator.Thresholds, errs map[int]ErrorCo
 }
 
 func upstream(c docsis.Upstream, t operator.Thresholds) ChannelHealth {
-	out := ChannelHealth{ChannelID: c.ChannelID}
+	out := ChannelHealth{ChannelID: c.ChannelID, FrequencyMHz: c.FrequencyMHz}
 
 	family := kind(c.Modulation)
 	if family != "ofdma" && kind(c.Multiplex) == "ofdma" {

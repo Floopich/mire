@@ -72,7 +72,7 @@ func TestRapport(t *testing.T) {
 		"Le réseau local a été coupé 1 fois, 3 h au total",
 		"Le modem a redémarré 1 fois.",
 		// L'OFDM publie 26,6 dBmV a chaque releve : toujours hors plage.
-		"Canaux descendants hors plage (part du temps) : 159 (" + percent(100, 0) + ").",
+		"Canaux descendants hors plage (part du temps) : 159 (706\u00a0MHz, " + percent(100, 0) + ").",
 		"Technicien passé : connecteur refait.",
 		"Ligne à surveiller : canal 3.",
 		"Avant et après l'intervention",

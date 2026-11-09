@@ -195,3 +195,46 @@ func TestDurees(t *testing.T) {
 		}
 	}
 }
+
+// Un canal se situe par sa frequence : le numero est propre au modem, la
+// frequence designe la meme bande pour le technicien.
+func TestLesCanauxPortentLeurFrequence(t *testing.T) {
+	mhz := func(v float64) *float64 { return &v }
+	avant := ligne(t0, 6, 0, 0, "64QAM", "64QAM")
+	for i := range avant.Downstream {
+		avant.Downstream[i].FrequencyMHz = mhz(442 + 8*float64(i))
+	}
+	avant.Upstream[1].FrequencyMHz = mhz(44.2)
+	apres := ligne(t0.Add(5*time.Minute), 3, 0, 0, "64QAM", "16QAM")
+	apres.Downstream[2].Modulation = "64QAM"
+	apres.Downstream[2].FrequencyMHz = mhz(458)
+	apres.Upstream[1].FrequencyMHz = mhz(44.2)
+
+	evs := Detect(Input{Prev: &avant, Cur: apres, Profile: voo(t)})
+	var msgs []string
+	for _, e := range evs {
+		msgs = append(msgs, e.Message)
+	}
+	got := strings.Join(msgs, "\n")
+	for _, want := range []string{
+		"Canaux descendants perdus : 4, 5 et 6, de 466 à 482 MHz.",
+		"Modulation en baisse, voie descendante : canal 3 (458 MHz, 256QAM → 64QAM).",
+		"Modulation en baisse, voie montante : canal 2 (44,2 MHz, 64QAM → 16QAM).",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("absent : %s\nobtenu :\n%s", want, got)
+		}
+	}
+
+	seul := ligne(t0.Add(10*time.Minute), 6, 0, 0)
+	seul.Downstream[5].FrequencyMHz = mhz(482)
+	evs = Detect(Input{Prev: &apres, Cur: seul, Profile: voo(t)})
+	if len(evs) == 0 || !strings.Contains(evs[0].Message, "4, 5 et 6, à 482 MHz.") {
+		t.Errorf("une seule fréquence connue : %v", evs)
+	}
+	sans := ligne(t0.Add(15*time.Minute), 5, 0, 0)
+	evs = Detect(Input{Prev: &seul, Cur: sans, Profile: voo(t)})
+	if len(evs) == 0 || evs[0].Message != "Canal descendant 6 (482 MHz) perdu." {
+		t.Errorf("canal seul : %v", evs)
+	}
+}

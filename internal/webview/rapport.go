@@ -13,6 +13,7 @@ import (
 
 	"github.com/floopich/mire/internal/analyze"
 	"github.com/floopich/mire/internal/compensation"
+	"github.com/floopich/mire/internal/docsis"
 	"github.com/floopich/mire/internal/events"
 	"github.com/floopich/mire/internal/probe"
 	"github.com/floopich/mire/internal/settings"
@@ -363,7 +364,7 @@ func (s *Server) handleReport(w http.ResponseWriter, r *http.Request) {
 			row.Out = outShare(c)
 			if c.OutOfBand > 0 {
 				row.Level = analyze.Warning
-				dsOut = append(dsOut, strconv.Itoa(c.ChannelID)+" ("+row.Out+")")
+				dsOut = append(dsOut, outOfRange(c.ChannelID, c.Frequency, row.Out))
 			}
 		} else {
 			row.Level = analyze.Unknown
@@ -377,7 +378,7 @@ func (s *Server) handleReport(w http.ResponseWriter, r *http.Request) {
 			row.Out = outShare(c)
 			if c.OutOfBand > 0 {
 				row.Level = analyze.Warning
-				usOut = append(usOut, strconv.Itoa(c.ChannelID)+" ("+row.Out+")")
+				usOut = append(usOut, outOfRange(c.ChannelID, c.Frequency, row.Out))
 			}
 		} else {
 			row.Level = analyze.Unknown
@@ -809,4 +810,13 @@ func outageText(p periodReport) string {
 		return "aucune"
 	}
 	return plural(p.Cuts, "coupure", "coupures") + ", " + events.Duration(p.Down)
+}
+
+// outOfRange nomme un canal hors plage pour le resume a transmettre a
+// l'operateur, frequence comprise : « 16 (570 MHz, 12 %) ».
+func outOfRange(id int, mhz *float64, share string) string {
+	if mhz == nil {
+		return strconv.Itoa(id) + " (" + share + ")"
+	}
+	return strconv.Itoa(id) + " (" + docsis.MHz(*mhz) + ", " + share + ")"
 }

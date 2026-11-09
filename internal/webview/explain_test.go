@@ -58,7 +58,7 @@ func TestVerdictExplique(t *testing.T) {
 	debutEmission := now.Add(-90 * time.Minute)
 	for _, voulu := range []string{
 		"Pourquoi ce verdict",
-		"Canal descendant 1</a> · SNR : 33,5 dB, sous le seuil nominal",
+		"Canal descendant 1 (650\u00a0MHz)</a> · SNR : 33,5 dB, sous le seuil nominal",
 		"Seuil : nominal dès 35 dB, critique sous 33 dB, en 256QAM.",
 		// La suite hors plage commence apres un releve sain : la date est sure.
 		"Constaté depuis 30\u00a0min, le " + FmtTime(debutSNR) + ".",

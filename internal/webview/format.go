@@ -2,12 +2,12 @@ package webview
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/floopich/mire/internal/analyze"
+	"github.com/floopich/mire/internal/docsis"
 )
 
 // Les nombres et les heures sont rendus a la francaise : virgule decimale,
@@ -31,18 +31,12 @@ func dec(v float64) string {
 	return strings.Replace(s, "-", "\u2212", 1)
 }
 
-// FmtMHz rend une frequence au dixieme de MHz, sans decimale quand elle est
-// entiere : 442 MHz, 37,2 MHz. Les canaux montants SC-QAM sont rarement
-// centres sur un MHz rond.
+// FmtMHz rend une frequence au dixieme de MHz : 442 MHz, 37,2 MHz.
 func FmtMHz(v *float64) string {
 	if v == nil {
 		return "—"
 	}
-	r := math.Round(*v*10) / 10
-	if r == math.Trunc(r) {
-		return strconv.Itoa(int(r)) + nbsp + "MHz"
-	}
-	return dec(r) + nbsp + "MHz"
+	return docsis.MHz(*v)
 }
 
 // FmtTime rend un horodatage en heure locale.

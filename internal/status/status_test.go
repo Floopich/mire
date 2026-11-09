@@ -61,7 +61,7 @@ func TestLecture(t *testing.T) {
 	if !s.LastRestart.Equal(now.Add(-3 * time.Hour)) {
 		t.Errorf("dernier redémarrage : %v", s.LastRestart)
 	}
-	if d := s.Diagnosis(); !strings.HasPrefix(d, "Ligne critique : canal descendant 1, puissance descendante 12,0") {
+	if d := s.Diagnosis(); !strings.HasPrefix(d, "Ligne critique : canal descendant 1 (442\u00a0MHz), puissance descendante 12,0") {
 		t.Errorf("diagnostic : %q", d)
 	}
 

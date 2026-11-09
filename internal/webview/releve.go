@@ -104,7 +104,7 @@ func findingsOf(h analyze.Health) []reason {
 				if f.Level >= analyze.Warning {
 					out = append(out, reason{Level: f.Level, Metric: f.Metric, Message: f.Message, Limit: f.Limit,
 						Headline: ucFirst(f.Metric) + " : " + f.Message,
-						Where:    "Canal " + side.dir + " " + strconv.Itoa(ch.ChannelID)})
+						Where:    channelWhere(side.dir, ch)})
 				}
 			}
 		}

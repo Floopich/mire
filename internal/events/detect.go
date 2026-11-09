@@ -188,7 +188,7 @@ func cause(h analyze.Health, level analyze.Level) (string, string, int) {
 		return "état dégradé", "", 0
 	}
 	first := hits[0]
-	text := "canal " + first.dir + " " + strconv.Itoa(first.ch.ChannelID)
+	text := channelName(first.dir, first.ch.ChannelID, first.ch.FrequencyMHz)
 	for _, f := range first.ch.Findings {
 		if f.Level == level {
 			text += ", " + f.Metric + " " + f.Message
@@ -246,33 +246,100 @@ func uncorrectedDelta(prev, cur docsis.Snapshot) int64 {
 
 func channelChanges(prev, cur docsis.Snapshot) []store.Event {
 	var out []store.Event
-	diff := func(dir string, before, after []int) {
-		lost, back := setDiff(before, after), setDiff(after, before)
+	// Un canal perdu se situe par sa frequence d'avant, un canal retrouve
+	// par celle d'apres.
+	diff := func(dir string, before, after map[int]*float64) {
+		lost, back := setDiff(keys(before), keys(after)), setDiff(keys(after), keys(before))
 		if len(lost) > 0 {
-			out = append(out, channelEvent(KindChannelsLost, dir, lost, analyze.Warning, "perdu"))
+			out = append(out, channelEvent(KindChannelsLost, dir, lost, before, analyze.Warning, "perdu"))
 		}
 		if len(back) > 0 {
-			out = append(out, channelEvent(KindChannelsBack, dir, back, analyze.Good, "retrouvé"))
+			out = append(out, channelEvent(KindChannelsBack, dir, back, after, analyze.Good, "retrouvé"))
 		}
 	}
-	diff(directionDown, downIDs(prev), downIDs(cur))
-	diff(directionUp, upIDs(prev), upIDs(cur))
+	diff(directionDown, downFreqs(prev), downFreqs(cur))
+	diff(directionUp, upFreqs(prev), upFreqs(cur))
 	return out
 }
 
-func channelEvent(kind, dir string, ids []int, level analyze.Level, verb string) store.Event {
+func channelEvent(kind, dir string, ids []int, freqs map[int]*float64, level analyze.Level, verb string) store.Event {
 	e := store.Event{Kind: kind, Level: int(level), Direction: dir}
 	if len(ids) == 1 {
 		e.ChannelID = ids[0]
-		e.Message = fmt.Sprintf("Canal %s %d %s.", dir, ids[0], verb)
+		name := channelName(dir, ids[0], freqs[ids[0]])
+		e.Message = strings.ToUpper(name[:1]) + name[1:] + " " + verb + "."
 		return e
 	}
-	e.Message = fmt.Sprintf("Canaux %ss %ss : %s.", dir, verb, list(ids))
+	e.Message = fmt.Sprintf("Canaux %ss %ss : %s%s.", dir, verb, list(ids), span(ids, freqs))
 	return e
+}
+
+// channelName nomme un canal avec sa frequence quand le modem la donne :
+// « canal descendant 16 (570 MHz) ». La frequence sert au diagnostic : un
+// numero est propre au modem, la frequence designe la meme bande pour le
+// technicien.
+func channelName(dir string, id int, mhz *float64) string {
+	s := "canal " + dir + " " + strconv.Itoa(id)
+	if mhz != nil {
+		s += " (" + docsis.MHz(*mhz) + ")"
+	}
+	return s
+}
+
+// span situe un groupe de canaux : « , de 458 à 482 MHz », vide si aucune
+// frequence n'est connue.
+func span(ids []int, freqs map[int]*float64) string {
+	var lo, hi *float64
+	for _, id := range ids {
+		f := freqs[id]
+		if f == nil {
+			continue
+		}
+		if lo == nil || *f < *lo {
+			lo = f
+		}
+		if hi == nil || *f > *hi {
+			hi = f
+		}
+	}
+	switch {
+	case lo == nil:
+		return ""
+	case docsis.MHz(*lo) == docsis.MHz(*hi):
+		return ", à " + docsis.MHz(*lo)
+	default:
+		return ", de " + strings.TrimSuffix(docsis.MHz(*lo), "\u00a0MHz") + " à " + docsis.MHz(*hi)
+	}
+}
+
+func keys(m map[int]*float64) []int {
+	out := make([]int, 0, len(m))
+	for id := range m {
+		out = append(out, id)
+	}
+	sort.Ints(out)
+	return out
+}
+
+func downFreqs(s docsis.Snapshot) map[int]*float64 {
+	out := make(map[int]*float64, len(s.Downstream))
+	for _, c := range s.Downstream {
+		out[c.ChannelID] = c.FrequencyMHz
+	}
+	return out
+}
+
+func upFreqs(s docsis.Snapshot) map[int]*float64 {
+	out := make(map[int]*float64, len(s.Upstream))
+	for _, c := range s.Upstream {
+		out[c.ChannelID] = c.FrequencyMHz
+	}
+	return out
 }
 
 type modChange struct {
 	id       int
+	mhz      *float64
 	from, to string
 	down     bool
 }
@@ -303,6 +370,7 @@ func modulationChanges(prev, cur docsis.Snapshot) []store.Event {
 	var ds []modChange
 	for _, c := range cur.Downstream {
 		if mc, ok := compare(c.ChannelID, before, c.Modulation); ok {
+			mc.mhz = c.FrequencyMHz
 			ds = append(ds, mc)
 		}
 	}
@@ -315,6 +383,7 @@ func modulationChanges(prev, cur docsis.Snapshot) []store.Event {
 	var us []modChange
 	for _, c := range cur.Upstream {
 		if mc, ok := compare(c.ChannelID, before, upLabel(c)); ok {
+			mc.mhz = c.FrequencyMHz
 			us = append(us, mc)
 		}
 	}
@@ -347,29 +416,17 @@ func modEvent(dir string, changes []modChange, level analyze.Level, title string
 	e := store.Event{Kind: KindModulation, Level: int(level), Direction: dir}
 	var parts []string
 	for _, c := range changes {
-		parts = append(parts, fmt.Sprintf("canal %d (%s → %s)", c.id, c.from, c.to))
+		where := ""
+		if c.mhz != nil {
+			where = docsis.MHz(*c.mhz) + ", "
+		}
+		parts = append(parts, fmt.Sprintf("canal %d (%s%s → %s)", c.id, where, c.from, c.to))
 	}
 	if len(changes) == 1 {
 		e.ChannelID = changes[0].id
 	}
 	e.Message = fmt.Sprintf("%s, voie %se : %s.", title, dir, joinFr(parts)) // voie descendante, montante
 	return e
-}
-
-func downIDs(s docsis.Snapshot) []int {
-	out := make([]int, 0, len(s.Downstream))
-	for _, c := range s.Downstream {
-		out = append(out, c.ChannelID)
-	}
-	return out
-}
-
-func upIDs(s docsis.Snapshot) []int {
-	out := make([]int, 0, len(s.Upstream))
-	for _, c := range s.Upstream {
-		out = append(out, c.ChannelID)
-	}
-	return out
 }
 
 // setDiff renvoie, tries, les elements de a absents de b.

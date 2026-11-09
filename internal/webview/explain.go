@@ -30,9 +30,19 @@ const (
 )
 
 // reason est une mesure hors plage, expliquee.
+// channelWhere nomme un canal avec sa frequence, que le technicien lit
+// avant le numero : « Canal descendant 12 (538 MHz) ».
+func channelWhere(dir string, ch analyze.ChannelHealth) string {
+	s := "Canal " + dir + " " + strconv.Itoa(ch.ChannelID)
+	if ch.FrequencyMHz != nil {
+		s += " (" + docsis.MHz(*ch.FrequencyMHz) + ")"
+	}
+	return s
+}
+
 type reason struct {
 	Level   analyze.Level
-	Where   string // « Canal descendant 12 »
+	Where   string // « Canal descendant 12 (538 MHz) »
 	Href    string
 	Metric  string
 	Message string
@@ -107,7 +117,7 @@ func (s *Server) explain(ctx context.Context, st service.State, snap docsis.Snap
 				continue
 			}
 			r := reason{Level: f.Level, Metric: f.Metric, Message: f.Message, Limit: f.Limit, Headline: ucFirst(f.Metric) + " : " + f.Message,
-				Where: "Canal " + dir + " " + strconv.Itoa(ch.ChannelID),
+				Where: channelWhere(dir, ch),
 				Href:  path + strconv.Itoa(ch.ChannelID) + "?heures=" + strconv.Itoa(hours)}
 			if f.Metric != "erreurs" {
 				o, err := date(f.Metric)
@@ -214,7 +224,7 @@ func (s *Server) channelState(ctx context.Context, direction string, id, hours i
 	if err != nil {
 		return nil, err
 	}
-	where := "Canal " + direction + " " + strconv.Itoa(id)
+	where := channelWhere(direction, *ch)
 	since := map[string]string{}
 	for _, r := range dated {
 		if r.Where == where {

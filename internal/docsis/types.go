@@ -7,6 +7,7 @@ package docsis
 import (
 	"bytes"
 	"encoding/json"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -225,6 +226,17 @@ func (f OptFloat) String() string {
 		return ""
 	}
 	return strconv.FormatFloat(f.V, 'g', -1, 64)
+}
+
+// MHz rend une frequence au dixieme de MHz, sans decimale quand elle est
+// entiere, avec une espace insecable : « 442 MHz », « 37,2 MHz ». Les canaux
+// montants SC-QAM sont rarement centres sur un MHz rond.
+func MHz(v float64) string {
+	r := math.Round(v*10) / 10
+	if r == math.Trunc(r) {
+		return strconv.FormatFloat(r, 'f', 0, 64) + "\u00a0MHz"
+	}
+	return strings.Replace(strconv.FormatFloat(r, 'f', 1, 64), ".", ",", 1) + "\u00a0MHz"
 }
 
 // CounterDelta renvoie l'accroissement d'un compteur cumulatif entre deux
