@@ -82,8 +82,9 @@ Service, hors de la page Réglages :
 | `MIRE_ECOUTE` | `0.0.0.0:1340` | adresse d'écoute de l'interface |
 | `MIRE_DEMO` | `false` | démonstration sur une ligne fictive : base jetable, interface sans mot de passe |
 | `MIRE_PROXY_DE_CONFIANCE` | aucun | proxys inverses dont l'en-tête `X-Forwarded-For` est cru, adresses ou plages : `172.18.0.0/16`. Facultatif : sans lui, derrière un proxy, trois fautes de frappe bloquent tout le monde quelques minutes |
+| `MIRE_CLE_SECRETS` | aucune | clé de chiffrement des secrets enregistrés, 64 caractères hexadécimaux (`openssl rand -hex 32`) ; voir plus bas |
 
-Chaque variable a son option en ligne de commande (`mire -h`), sauf le mot de passe du modem et les proxys de confiance. Les données tiennent dans un fichier SQLite, `mire.db`.
+Chaque variable a son option en ligne de commande (`mire -h`), sauf le mot de passe du modem, les proxys de confiance et la clé des secrets. Les données tiennent dans un fichier SQLite, `mire.db`.
 
 **Secrets dans un fichier (facultatif).** Chaque mot de passe ou jeton peut aussi se lire dans un fichier, en ajoutant `_FICHIER` au nom de sa variable : `MIRE_MODEM_MOT_DE_PASSE_FICHIER=/run/secrets/modem`. Le secret n'apparaît alors ni dans `docker inspect` ni dans l'environnement du conteneur. Les deux formes à la fois pour un même secret empêchent le démarrage, comme un fichier vide ou illisible. Avec les secrets Docker :
 
@@ -96,6 +97,33 @@ services:
 secrets:
   modem:
     file: ./modem.secret
+```
+
+**Secrets chiffrés dans la base (facultatif).** Sans réglage, les mots de passe et jetons saisis dans la page Réglages sont enregistrés en clair dans `mire.db`, lisible par le seul compte du service. Avec une clé gardée hors du dossier des données, ils sont chiffrés (AES-256-GCM) : une copie de la base, du volume ou une sauvegarde complète ne les livre plus sans la clé.
+
+```bash
+openssl rand -hex 32 > mire-cle.secret && chmod 600 mire-cle.secret
+```
+
+```yaml
+services:
+  mire:
+    environment:
+      MIRE_CLE_SECRETS_FICHIER: /run/secrets/mire-cle
+    secrets: [mire-cle]
+secrets:
+  mire-cle:
+    file: ./mire-cle.secret
+```
+
+Au démarrage suivant, les secrets déjà enregistrés sont chiffrés ; le journal l'indique. `MIRE_CLE_SECRETS` donne aussi la clé directement. Gardez la clé à part : sans elle, Mire refuse de démarrer sur cette base et une sauvegarde complète ne se restaure pas (une copie sans secrets, si). Une clé différente est refusée de même, plutôt que d'envoyer un mot de passe faux au modem.
+
+Revenir sans chiffrement, ou changer de clé : Mire arrêté, `mire dechiffrer` avec la clé actuelle, puis démarrez sans clé ou avec la nouvelle.
+
+```bash
+docker compose stop mire
+docker compose run --rm mire dechiffrer
+docker compose start mire   # après avoir retiré ou remplacé la clé
 ```
 
 ## Docker
@@ -151,6 +179,7 @@ Ouvrez ensuite `http://<machine>:1340`. Le service tourne sous le compte `mire` 
 | `mire releve` | prend un relevé et l'enregistre |
 | `mire sauvegarde FICHIER` | copie la base, sans arrêter le service ; `-` pour la sortie standard ; `-sans-secrets` retire mots de passe et jetons |
 | `mire restauration FICHIER` | remplace la base par une sauvegarde, service arrêté ; `-` pour l'entrée standard |
+| `mire dechiffrer` | remet les secrets en clair avec la clé actuelle, service arrêté |
 | `mire mot-de-passe` | change le mot de passe de l'interface et ferme les sessions |
 | `mire sante` | vérifie qu'une instance répond |
 | `mire detecter` | cherche le modem sur le réseau |
@@ -176,7 +205,7 @@ docker compose exec -T mire mire sauvegarde - > mire-$(date +%F).db
 mire sauvegarde /chemin/mire-sauvegarde.db
 ```
 
-La copie ne remplace jamais un fichier existant. Complète, elle contient le mot de passe du modem et les jetons : gardez-la à l'abri. Avec `-sans-secrets` (`mire sauvegarde -sans-secrets FICHIER`), mots de passe, jetons et sessions sont retirés ; après restauration, ils se ressaisissent, celui de l'interface compris.
+La copie ne remplace jamais un fichier existant. Complète, elle contient le mot de passe du modem et les jetons, chiffrés si une clé est donnée : gardez-la à l'abri. Avec `-sans-secrets` (`mire sauvegarde -sans-secrets FICHIER`), mots de passe, jetons et sessions sont retirés ; après restauration, ils se ressaisissent, celui de l'interface compris.
 
 **Restaurer**, Mire arrêté : l'ancienne base est conservée à côté, sous un nom daté.
 

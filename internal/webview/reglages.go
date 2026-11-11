@@ -121,6 +121,9 @@ type backupsView struct {
 	Count int
 	Last  time.Time
 	Size  string
+	// Sealed dit que les secrets de la base sont chiffres : une sauvegarde
+	// complete demande alors la cle pour etre restauree.
+	Sealed bool
 }
 
 type logLine struct {
@@ -592,6 +595,7 @@ func (s *Server) reglagesView(r *http.Request, section string, explicit bool, in
 		}
 		if g.ID == "sauvegarde" && !s.opts.Demo {
 			v.Backups = s.backups()
+			v.Backups.Sealed = settings.Sealed(r.Context(), s.db)
 		}
 		if g.ID == "journal" {
 			if s.opts.Journal == nil {

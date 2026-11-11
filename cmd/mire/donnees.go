@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/floopich/mire/internal/cli"
+	"github.com/floopich/mire/internal/settings"
 	"github.com/floopich/mire/internal/store"
 )
 
@@ -173,4 +174,38 @@ func running(listen string) bool {
 	}
 	_ = resp.Body.Close()
 	return true
+}
+
+// unseal remet les secrets en clair avec la cle actuelle : pour cesser de
+// chiffrer, ou pour changer de cle (dechiffrer, puis demarrer avec la
+// nouvelle). Mire doit etre arrete, comme pour une restauration.
+func unseal(args []string) error {
+	cfg, err := parseConfig("mire dechiffrer", args, os.Getenv, os.Stderr)
+	if err != nil {
+		return err
+	}
+	if cfg.SecretKey == nil {
+		return fmt.Errorf("donnez la clé actuelle avec %s ou %s", settings.KeyEnv, settings.KeyEnv+settings.FileSuffix)
+	}
+	if err := checkWritable(cfg.DataDir); err != nil {
+		return err
+	}
+	unlock, err := lockData(cfg.DataDir)
+	if errors.Is(err, errDataLocked) || running(cfg.Listen) {
+		return errors.New("Mire tourne encore sur ce dossier de données : arrêtez-le avant de déchiffrer (docker compose stop, ou systemctl stop mire)")
+	}
+	if err == nil {
+		defer unlock()
+	}
+	db, err := open(cfg)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = db.Close() }()
+	n, err := settings.UnsealSecrets(context.Background(), db)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(os.Stderr, "%d secret(s) remis en clair. Retirez %s, ou remplacez-la par la nouvelle clé, puis relancez Mire.\n", n, settings.KeyEnv)
+	return nil
 }

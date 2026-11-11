@@ -41,9 +41,10 @@ var (
 )
 
 // SecretKeys sont les cles retirees d'une copie sans secrets : reglages
-// secrets et empreinte du mot de passe de l'interface.
+// secrets, empreinte du mot de passe de l'interface et ligne de controle du
+// chiffrement, qui n'a plus rien a proteger.
 func SecretKeys() []string {
-	return append(settings.SecretKeys(), auth.KeyPasswordHash)
+	return append(settings.SecretKeys(), auth.KeyPasswordHash, settings.KeyCheck)
 }
 
 type Copy struct {

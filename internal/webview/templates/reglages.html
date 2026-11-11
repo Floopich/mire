@@ -116,7 +116,7 @@
     <a class="btn filled" href="/reglages/sauvegarde/telecharger" download>{{icon "telecharger"}}Sauvegarde complète</a>
     <a class="btn tonal" href="/reglages/sauvegarde/telecharger?secrets=non" download>{{icon "telecharger"}}Sans mots de passe ni jetons</a>
    </div>
-   <p class="help body-m">Complète : mots de passe et jetons compris. Sans mots de passe : à ressaisir après restauration, celui de l'interface compris.</p>
+   <p class="help body-m">Complète : mots de passe et jetons compris{{with $.Backups}}{{if .Sealed}}, chiffrés : la clé des secrets est nécessaire pour la restaurer{{end}}{{end}}. Sans mots de passe : à ressaisir après restauration, celui de l'interface compris.</p>
    <p class="help body-m">Restaurer : <code>mire restauration FICHIER</code>, Mire arrêté.</p>
   </div>
   {{end}}

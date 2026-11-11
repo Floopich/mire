@@ -164,6 +164,9 @@ func Load(ctx context.Context, db *sql.DB, forced Source) (Values, error) {
 			if err != nil {
 				return v, err
 			}
+			if saved, err = decode(key(d.Key), saved); err != nil {
+				return v, err
+			}
 			// Un champ vide dans la page Reglages revient a la valeur par
 			// defaut, jamais a zero : une conservation videe ne doit pas
 			// devenir illimitee.
@@ -292,7 +295,7 @@ func Set(ctx context.Context, db *sql.DB, forced Source, input map[string]string
 		accepted[k] = value
 	}
 	for k, value := range accepted {
-		if err := store.SetSetting(ctx, db, key(k), value); err != nil {
+		if err := store.SetSetting(ctx, db, key(k), encode(key(k), value)); err != nil {
 			return err
 		}
 	}

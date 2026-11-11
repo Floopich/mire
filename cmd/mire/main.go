@@ -53,6 +53,8 @@ Utilisation :
   mire restauration [options] FICHIER
                                  remplace la base par une sauvegarde, Mire
                                  arrêté ; - lit l'entrée standard
+  mire dechiffrer [options]      remet les secrets en clair, Mire arrêté,
+                                 avec la clé MIRE_CLE_SECRETS actuelle
   mire sante [options]           vérifie qu'une instance répond
   mire detecter                  cherche le modem sur le réseau
   mire diagnostic [options]      écrit les réponses du modem, anonymisées,
@@ -88,6 +90,8 @@ func run(args []string) error {
 		return backup(args)
 	case "restauration":
 		return restore(args)
+	case "dechiffrer":
+		return unseal(args)
 	case "sante":
 		return health(args)
 	case "detecter":
@@ -138,6 +142,11 @@ func open(cfg config) (*sql.DB, error) {
 			return nil, err
 		}
 	}
+	settings.UseKey(cfg.SecretKey)
+	if err := settings.CheckSecrets(context.Background(), db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	return db, nil
 }
 
@@ -185,6 +194,11 @@ func serve(args []string) error {
 		return err
 	}
 	defer func() { _ = db.Close() }()
+	if n, err := settings.SealSecrets(ctx, db); err != nil {
+		return err
+	} else if n > 0 {
+		logger.Info("secrets enregistrés chiffrés", "nombre", n)
+	}
 	applyTimeZone(ctx, db, cfg, logger)
 
 	// L'interface demarre toujours, meme sans modem configure.

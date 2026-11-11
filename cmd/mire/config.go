@@ -25,6 +25,8 @@ type config struct {
 	// Forced regroupe les reglages imposes par l'environnement ou par les
 	// options : ils l'emportent sur la page Reglages et y sont verrouilles.
 	Forced settings.Source
+	// SecretKey chiffre les secrets enregistres ; nil les laisse en clair.
+	SecretKey *settings.Key
 }
 
 // flagSettings relie les options historiques de la ligne de commande aux
@@ -70,6 +72,9 @@ func parseConfigArgs(name string, args []string, getenv func(string) string, out
 	}
 	for k, v := range files {
 		c.Forced[k] = v
+	}
+	if c.SecretKey, err = settings.KeyFrom(getenv, readSecretFile); err != nil {
+		return c, nil, err
 	}
 
 	demoMode, err := strconv.ParseBool(env("MIRE_DEMO", "false"))
