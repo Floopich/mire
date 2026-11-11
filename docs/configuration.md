@@ -132,16 +132,16 @@ Service systemd sous Linux, en root :
 
 ```bash
 A=linux-amd64   # ou linux-arm64, linux-armv7
-curl -fsSLO https://github.com/floopich/mire/releases/latest/download/mire-$A
-curl -fsSLO https://github.com/floopich/mire/releases/latest/download/SHA256SUMS
+U=https://github.com/floopich/mire/releases/latest/download
+curl -fsSL --remote-name-all $U/mire-$A $U/mire.service $U/SHA256SUMS
 sha256sum --check --ignore-missing SHA256SUMS
 install -m 755 mire-$A /usr/local/bin/mire
+install -m 644 mire.service /etc/systemd/system/mire.service
 useradd --system --home-dir /var/lib/mire --shell /usr/sbin/nologin mire
-curl -fsSL -o /etc/systemd/system/mire.service https://raw.githubusercontent.com/floopich/mire/main/deploy/mire.service
 systemctl daemon-reload && systemctl enable --now mire
 ```
 
-Ouvrez ensuite `http://<machine>:1340`. Le service tourne sous le compte `mire` et n'écrit que dans `/var/lib/mire`. Réglages imposés, facultatifs : `/etc/mire/mire.env`, au format de [.env.exemple](../.env.exemple). Mise à jour : les quatre premières lignes, puis `install -m 755 mire-$A /usr/local/bin/mire && systemctl restart mire`. Journal : `journalctl -u mire`.
+Ouvrez ensuite `http://<machine>:1340`. Le service tourne sous le compte `mire` et n'écrit que dans `/var/lib/mire`. Réglages imposés, facultatifs : `/etc/mire/mire.env`, au format de [.env.exemple](../.env.exemple). Mise à jour : les six premières lignes, puis `systemctl daemon-reload && systemctl restart mire`. Journal : `journalctl -u mire`.
 
 ## Commandes
 
