@@ -4,7 +4,7 @@
 # binaire est en Go pur (-tags purego), aucune chaine C n'est necessaire.
 # Images de base figees par empreinte : la construction est reproductible,
 # et Dependabot propose chaque mise a jour.
-FROM --platform=$BUILDPLATFORM golang:1.27-alpine@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb AS build
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS build
 ARG TARGETOS TARGETARCH TARGETVARIANT
 ARG VERSION=dev
 WORKDIR /src
